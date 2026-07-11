@@ -12,18 +12,13 @@ import java.io.File;
  * @version 1.0.0
  * @since 2026-07-08
  */
-public class ImageFileInfo {
+public class ImageFileInfo implements FileInfo {
 
-    /** 处理状态枚举 */
+    // Status enum 移至 FileInfo 接口统一管理，保留别名以兼容旧代码
+    /** @deprecated 请使用 {@link FileInfo.Status} */
+    @Deprecated
     public enum Status {
-        /** 待处理 */
-        PENDING,
-        /** 正在处理 */
-        PROCESSING,
-        /** 处理成功 */
-        SUCCESS,
-        /** 处理失败 */
-        FAILED
+        PENDING, PROCESSING, SUCCESS, FAILED
     }
 
     // ==================== 基本信息 ====================
@@ -176,5 +171,37 @@ public class ImageFileInfo {
     @Override
     public int hashCode() {
         return sourceFile != null ? sourceFile.getAbsolutePath().hashCode() : 0;
+    }
+
+    // ==================== FileInfo 接口实现 ====================
+
+    @Override
+    public FileInfo.FileType getFileType() {
+        return FileInfo.FileType.IMAGE;
+    }
+
+    @Override
+    public FileInfo.Status getFileInfoStatus() {
+        switch (status) {
+            case PROCESSING: return FileInfo.Status.PROCESSING;
+            case SUCCESS:    return FileInfo.Status.SUCCESS;
+            case FAILED:     return FileInfo.Status.FAILED;
+            default:         return FileInfo.Status.PENDING;
+        }
+    }
+
+    @Override
+    public void setFileInfoStatus(FileInfo.Status s) {
+        switch (s) {
+            case PROCESSING: this.status = Status.PROCESSING; break;
+            case SUCCESS:    this.status = Status.SUCCESS; break;
+            case FAILED:     this.status = Status.FAILED; break;
+            default:         this.status = Status.PENDING; break;
+        }
+    }
+
+    @Override
+    public String getDurationString() {
+        return ""; // 图片无时长
     }
 }

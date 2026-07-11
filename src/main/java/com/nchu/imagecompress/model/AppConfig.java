@@ -67,10 +67,38 @@ public class AppConfig {
     /** 是否启用智能推荐 */
     private boolean smartRecommendEnabled = false;
 
+    // ==================== 压缩模式 ====================
+
+    /** 当前压缩模式：IMAGE 或 VIDEO */
+    private String compressMode = "IMAGE";
+
+    // ==================== 视频压缩参数记忆 ====================
+
+    /** 上次使用的视频 CRF 值 */
+    private int lastVideoCrf = 23;
+
+    /** 上次使用的视频输出格式名称 */
+    private String lastVideoFormat = "ORIGINAL";
+
+    /** 上次使用的分辨率模式 */
+    private String lastVideoResolution = "ORIGINAL";
+
+    /** 上次使用的帧率模式 */
+    private String lastVideoFps = "ORIGINAL";
+
+    /** 上次使用的音频模式 */
+    private String lastVideoAudio = "KEEP";
+
+    /** 上次使用的视频输出目录 */
+    private String lastVideoOutputPath = "";
+
     // ==================== 最近目录 ====================
 
     /** 最近导入文件的目录 */
     private String recentImportDir = "";
+
+    /** 最近视频导入目录 */
+    private String recentVideoImportDir = "";
 
     /** 最近输出目录 */
     private String recentOutputDir = "";
@@ -134,8 +162,32 @@ public class AppConfig {
     public String getRecentImportDir() { return recentImportDir; }
     public void setRecentImportDir(String recentImportDir) { this.recentImportDir = recentImportDir; }
 
+    public String getRecentVideoImportDir() { return recentVideoImportDir; }
+    public void setRecentVideoImportDir(String recentVideoImportDir) { this.recentVideoImportDir = recentVideoImportDir; }
+
     public String getRecentOutputDir() { return recentOutputDir; }
     public void setRecentOutputDir(String recentOutputDir) { this.recentOutputDir = recentOutputDir; }
+
+    public String getCompressMode() { return compressMode != null ? compressMode : "IMAGE"; }
+    public void setCompressMode(String compressMode) { this.compressMode = compressMode; }
+
+    public int getLastVideoCrf() { return lastVideoCrf; }
+    public void setLastVideoCrf(int lastVideoCrf) { this.lastVideoCrf = lastVideoCrf; }
+
+    public String getLastVideoFormat() { return lastVideoFormat; }
+    public void setLastVideoFormat(String lastVideoFormat) { this.lastVideoFormat = lastVideoFormat; }
+
+    public String getLastVideoResolution() { return lastVideoResolution; }
+    public void setLastVideoResolution(String lastVideoResolution) { this.lastVideoResolution = lastVideoResolution; }
+
+    public String getLastVideoFps() { return lastVideoFps; }
+    public void setLastVideoFps(String lastVideoFps) { this.lastVideoFps = lastVideoFps; }
+
+    public String getLastVideoAudio() { return lastVideoAudio; }
+    public void setLastVideoAudio(String lastVideoAudio) { this.lastVideoAudio = lastVideoAudio; }
+
+    public String getLastVideoOutputPath() { return lastVideoOutputPath; }
+    public void setLastVideoOutputPath(String lastVideoOutputPath) { this.lastVideoOutputPath = lastVideoOutputPath; }
 
     @Override
     public String toString() {

@@ -12,12 +12,15 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JSplitPane;
+import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.WindowConstants;
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -68,14 +71,26 @@ public class MainFrame extends JFrame {
     private JButton clearBtn;
     private JButton compressBtn;
     private JButton themeBtn;
+    private JToggleButton modeToggleBtn;
 
     // ==================== 面板引用 ====================
     private FileListPanel fileListPanel;
     private PreviewPanel previewPanel;
     private ParamPanel paramPanel;
+    private VideoPreviewPanel videoPreviewPanel;
+    private VideoParamPanel videoParamPanel;
     private StatusBar statusBar;
     private JSplitPane mainSplitPane;
     private JSplitPane rightSplitPane;
+
+    // ==================== 布局管理器 ====================
+    private CardLayout rightCardLayout;
+    private JPanel rightCardPanel;
+    private JPanel imageRightPanel;
+    private JPanel videoRightPanel;
+
+    private static final String CARD_IMAGE = "IMAGE";
+    private static final String CARD_VIDEO = "VIDEO";
 
     public MainFrame() {
         initFrame();
@@ -86,7 +101,7 @@ public class MainFrame extends JFrame {
     }
 
     private void initFrame() {
-        setTitle("NCHU Image Compressor");
+        setTitle("NCHU Compressor");
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
         setMinimumSize(new Dimension(MIN_WIDTH, MIN_HEIGHT));
@@ -170,12 +185,12 @@ public class MainFrame extends JFrame {
         logoLabel.setFont(new java.awt.Font("Segoe UI Emoji", java.awt.Font.PLAIN, 20));
         leftPanel.add(logoLabel);
 
-        JLabel nameLabel = new JLabel("NCHU Image Compressor");
+        JLabel nameLabel = new JLabel("NCHU Compressor");
         nameLabel.setFont(ThemeUtil.FONT_TITLE);
         nameLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
         leftPanel.add(nameLabel);
 
-        JLabel subLabel = new JLabel("图片压缩工具");
+        JLabel subLabel = new JLabel("图片/视频压缩工具");
         subLabel.setFont(ThemeUtil.FONT_SMALL);
         subLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
         leftPanel.add(subLabel);
@@ -203,6 +218,19 @@ public class MainFrame extends JFrame {
         // --- 右侧：功能图标 + 主按钮 ---
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         rightPanel.setOpaque(false);
+
+        // 模式切换按钮
+        modeToggleBtn = new JToggleButton("🎬 视频模式");
+        modeToggleBtn.setFont(ThemeUtil.FONT_SMALL);
+        modeToggleBtn.setToolTipText("切换图片/视频压缩模式");
+        modeToggleBtn.setFocusPainted(false);
+        modeToggleBtn.setBackground(ThemeUtil.BG_CARD);
+        modeToggleBtn.setForeground(ThemeUtil.TEXT_SECONDARY);
+        modeToggleBtn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ThemeUtil.BORDER, 1),
+                BorderFactory.createEmptyBorder(4, 12, 4, 12)));
+        modeToggleBtn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        rightPanel.add(modeToggleBtn);
 
         themeBtn = new JButton("🎨");
         themeBtn.setFont(new java.awt.Font("Segoe UI Emoji", java.awt.Font.PLAIN, 16));
@@ -244,7 +272,7 @@ public class MainFrame extends JFrame {
     }
 
     /**
-     * 初始化中心面板：三区卡片化布局。
+     * 初始化中心面板：三区卡片化布局 + 图片/视频模式切换。
      * 每个功能区是独立卡片（12px 圆角 + 3 层柔阴影 + 16px 间距）。
      */
     private void initPanels() {
@@ -252,22 +280,42 @@ public class MainFrame extends JFrame {
         fileListPanel = new FileListPanel();
         JPanel leftCard = new CardWrapper(fileListPanel);
 
-        // 右侧：预览（独立卡片）
+        // ========== 图片模式右侧面板 ==========
         previewPanel = new PreviewPanel();
         JPanel previewCard = new CardWrapper(previewPanel);
 
-        // 右侧：参数设置（独立卡片）
         paramPanel = new ParamPanel();
         JPanel paramCard = new CardWrapper(paramPanel);
 
-        // 右侧垂直排列：预览卡片 + 间距 + 参数卡片
-        JPanel rightPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_LG));
-        rightPanel.setOpaque(false);
-        rightPanel.add(previewCard, BorderLayout.CENTER);
-        rightPanel.add(paramCard, BorderLayout.SOUTH);
+        imageRightPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_LG));
+        imageRightPanel.setOpaque(false);
+        imageRightPanel.add(previewCard, BorderLayout.CENTER);
+        imageRightPanel.add(paramCard, BorderLayout.SOUTH);
 
-        // 水平分割：左卡片 | 右面板（窗口 20px 内边距）
-        mainSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftCard, rightPanel);
+        // ========== 视频模式右侧面板 ==========
+        videoPreviewPanel = new VideoPreviewPanel();
+        JPanel videoPreviewCard = new CardWrapper(videoPreviewPanel);
+
+        videoParamPanel = new VideoParamPanel();
+        JPanel videoParamCard = new CardWrapper(videoParamPanel);
+
+        videoRightPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_LG));
+        videoRightPanel.setOpaque(false);
+        videoRightPanel.add(videoPreviewCard, BorderLayout.CENTER);
+        videoRightPanel.add(videoParamCard, BorderLayout.SOUTH);
+
+        // ========== CardLayout 切换图片/视频右侧面板 ==========
+        rightCardLayout = new CardLayout();
+        rightCardPanel = new JPanel(rightCardLayout);
+        rightCardPanel.setOpaque(false);
+        rightCardPanel.add(imageRightPanel, CARD_IMAGE);
+        rightCardPanel.add(videoRightPanel, CARD_VIDEO);
+
+        // 默认显示图片模式
+        rightCardLayout.show(rightCardPanel, CARD_IMAGE);
+
+        // ========== 水平分割：左卡片 | 右面板（窗口 20px 内边距） ==========
+        mainSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftCard, rightCardPanel);
         mainSplitPane.setDividerLocation(380);
         mainSplitPane.setResizeWeight(0.36);
         mainSplitPane.setBorder(BorderFactory.createEmptyBorder(
@@ -336,6 +384,36 @@ public class MainFrame extends JFrame {
         setLocation(x, y);
     }
 
+    // ==================== 模式切换 ====================
+
+    /**
+     * 切换到指定压缩模式（IMAGE 或 VIDEO）。
+     *
+     * @param mode "IMAGE" 或 "VIDEO"
+     */
+    public void switchCompressMode(String mode) {
+        if ("VIDEO".equals(mode)) {
+            rightCardLayout.show(rightCardPanel, CARD_VIDEO);
+            modeToggleBtn.setSelected(true);
+            modeToggleBtn.setText("🎬 视频模式");
+            modeToggleBtn.setForeground(ThemeUtil.PRIMARY);
+            setTitle("NCHU Compressor — 视频压缩");
+        } else {
+            rightCardLayout.show(rightCardPanel, CARD_IMAGE);
+            modeToggleBtn.setSelected(false);
+            modeToggleBtn.setText("🖼 图片模式");
+            modeToggleBtn.setForeground(ThemeUtil.TEXT_SECONDARY);
+            setTitle("NCHU Compressor — 图片压缩");
+        }
+    }
+
+    /**
+     * 获取当前是否为视频模式。
+     */
+    public boolean isVideoMode() {
+        return modeToggleBtn.isSelected();
+    }
+
     // ==================== Getter（API 兼容） ====================
 
     public JMenuItem getImportFilesItem() { return importFilesItem; }
@@ -351,10 +429,13 @@ public class MainFrame extends JFrame {
     public JButton getClearBtn() { return clearBtn; }
     public JButton getCompressBtn() { return compressBtn; }
     public JButton getThemeBtn() { return themeBtn; }
+    public JToggleButton getModeToggleBtn() { return modeToggleBtn; }
 
     public FileListPanel getFileListPanel() { return fileListPanel; }
     public PreviewPanel getPreviewPanel() { return previewPanel; }
     public ParamPanel getParamPanel() { return paramPanel; }
+    public VideoPreviewPanel getVideoPreviewPanel() { return videoPreviewPanel; }
+    public VideoParamPanel getVideoParamPanel() { return videoParamPanel; }
     public StatusBar getStatusBar() { return statusBar; }
     public JSplitPane getMainSplitPane() { return mainSplitPane; }
     public JSplitPane getRightSplitPane() { return rightSplitPane; }

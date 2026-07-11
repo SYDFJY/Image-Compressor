@@ -124,4 +124,13 @@ public interface MainControllerCallback {
      * 用户点击"退出"菜单。
      */
     void onExit();
+
+    // ==================== 模式切换（v2.0） ====================
+
+    /**
+     * 用户切换图片/视频压缩模式。
+     *
+     * @param videoMode true 表示切换到视频模式
+     */
+    void onModeToggle(boolean videoMode);
 }

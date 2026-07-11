@@ -14,11 +14,20 @@ public class CompressResult {
 
     // ==================== 输入信息 ====================
 
-    /** 输入文件信息 */
+    /** 输入文件信息（图片） */
     private ImageFileInfo inputInfo;
 
-    /** 使用的压缩配置 */
+    /** 输入文件信息（视频） */
+    private VideoFileInfo videoInputInfo;
+
+    /** 输入文件信息（通用接口） */
+    private FileInfo sourceFileInfo;
+
+    /** 使用的压缩配置（图片） */
     private CompressConfig config;
+
+    /** 使用的压缩配置（视频） */
+    private VideoCompressConfig videoConfig;
 
     // ==================== 输出信息 ====================
 
@@ -60,15 +69,64 @@ public class CompressResult {
         return result;
     }
 
+    // ==================== 视频工厂方法（v2.0） ====================
+
+    /**
+     * 创建视频压缩成功结果。
+     */
+    public static CompressResult success(VideoFileInfo info, String outputPath,
+                                          long outputSize, long elapsedMs) {
+        CompressResult result = new CompressResult();
+        result.videoInputInfo = info;
+        result.sourceFileInfo = info;
+        result.outputPath = outputPath;
+        result.outputSize = outputSize;
+        result.elapsedMs = elapsedMs;
+        result.success = true;
+        return result;
+    }
+
+    /**
+     * 创建视频压缩失败结果。
+     */
+    public static CompressResult failure(VideoFileInfo info, String errorMsg) {
+        CompressResult result = new CompressResult();
+        result.videoInputInfo = info;
+        result.sourceFileInfo = info;
+        result.success = false;
+        result.errorMessage = errorMsg;
+        return result;
+    }
+
+    /**
+     * 创建视频压缩取消结果。
+     */
+    public static CompressResult cancelled(VideoFileInfo info) {
+        CompressResult result = new CompressResult();
+        result.videoInputInfo = info;
+        result.sourceFileInfo = info;
+        result.success = false;
+        result.errorMessage = "已取消";
+        return result;
+    }
+
     // ==================== 计算属性 ====================
+
+    /**
+     * 获取原始文件大小（兼容图片和视频）。
+     */
+    private long getOriginalSizeInternal() {
+        if (inputInfo != null) return inputInfo.getOriginalSize();
+        if (videoInputInfo != null) return videoInputInfo.getOriginalSize();
+        return 0;
+    }
 
     /**
      * 获取压缩后节省的字节数。
      * 正数表示节省空间，负数表示输出比输入更大。
      */
     public long getSavedBytes() {
-        if (inputInfo == null) return 0;
-        return inputInfo.getOriginalSize() - outputSize;
+        return getOriginalSizeInternal() - outputSize;
     }
 
     /**
@@ -76,8 +134,9 @@ public class CompressResult {
      * 例如：原文件 100KB → 压缩后 60KB，压缩率 = 40.0%
      */
     public double getCompressionRatio() {
-        if (inputInfo == null || inputInfo.getOriginalSize() == 0) return 0;
-        return (1.0 - (double) outputSize / inputInfo.getOriginalSize()) * 100.0;
+        long original = getOriginalSizeInternal();
+        if (original == 0) return 0;
+        return (1.0 - (double) outputSize / original) * 100.0;
     }
 
     /**
@@ -106,8 +165,16 @@ public class CompressResult {
     public ImageFileInfo getInputInfo() { return inputInfo; }
     public void setInputInfo(ImageFileInfo inputInfo) { this.inputInfo = inputInfo; }
 
+    public VideoFileInfo getVideoInputInfo() { return videoInputInfo; }
+    public void setVideoInputInfo(VideoFileInfo videoInputInfo) { this.videoInputInfo = videoInputInfo; }
+
+    public FileInfo getSourceFileInfo() { return sourceFileInfo; }
+
     public CompressConfig getConfig() { return config; }
     public void setConfig(CompressConfig config) { this.config = config; }
+
+    public VideoCompressConfig getVideoConfig() { return videoConfig; }
+    public void setVideoConfig(VideoCompressConfig videoConfig) { this.videoConfig = videoConfig; }
 
     public String getOutputPath() { return outputPath; }
     public void setOutputPath(String outputPath) { this.outputPath = outputPath; }

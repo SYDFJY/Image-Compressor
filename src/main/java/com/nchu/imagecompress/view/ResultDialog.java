@@ -64,14 +64,17 @@ public class ResultDialog extends JDialog {
         setResizable(false);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
-        // 统计
+        // 统计（支持图片和视频两种结果）
         int success = 0, fail = 0;
         long totalOriginal = 0, totalCompressed = 0;
         for (CompressResult r : results) {
             if (r.isSuccess()) {
                 success++;
+                // 优先获取图片结果，其次视频结果
                 if (r.getInputInfo() != null) {
                     totalOriginal += r.getInputInfo().getOriginalSize();
+                } else if (r.getVideoInputInfo() != null) {
+                    totalOriginal += r.getVideoInputInfo().getOriginalSize();
                 }
                 totalCompressed += r.getOutputSize();
             } else {

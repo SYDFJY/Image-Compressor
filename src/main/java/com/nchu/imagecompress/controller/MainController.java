@@ -7,14 +7,18 @@ import com.nchu.imagecompress.model.ImageFileInfo;
 import com.nchu.imagecompress.model.OutputFormat;
 import com.nchu.imagecompress.model.ProgressChunk;
 import com.nchu.imagecompress.model.Theme;
+import com.nchu.imagecompress.model.VideoCompressConfig;
+import com.nchu.imagecompress.model.VideoFileInfo;
 import com.nchu.imagecompress.service.BatchCompressService;
 import com.nchu.imagecompress.service.CompressService;
 import com.nchu.imagecompress.service.ConfigService;
 import com.nchu.imagecompress.service.FileManagerService;
 import com.nchu.imagecompress.service.SmartRecommendService;
+import com.nchu.imagecompress.service.VideoCompressService;
 import com.nchu.imagecompress.util.ImageUtil;
 import com.nchu.imagecompress.util.LogUtil;
 import com.nchu.imagecompress.util.ThemeUtil;
+import com.nchu.imagecompress.util.VideoUtil;
 import com.nchu.imagecompress.view.FileListPanel;
 import com.nchu.imagecompress.view.MainFrame;
 import com.nchu.imagecompress.view.ParamPanel;
@@ -22,6 +26,8 @@ import com.nchu.imagecompress.view.PreviewPanel;
 import com.nchu.imagecompress.view.ResultDialog;
 import com.nchu.imagecompress.view.StatusBar;
 import com.nchu.imagecompress.view.ToastNotification;
+import com.nchu.imagecompress.view.VideoParamPanel;
+import com.nchu.imagecompress.view.VideoPreviewPanel;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
@@ -75,11 +81,14 @@ public class MainController implements MainControllerCallback {
     private final BatchCompressService batchCompressService;
     private final CompressService compressService;
     private final SmartRecommendService smartRecommendService;
+    private final VideoCompressService videoCompressService;
 
     // 视图面板（快捷引用）
     private final FileListPanel fileListPanel;
     private final PreviewPanel previewPanel;
     private final ParamPanel paramPanel;
+    private final VideoPreviewPanel videoPreviewPanel;
+    private final VideoParamPanel videoParamPanel;
     private final StatusBar statusBar;
 
     // ==================== 状态 ====================
@@ -93,8 +102,20 @@ public class MainController implements MainControllerCallback {
     /** 当前压缩任务使用的配置（供完成回调使用） */
     private CompressConfig currentCompressConfig;
 
+    /** 当前视频压缩配置 */
+    private VideoCompressConfig currentVideoConfig;
+
+    /** 视频压缩后台线程（简化版） */
+    private Thread currentVideoThread;
+
     /** 上次打开的目录（用于文件选择器记忆） */
     private File lastOpenDir;
+
+    /** 上次打开的视频目录 */
+    private File lastVideoOpenDir;
+
+    /** 视频文件列表（视频模式专用） */
+    private final List<VideoFileInfo> videoFileList = new ArrayList<>();
 
     /** 窗口是否正在关闭 */
     private boolean shuttingDown = false;
@@ -115,11 +136,14 @@ public class MainController implements MainControllerCallback {
         this.batchCompressService = new BatchCompressService();
         this.compressService = new CompressService();
         this.smartRecommendService = new SmartRecommendService();
+        this.videoCompressService = new VideoCompressService();
 
         // 快捷引用
         this.fileListPanel = mainFrame.getFileListPanel();
         this.previewPanel = mainFrame.getPreviewPanel();
         this.paramPanel = mainFrame.getParamPanel();
+        this.videoPreviewPanel = mainFrame.getVideoPreviewPanel();
+        this.videoParamPanel = mainFrame.getVideoParamPanel();
         this.statusBar = mainFrame.getStatusBar();
     }
 
@@ -131,8 +155,13 @@ public class MainController implements MainControllerCallback {
         appConfig = configService.loadConfig();
         LogUtil.info("[MainController] 配置已加载: " + appConfig);
 
-        // ② 恢复上次的界面参数
-        restoreParamsFromConfig();
+        // ② 恢复上次的压缩模式
+        if ("VIDEO".equals(appConfig.getCompressMode())) {
+            mainFrame.switchCompressMode("VIDEO");
+            restoreVideoParamsFromConfig();
+        } else {
+            restoreParamsFromConfig();
+        }
 
         // ③ 绑定所有事件监听器
         bindEvents();
@@ -167,6 +196,27 @@ public class MainController implements MainControllerCallback {
         mainFrame.getClearBtn().addActionListener(e -> onClearAllFiles());
         mainFrame.getCompressBtn().addActionListener(e -> onStartCompress());
         mainFrame.getThemeBtn().addActionListener(e -> onToggleTheme());
+
+        // ---- 模式切换 ----
+        mainFrame.getModeToggleBtn().addActionListener(e -> {
+            boolean videoMode = mainFrame.getModeToggleBtn().isSelected();
+            onModeToggle(videoMode);
+        });
+
+        // ---- 视频参数面板按钮 ----
+        videoParamPanel.getCompressButton().addActionListener(e -> onStartCompress());
+        videoParamPanel.getCancelButton().addActionListener(e -> onCancelCompress());
+        videoParamPanel.getOutputDirButton().addActionListener(e -> onChooseVideoOutputDir());
+
+        // ---- 视频 CRF 滑块实时更新 ----
+        videoParamPanel.getCrfSlider().addChangeListener(e -> {
+            if (!videoParamPanel.getCrfSlider().getValueIsAdjusting()) {
+                int crf = videoParamPanel.getCrf();
+                videoParamPanel.setCrfDisplay(crf);
+                appConfig.setLastVideoCrf(crf);
+                configService.saveConfig(appConfig);
+            }
+        });
 
         // ---- 参数面板按钮 ----
         paramPanel.getCompressButton().addActionListener(e -> onStartCompress());
@@ -251,39 +301,50 @@ public class MainController implements MainControllerCallback {
 
     @Override
     public void onImportFiles() {
-        JFileChooser chooser = createImageFileChooser(true);
-        int result = chooser.showOpenDialog(mainFrame);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File[] files = chooser.getSelectedFiles();
-            lastOpenDir = chooser.getCurrentDirectory();
-            importFilesInternal(files);
+        if (mainFrame.isVideoMode()) {
+            onImportVideoFiles();
+        } else {
+            JFileChooser chooser = createImageFileChooser(true);
+            int result = chooser.showOpenDialog(mainFrame);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File[] files = chooser.getSelectedFiles();
+                lastOpenDir = chooser.getCurrentDirectory();
+                importFilesInternal(files);
+            }
         }
     }
 
     @Override
     public void onImportFolder() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("选择图片文件夹");
-        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        chooser.setAcceptAllFileFilterUsed(false);
-        if (lastOpenDir != null) {
-            chooser.setCurrentDirectory(lastOpenDir);
-        }
+        if (mainFrame.isVideoMode()) {
+            onImportVideoFolder();
+        } else {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("选择图片文件夹");
+            chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            chooser.setAcceptAllFileFilterUsed(false);
+            if (lastOpenDir != null) {
+                chooser.setCurrentDirectory(lastOpenDir);
+            }
 
-        int result = chooser.showOpenDialog(mainFrame);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File folder = chooser.getSelectedFile();
-            lastOpenDir = folder;
-            // 默认递归扫描
-            List<ImageFileInfo> imported = fileManagerService.importFolder(folder, true);
-            addFilesToList(imported);
+            int result = chooser.showOpenDialog(mainFrame);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File folder = chooser.getSelectedFile();
+                lastOpenDir = folder;
+                List<ImageFileInfo> imported = fileManagerService.importFolder(folder, true);
+                addFilesToList(imported);
+            }
         }
     }
 
     @Override
     public void onDragImport(List<File> files) {
         if (files == null || files.isEmpty()) return;
-        importFilesInternal(files.toArray(new File[0]));
+        if (mainFrame.isVideoMode()) {
+            importVideoFiles(files.toArray(new File[0]));
+        } else {
+            importFilesInternal(files.toArray(new File[0]));
+        }
     }
 
     /**
@@ -356,6 +417,21 @@ public class MainController implements MainControllerCallback {
             ToastNotification.warning("压缩任务进行中，请先取消或等待完成");
             return;
         }
+        if (currentVideoThread != null && currentVideoThread.isAlive()) {
+            ToastNotification.warning("视频压缩任务进行中，请先取消或等待完成");
+            return;
+        }
+
+        if (mainFrame.isVideoMode()) {
+            int count = videoFileList.size();
+            if (count == 0) return;
+            videoFileList.clear();
+            videoPreviewPanel.clearPreview();
+            updateVideoCompressButtonState();
+            statusBar.setStatus("已清空 " + count + " 个视频", "ready");
+            ToastNotification.info("已清空视频列表");
+            return;
+        }
 
         int count = fileListPanel.getFileList().size();
         if (count == 0) return;
@@ -372,14 +448,27 @@ public class MainController implements MainControllerCallback {
     @Override
     public void onFileSelected(int index) {
         if (index < 0) {
-            previewPanel.clearPreview();
+            if (mainFrame.isVideoMode()) {
+                videoPreviewPanel.clearPreview();
+            } else {
+                previewPanel.clearPreview();
+            }
             return;
         }
 
+        // 视频模式：显示视频元信息
+        if (mainFrame.isVideoMode()) {
+            if (index < videoFileList.size()) {
+                VideoFileInfo info = videoFileList.get(index);
+                videoPreviewPanel.showVideoInfo(info);
+            }
+            return;
+        }
+
+        // 图片模式：生成预览图
         ImageFileInfo info = fileListPanel.getFileList().get(index);
         if (info == null || info.getSourceFile() == null) return;
 
-        // 后台生成预览图
         new Thread(() -> {
             ImageIcon preview = ImageUtil.loadScaledIcon(info.getSourceFile(), 1024, 768);
             SwingUtilities.invokeLater(() -> {
@@ -392,6 +481,11 @@ public class MainController implements MainControllerCallback {
 
     @Override
     public void onStartCompress() {
+        if (mainFrame.isVideoMode()) {
+            onStartVideoCompress();
+            return;
+        }
+
         // ① 校验
         List<ImageFileInfo> fileList = fileListPanel.getFileList();
         if (fileList.isEmpty()) {
@@ -472,6 +566,16 @@ public class MainController implements MainControllerCallback {
 
     @Override
     public void onCancelCompress() {
+        if (mainFrame.isVideoMode()) {
+            if (currentVideoThread != null && currentVideoThread.isAlive()) {
+                LogUtil.info("[MainController] 用户取消视频压缩任务");
+                currentVideoThread.interrupt();
+                statusBar.setStatus("正在取消...", "working");
+                videoParamPanel.getCancelButton().setEnabled(false);
+            }
+            return;
+        }
+
         if (currentWorker != null && !currentWorker.isDone()) {
             LogUtil.info("[MainController] 用户取消压缩任务");
             currentWorker.cancel(true);
@@ -571,8 +675,13 @@ public class MainController implements MainControllerCallback {
      * 切换 UI 的压缩/空闲状态。
      */
     private void setCompressingState(boolean compressing) {
-        paramPanel.getCompressButton().setEnabled(!compressing);
-        paramPanel.getCancelButton().setEnabled(compressing);
+        if (mainFrame.isVideoMode()) {
+            videoParamPanel.getCompressButton().setEnabled(!compressing);
+            videoParamPanel.getCancelButton().setEnabled(compressing);
+        } else {
+            paramPanel.getCompressButton().setEnabled(!compressing);
+            paramPanel.getCancelButton().setEnabled(compressing);
+        }
         mainFrame.getCompressBtn().setEnabled(!compressing);
         mainFrame.getImportBtn().setEnabled(!compressing);
         mainFrame.getImportFolderBtn().setEnabled(!compressing);
@@ -737,16 +846,20 @@ public class MainController implements MainControllerCallback {
         if (shuttingDown) return;
 
         // 检查是否有运行中的任务
-        if (currentWorker != null && !currentWorker.isDone()) {
+        if (currentWorker != null && !currentWorker.isDone()
+                || currentVideoThread != null && currentVideoThread.isAlive()) {
+            String task = (currentVideoThread != null && currentVideoThread.isAlive())
+                    ? "视频" : "图片";
             int choice = JOptionPane.showConfirmDialog(mainFrame,
-                    "压缩任务正在进行中，确定要退出吗？",
+                    task + "压缩任务正在进行中，确定要退出吗？",
                     "确认退出",
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE);
             if (choice != JOptionPane.YES_OPTION) {
                 return;
             }
-            currentWorker.cancel(true);
+            if (currentWorker != null) currentWorker.cancel(true);
+            if (currentVideoThread != null) currentVideoThread.interrupt();
         }
 
         shuttingDown = true;
@@ -794,8 +907,31 @@ public class MainController implements MainControllerCallback {
         if (lastOpenDir != null) {
             appConfig.setRecentImportDir(lastOpenDir.getAbsolutePath());
         }
+        if (lastVideoOpenDir != null) {
+            appConfig.setRecentVideoImportDir(lastVideoOpenDir.getAbsolutePath());
+        }
+
+        // 保存视频压缩参数
+        saveVideoParamsToConfig();
 
         configService.saveConfig(appConfig);
+    }
+
+    /**
+     * 保存当前视频压缩参数到配置。
+     */
+    private void saveVideoParamsToConfig() {
+        appConfig.setLastVideoCrf(videoParamPanel.getCrf());
+        appConfig.setLastVideoFormat(
+                VideoCompressConfig.VideoFormat.values()[videoParamPanel.getOutputFormatIndex()].name());
+        appConfig.setLastVideoResolution(
+                VideoCompressConfig.ResolutionMode.values()[videoParamPanel.getResolutionIndex()].name());
+        appConfig.setLastVideoFps(
+                VideoCompressConfig.FpsMode.values()[videoParamPanel.getFpsIndex()].name());
+        appConfig.setLastVideoAudio(
+                videoParamPanel.getAudioIndex() == 1
+                        ? VideoCompressConfig.AudioMode.REMOVE.name()
+                        : VideoCompressConfig.AudioMode.KEEP.name());
     }
 
     /**
@@ -1067,6 +1203,344 @@ public class MainController implements MainControllerCallback {
                 if (dir.exists()) {
                     chooser.setCurrentDirectory(dir);
                 }
+            }
+        }
+
+        return chooser;
+    }
+
+    // ==================== 视频模式（v2.0） ====================
+
+    @Override
+    public void onModeToggle(boolean videoMode) {
+        if (videoMode) {
+            // 切换到视频模式
+            mainFrame.switchCompressMode("VIDEO");
+            // 检测 FFmpeg 可用性
+            if (!VideoUtil.checkFfmpegAvailable()) {
+                ToastNotification.warning("FFmpeg 未安装，视频压缩功能不可用。请先安装 FFmpeg 4.0+");
+            }
+            // 恢复视频参数
+            restoreVideoParamsFromConfig();
+            statusBar.setStatus("视频模式 — 请导入视频文件", "ready");
+        } else {
+            // 切换回图片模式
+            mainFrame.switchCompressMode("IMAGE");
+            // 恢复图片参数
+            restoreParamsFromConfig();
+            updateCompressButtonState();
+            statusBar.setStatus("图片模式 — 请导入图片文件", "ready");
+        }
+        appConfig.setCompressMode(videoMode ? "VIDEO" : "IMAGE");
+        configService.saveConfig(appConfig);
+    }
+
+    /**
+     * 导入视频文件。
+     */
+    private void onImportVideoFiles() {
+        JFileChooser chooser = createVideoFileChooser(true);
+        int result = chooser.showOpenDialog(mainFrame);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File[] files = chooser.getSelectedFiles();
+            lastVideoOpenDir = chooser.getCurrentDirectory();
+            appConfig.setRecentVideoImportDir(lastVideoOpenDir.getAbsolutePath());
+            configService.saveConfig(appConfig);
+            importVideoFiles(files);
+        }
+    }
+
+    /**
+     * 导入视频文件夹。
+     */
+    private void onImportVideoFolder() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("选择视频文件夹");
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        chooser.setAcceptAllFileFilterUsed(false);
+        if (lastVideoOpenDir != null) {
+            chooser.setCurrentDirectory(lastVideoOpenDir);
+        }
+
+        int result = chooser.showOpenDialog(mainFrame);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File folder = chooser.getSelectedFile();
+            lastVideoOpenDir = folder;
+
+            // 扫描文件夹中的视频文件
+            File[] files = folder.listFiles((dir, name) -> {
+                String lower = name.toLowerCase();
+                return lower.endsWith(".mp4") || lower.endsWith(".avi")
+                        || lower.endsWith(".mov") || lower.endsWith(".mkv")
+                        || lower.endsWith(".webm") || lower.endsWith(".flv")
+                        || lower.endsWith(".wmv") || lower.endsWith(".m4v");
+            });
+
+            if (files != null && files.length > 0) {
+                importVideoFiles(files);
+            } else {
+                ToastNotification.warning("文件夹中未找到视频文件");
+            }
+        }
+    }
+
+    /**
+     * 内部统一视频导入逻辑。
+     */
+    private void importVideoFiles(File[] files) {
+        statusBar.setStatus("正在导入视频文件...", "working");
+
+        new Thread(() -> {
+            List<VideoFileInfo> imported = new ArrayList<>();
+            for (File file : files) {
+                if (!VideoUtil.isSupportedVideo(file)) continue;
+                VideoFileInfo info = new VideoFileInfo(file);
+                // 后台解析元数据
+                VideoUtil.parseMetadata(info);
+                imported.add(info);
+            }
+
+            SwingUtilities.invokeLater(() -> {
+                if (imported.isEmpty()) {
+                    statusBar.setStatus("未找到支持的视频文件", "error");
+                    ToastNotification.warning("未找到支持的视频格式");
+                    return;
+                }
+                videoFileList.clear();
+                videoFileList.addAll(imported);
+
+                // 更新 UI
+                updateVideoCompressButtonState();
+                statusBar.setStatus("已导入 " + imported.size() + " 个视频", "success");
+                ToastNotification.success("成功导入 " + imported.size() + " 个视频文件");
+
+                // 自动预览第一个
+                if (!imported.isEmpty()) {
+                    videoPreviewPanel.showVideoInfo(imported.get(0));
+                }
+            });
+        }).start();
+    }
+
+    /**
+     * 开始视频压缩。
+     */
+    private void onStartVideoCompress() {
+        if (videoFileList.isEmpty()) {
+            ToastNotification.warning("请先导入视频文件");
+            return;
+        }
+
+        if (currentVideoThread != null && currentVideoThread.isAlive()) {
+            ToastNotification.warning("视频压缩任务正在进行中");
+            return;
+        }
+
+        if (!VideoUtil.checkFfmpegAvailable()) {
+            ToastNotification.error("FFmpeg 未安装，无法压缩视频。请先安装 FFmpeg 4.0+");
+            return;
+        }
+
+        // 构建配置
+        currentVideoConfig = videoParamPanel.buildConfig();
+        currentVideoConfig.setOutputPath(getVideoOutputPath());
+
+        // 更新 UI
+        setCompressingState(true);
+        statusBar.showProgress(0, "0/" + videoFileList.size(),
+                "准备压缩 " + videoFileList.size() + " 个视频...");
+
+        // 后台线程执行
+        final int total = videoFileList.size();
+        currentVideoThread = new Thread(() -> {
+            List<CompressResult> results = new ArrayList<>();
+
+            for (int i = 0; i < total; i++) {
+                if (Thread.currentThread().isInterrupted()) break;
+
+                VideoFileInfo info = videoFileList.get(i);
+                final int idx = i;
+
+                SwingUtilities.invokeLater(() -> {
+                    statusBar.showProgress(
+                            (int) ((double) idx / total * 100),
+                            (idx + 1) + "/" + total,
+                            "正在压缩 " + info.getFileName() + "...");
+                });
+
+                CompressResult result = videoCompressService.compress(info, currentVideoConfig);
+                results.add(result);
+
+                // 更新进度
+                final int progress = (int) ((double) (i + 1) / total * 100);
+                SwingUtilities.invokeLater(() -> {
+                    statusBar.showProgress(progress, (i + 1) + "/" + total,
+                            result.isSuccess()
+                                    ? info.getFileName() + " 完成"
+                                    : info.getFileName() + " 失败");
+                });
+            }
+
+            // 完成回调
+            SwingUtilities.invokeLater(() -> onVideoCompressComplete(results));
+        }, "VideoCompress-Thread");
+        currentVideoThread.start();
+        LogUtil.info("[MainController] 视频压缩任务已启动，共 " + total + " 个文件");
+    }
+
+    /**
+     * 视频压缩完成回调（在 EDT 中执行）。
+     */
+    private void onVideoCompressComplete(List<CompressResult> results) {
+        int success = 0;
+        int fail = 0;
+        long totalSaved = 0;
+        long totalElapsed = 0;
+
+        for (CompressResult r : results) {
+            if (r.isSuccess()) {
+                success++;
+                totalSaved += r.getSavedBytes();
+                totalElapsed += r.getElapsedMs();
+            } else {
+                fail++;
+            }
+        }
+
+        statusBar.hideProgress();
+        String msg = String.format("完成 — 成功 %d, 失败 %d", success, fail);
+        if (success > 0) {
+            statusBar.flashSuccess(msg);
+        } else {
+            statusBar.flashError(msg);
+        }
+
+        // 弹出结果弹窗
+        String outputDir = currentVideoConfig != null
+                ? currentVideoConfig.getOutputPath() : "";
+        ResultDialog.show(mainFrame, results, outputDir, totalElapsed);
+
+        // 显示第一个成功的对比
+        for (CompressResult r : results) {
+            if (r.isSuccess()) {
+                File outputFile = new File(r.getOutputPath());
+                if (outputFile.exists() && r.getVideoInputInfo() != null) {
+                    videoPreviewPanel.showComparison(
+                            r.getVideoInputInfo().getOriginalSize(),
+                            r.getOutputSize(),
+                            r.getCompressionRatio());
+                }
+                break;
+            }
+        }
+
+        setCompressingState(false);
+        currentVideoThread = null;
+    }
+
+    /**
+     * 选择视频输出目录。
+     */
+    private void onChooseVideoOutputDir() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("选择视频输出目录");
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        chooser.setAcceptAllFileFilterUsed(false);
+
+        String recentDir = appConfig.getLastVideoOutputPath();
+        if (recentDir != null && !recentDir.isEmpty()) {
+            File dir = new File(recentDir);
+            if (dir.exists()) chooser.setCurrentDirectory(dir);
+        }
+
+        int result = chooser.showOpenDialog(mainFrame);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File dir = chooser.getSelectedFile();
+            appConfig.setLastVideoOutputPath(dir.getAbsolutePath());
+            configService.saveConfig(appConfig);
+            ToastNotification.info("视频输出目录: " + dir.getName());
+        }
+    }
+
+    /**
+     * 获取视频输出路径。
+     */
+    private String getVideoOutputPath() {
+        String path = appConfig.getLastVideoOutputPath();
+        if (path != null && !path.isEmpty()) return path;
+        return configService.getDefaultOutputDir();
+    }
+
+    /**
+     * 更新视频压缩按钮状态。
+     */
+    private void updateVideoCompressButtonState() {
+        boolean hasFiles = !videoFileList.isEmpty();
+        videoParamPanel.getCompressButton().setEnabled(hasFiles);
+        mainFrame.getCompressBtn().setEnabled(hasFiles);
+    }
+
+    /**
+     * 从配置恢复视频压缩参数。
+     */
+    private void restoreVideoParamsFromConfig() {
+        if (appConfig.getLastVideoCrf() > 0) {
+            videoParamPanel.setCrf(appConfig.getLastVideoCrf());
+        }
+        String resolution = appConfig.getLastVideoResolution();
+        if (resolution != null) {
+            try {
+                videoParamPanel.setResolutionMode(
+                        VideoCompressConfig.ResolutionMode.valueOf(resolution));
+            } catch (IllegalArgumentException ignored) {}
+        }
+        String fps = appConfig.getLastVideoFps();
+        if (fps != null) {
+            try {
+                videoParamPanel.setFpsMode(
+                        VideoCompressConfig.FpsMode.valueOf(fps));
+            } catch (IllegalArgumentException ignored) {}
+        }
+        String audio = appConfig.getLastVideoAudio();
+        if (audio != null) {
+            try {
+                videoParamPanel.setAudioMode(
+                        VideoCompressConfig.AudioMode.valueOf(audio));
+            } catch (IllegalArgumentException ignored) {}
+        }
+        String format = appConfig.getLastVideoFormat();
+        if (format != null) {
+            try {
+                videoParamPanel.setOutputFormat(
+                        VideoCompressConfig.VideoFormat.valueOf(format));
+            } catch (IllegalArgumentException ignored) {}
+        }
+
+        updateVideoCompressButtonState();
+    }
+
+    /**
+     * 创建视频文件选择器。
+     */
+    private JFileChooser createVideoFileChooser(boolean multiSelect) {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("选择视频文件");
+        chooser.setMultiSelectionEnabled(multiSelect);
+        chooser.setAcceptAllFileFilterUsed(false);
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+
+        FileNameExtensionFilter filter = new FileNameExtensionFilter(
+                "视频文件 (MP4, AVI, MOV, MKV, WebM, FLV, WMV)",
+                "mp4", "avi", "mov", "mkv", "webm", "flv", "wmv", "m4v", "ts", "3gp");
+        chooser.setFileFilter(filter);
+
+        if (lastVideoOpenDir != null && lastVideoOpenDir.exists()) {
+            chooser.setCurrentDirectory(lastVideoOpenDir);
+        } else {
+            String recentDir = appConfig.getRecentVideoImportDir();
+            if (recentDir != null && !recentDir.isEmpty()) {
+                File dir = new File(recentDir);
+                if (dir.exists()) chooser.setCurrentDirectory(dir);
             }
         }
 
