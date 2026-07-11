@@ -3,6 +3,7 @@ package com.nchu.imagecompress.controller;
 import com.nchu.imagecompress.model.AppConfig;
 import com.nchu.imagecompress.model.CompressConfig;
 import com.nchu.imagecompress.model.CompressResult;
+import com.nchu.imagecompress.model.FileInfo;
 import com.nchu.imagecompress.model.ImageFileInfo;
 import com.nchu.imagecompress.model.OutputFormat;
 import com.nchu.imagecompress.model.ProgressChunk;
@@ -373,7 +374,7 @@ public class MainController implements MainControllerCallback {
      * 将导入的文件添加到列表（去重后）。
      */
     private void addFilesToList(List<ImageFileInfo> newFiles) {
-        List<ImageFileInfo> existing = fileListPanel.getFileList();
+        List<ImageFileInfo> existing = fileListPanel.getImageFileList();
 
         // 检查上限
         if (existing.size() + newFiles.size() > 500) {
@@ -426,6 +427,7 @@ public class MainController implements MainControllerCallback {
             int count = videoFileList.size();
             if (count == 0) return;
             videoFileList.clear();
+            fileListPanel.clearAllFiles();
             videoPreviewPanel.clearPreview();
             updateVideoCompressButtonState();
             statusBar.setStatus("已清空 " + count + " 个视频", "ready");
@@ -458,16 +460,18 @@ public class MainController implements MainControllerCallback {
 
         // 视频模式：显示视频元信息
         if (mainFrame.isVideoMode()) {
-            if (index < videoFileList.size()) {
-                VideoFileInfo info = videoFileList.get(index);
-                videoPreviewPanel.showVideoInfo(info);
+            FileInfo info = fileListPanel.getFileList().get(index);
+            if (info instanceof VideoFileInfo) {
+                videoPreviewPanel.showVideoInfo((VideoFileInfo) info);
             }
             return;
         }
 
         // 图片模式：生成预览图
-        ImageFileInfo info = fileListPanel.getFileList().get(index);
-        if (info == null || info.getSourceFile() == null) return;
+        FileInfo selected = fileListPanel.getFileList().get(index);
+        if (!(selected instanceof ImageFileInfo)) return;
+        ImageFileInfo info = (ImageFileInfo) selected;
+        if (info.getSourceFile() == null) return;
 
         new Thread(() -> {
             ImageIcon preview = ImageUtil.loadScaledIcon(info.getSourceFile(), 1024, 768);
@@ -487,7 +491,7 @@ public class MainController implements MainControllerCallback {
         }
 
         // ① 校验
-        List<ImageFileInfo> fileList = fileListPanel.getFileList();
+        List<ImageFileInfo> fileList = fileListPanel.getImageFileList();
         if (fileList.isEmpty()) {
             ToastNotification.warning("请先导入图片文件");
             return;
@@ -524,7 +528,7 @@ public class MainController implements MainControllerCallback {
 
         // 将所有文件状态重置为 PENDING
         for (ImageFileInfo info : fileList) {
-            info.setStatus(ImageFileInfo.Status.PENDING);
+            info.setFileInfoStatus(FileInfo.Status.PENDING);
         }
         fileListPanel.getFileJList().repaint();
 
@@ -1009,12 +1013,15 @@ public class MainController implements MainControllerCallback {
 
         JMenuItem openOriginalItem = new JMenuItem("🖼 打开原图");
         openOriginalItem.addActionListener(e -> {
-            ImageFileInfo info = fileListPanel.getSelectedFile();
-            if (info != null && info.getSourceFile().exists()) {
-                try {
-                    Desktop.getDesktop().open(info.getSourceFile());
-                } catch (IOException ex) {
-                    ToastNotification.error("无法打开文件: " + ex.getMessage());
+            FileInfo selected = fileListPanel.getSelectedFile();
+            if (selected instanceof ImageFileInfo) {
+                ImageFileInfo info = (ImageFileInfo) selected;
+                if (info.getSourceFile().exists()) {
+                    try {
+                        Desktop.getDesktop().open(info.getSourceFile());
+                    } catch (IOException ex) {
+                        ToastNotification.error("无法打开文件: " + ex.getMessage());
+                    }
                 }
             }
         });
@@ -1022,9 +1029,9 @@ public class MainController implements MainControllerCallback {
 
         JMenuItem openFolderItem = new JMenuItem("📁 打开所在文件夹");
         openFolderItem.addActionListener(e -> {
-            ImageFileInfo info = fileListPanel.getSelectedFile();
-            if (info != null) {
-                File parent = info.getSourceFile().getParentFile();
+            FileInfo selected = fileListPanel.getSelectedFile();
+            if (selected != null) {
+                File parent = selected.getSourceFile().getParentFile();
                 if (parent != null && parent.exists()) {
                     try {
                         Desktop.getDesktop().open(parent);
@@ -1040,9 +1047,9 @@ public class MainController implements MainControllerCallback {
 
         JMenuItem compressSingleItem = new JMenuItem("⚡ 单独压缩此文件");
         compressSingleItem.addActionListener(e -> {
-            ImageFileInfo info = fileListPanel.getSelectedFile();
-            if (info != null) {
-                compressSingleFile(info);
+            FileInfo selected = fileListPanel.getSelectedFile();
+            if (selected instanceof ImageFileInfo) {
+                compressSingleFile((ImageFileInfo) selected);
             }
         });
         popupMenu.add(compressSingleItem);
@@ -1090,16 +1097,16 @@ public class MainController implements MainControllerCallback {
     private void compressSingleFile(ImageFileInfo info) {
         CompressConfig config = buildCompressConfig();
         setCompressingState(true);
-        info.setStatus(ImageFileInfo.Status.PROCESSING);
+        info.setFileInfoStatus(FileInfo.Status.PROCESSING);
         fileListPanel.getFileJList().repaint();
         statusBar.showProgress(0, "1/1", "正在压缩 " + info.getFileName() + "...");
 
         new Thread(() -> {
             CompressResult result = compressService.compress(info, config);
             SwingUtilities.invokeLater(() -> {
-                info.setStatus(result.isSuccess()
-                        ? ImageFileInfo.Status.SUCCESS
-                        : ImageFileInfo.Status.FAILED);
+                info.setFileInfoStatus(result.isSuccess()
+                        ? FileInfo.Status.SUCCESS
+                        : FileInfo.Status.FAILED);
                 if (!result.isSuccess()) {
                     info.setErrorMessage(result.getErrorMessage());
                 }
@@ -1216,16 +1223,21 @@ public class MainController implements MainControllerCallback {
         if (videoMode) {
             // 切换到视频模式
             mainFrame.switchCompressMode("VIDEO");
+            // 同步 fileListPanel：清空图片列表，加载视频列表
+            fileListPanel.setFileList(videoFileList);
             // 检测 FFmpeg 可用性
             if (!VideoUtil.checkFfmpegAvailable()) {
                 ToastNotification.warning("FFmpeg 未安装，视频压缩功能不可用。请先安装 FFmpeg 4.0+");
             }
             // 恢复视频参数
             restoreVideoParamsFromConfig();
+            updateVideoCompressButtonState();
             statusBar.setStatus("视频模式 — 请导入视频文件", "ready");
         } else {
             // 切换回图片模式
             mainFrame.switchCompressMode("IMAGE");
+            // 同步 fileListPanel：清空视频列表（图片列表由用户重新导入或已在内存中）
+            fileListPanel.clearAllFiles();
             // 恢复图片参数
             restoreParamsFromConfig();
             updateCompressButtonState();
@@ -1308,6 +1320,9 @@ public class MainController implements MainControllerCallback {
                 }
                 videoFileList.clear();
                 videoFileList.addAll(imported);
+
+                // 同步到 FileListPanel 显示
+                fileListPanel.setFileList(imported);
 
                 // 更新 UI
                 updateVideoCompressButtonState();
@@ -1477,7 +1492,7 @@ public class MainController implements MainControllerCallback {
      * 更新视频压缩按钮状态。
      */
     private void updateVideoCompressButtonState() {
-        boolean hasFiles = !videoFileList.isEmpty();
+        boolean hasFiles = !fileListPanel.getFileList().isEmpty();
         videoParamPanel.getCompressButton().setEnabled(hasFiles);
         mainFrame.getCompressBtn().setEnabled(hasFiles);
     }
