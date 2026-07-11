@@ -197,8 +197,8 @@ public class VideoCompressConfig {
     /** 文件命名后缀 */
     private String suffix = "_compressed";
 
-    /** 是否允许覆盖同名文件 */
-    private boolean overwrite = false;
+    /** 是否允许覆盖同名文件（默认 true，方便重复压缩调试） */
+    private boolean overwrite = true;
 
     /** 额外 FFmpeg 参数（高级用户） */
     private String extraArgs = "";

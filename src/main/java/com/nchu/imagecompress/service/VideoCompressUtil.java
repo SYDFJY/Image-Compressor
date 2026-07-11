@@ -108,8 +108,10 @@ public final class VideoCompressUtil {
             cmd.add(resolveAudioCodec(config));
         }
 
-        // --- 覆盖输出 ---
-        cmd.add("-y");
+        // --- 覆盖输出（根据配置决定） ---
+        if (config.isOverwrite()) {
+            cmd.add("-y");
+        }
 
         // --- 输出文件 ---
         cmd.add(outputFile.getAbsolutePath());

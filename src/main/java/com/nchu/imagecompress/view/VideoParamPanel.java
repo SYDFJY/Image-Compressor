@@ -150,10 +150,11 @@ public class VideoParamPanel extends JPanel {
 
         // --- 覆盖设置 ---
         addFormLabel(panel, gbc, "覆盖设置", row);
-        overwriteCheckBox = new JCheckBox("覆盖原文件");
+        overwriteCheckBox = new JCheckBox("覆盖已存在的输出文件");
         overwriteCheckBox.setFont(ThemeUtil.FONT_SMALL);
         overwriteCheckBox.setForeground(ThemeUtil.TEXT_SECONDARY);
         overwriteCheckBox.setOpaque(false);
+        overwriteCheckBox.setSelected(true); // 默认覆盖，方便重复压缩
         addFormControl(panel, gbc, overwriteCheckBox, row);
         row++;
 
