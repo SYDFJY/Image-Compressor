@@ -1358,7 +1358,7 @@ public class MainController implements MainControllerCallback {
             for (int i = 0; i < total; i++) {
                 if (Thread.currentThread().isInterrupted()) break;
 
-                VideoFileInfo info = videoFileList.get(i);
+                final VideoFileInfo info = videoFileList.get(i);
                 final int idx = i;
 
                 SwingUtilities.invokeLater(() -> {
@@ -1368,13 +1368,15 @@ public class MainController implements MainControllerCallback {
                             "正在压缩 " + info.getFileName() + "...");
                 });
 
-                CompressResult result = videoCompressService.compress(info, currentVideoConfig);
+                final CompressResult result = videoCompressService.compress(info, currentVideoConfig);
                 results.add(result);
 
                 // 更新进度
-                final int progress = (int) ((double) (i + 1) / total * 100);
+                final int finalI = i;
                 SwingUtilities.invokeLater(() -> {
-                    statusBar.showProgress(progress, (i + 1) + "/" + total,
+                    statusBar.showProgress(
+                            (int) ((double) (finalI + 1) / total * 100),
+                            (finalI + 1) + "/" + total,
                             result.isSuccess()
                                     ? info.getFileName() + " 完成"
                                     : info.getFileName() + " 失败");

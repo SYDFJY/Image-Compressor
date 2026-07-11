@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.coobird.thumbnails.Thumbnails;
+import net.coobird.thumbnailator.Thumbnails;
 
 /**
  * 文件列表面板（UI 升级版 — 缩略图 + 信息列表风格）。

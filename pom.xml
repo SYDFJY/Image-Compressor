@@ -70,7 +70,7 @@
     <!-- ==================== 构建配置 ==================== -->
     <build>
         <plugins>
-            <!-- Maven 编译器插件：强制 JDK 1.8 编译 -->
+            <!-- Maven 编译器插件：强制 JDK 1.8 编译 + 修复 CLASSPATH 干扰 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -79,6 +79,8 @@
                     <source>1.8</source>
                     <target>1.8</target>
                     <encoding>UTF-8</encoding>
+                    <!-- fork=true 在独立 JVM 中运行 javac，避免 CLASSPATH 环境变量干扰 -->
+                    <fork>true</fork>
                 </configuration>
             </plugin>
 
