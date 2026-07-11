@@ -4,28 +4,34 @@ import com.nchu.imagecompress.model.VideoFileInfo;
 import com.nchu.imagecompress.util.ThemeUtil;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Color;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 
 /**
- * 视频预览面板 — 显示视频文件信息和压缩结果对比。
+ * 视频预览面板 — 显示视频文件信息、压缩对比浮层、播放按钮。
  *
- * <p>由于 Java Swing 不原生支持视频播放，此面板展示：
+ * <p>支持两个状态：
  * <ul>
  *   <li>空状态：引导信息</li>
- *   <li>选中视频：文件元数据（时长/分辨率/编码/帧率）</li>
- *   <li>压缩完成：原始 vs 压缩后大小对比</li>
+ *   <li>视频信息：文件元数据 +（压缩后的）对比 overlay bar + ▶ 播放按钮</li>
  * </ul>
  *
+ * <p>对比数据持久化在 {@link VideoFileInfo} Model 上，不受文件列表切换影响。</p>
+ *
  * @author NCHU-Student
- * @version 2.0.0
+ * @version 2.1.0
  * @since 2026-07-11
  */
 public class VideoPreviewPanel extends JPanel {
@@ -48,11 +54,22 @@ public class VideoPreviewPanel extends JPanel {
     private JLabel sizeLabel;
     private JLabel bitrateLabel;
 
-    // 压缩对比
-    private JPanel comparisonPanel;
-    private JLabel originalSizeValue;
-    private JLabel compressedSizeValue;
-    private JLabel savedValue;
+    // ==================== 播放按钮 ====================
+
+    private JButton playOriginalBtn;
+    private JButton playCompressedBtn;
+
+    // ==================== 对比浮层 ====================
+
+    private JPanel overlayBar;
+    private JLabel origSizeValue;
+    private JLabel compSizeValue;
+    private JLabel ratioValue;
+    private JLabel bitrateChangeValue;
+
+    // ==================== 当前选中视频引用 ====================
+
+    private VideoFileInfo currentVideoInfo;
 
     private static final String CARD_EMPTY = "EMPTY";
     private static final String CARD_INFO = "INFO";
@@ -75,9 +92,6 @@ public class VideoPreviewPanel extends JPanel {
         cardPanel = new JPanel(cardLayout);
         cardPanel.setOpaque(false);
 
-        // comparisonPanel 必须在 createInfoPanel() 之前初始化，
-        // 因为 createInfoPanel() 内部引用了 comparisonPanel 字段
-        comparisonPanel = createComparisonPanel();
         emptyPanel = createEmptyPanel();
         infoPanel = createInfoPanel();
 
@@ -86,9 +100,16 @@ public class VideoPreviewPanel extends JPanel {
 
         add(cardPanel, BorderLayout.CENTER);
 
+        // === 底部：对比浮层（初始隐藏） ===
+        overlayBar = createOverlayBar();
+        overlayBar.setVisible(false);
+        add(overlayBar, BorderLayout.SOUTH);
+
         // 初始显示空状态
         cardLayout.show(cardPanel, CARD_EMPTY);
     }
+
+    // ==================== 子面板构建 ====================
 
     /**
      * 空状态面板。
@@ -115,13 +136,13 @@ public class VideoPreviewPanel extends JPanel {
     }
 
     /**
-     * 视频信息面板。
+     * 视频信息面板（元数据表单 + 播放按钮）。
      */
     private JPanel createInfoPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_MD));
         panel.setOpaque(false);
 
-        // 视频图标 + 文件名
+        // --- 头部：🎬 图标 + 文件名 + [▶ 播放] ---
         JPanel headerPanel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
         headerPanel.setOpaque(false);
 
@@ -134,16 +155,18 @@ public class VideoPreviewPanel extends JPanel {
         fileNameLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
         headerPanel.add(fileNameLabel, BorderLayout.CENTER);
 
+        playOriginalBtn = createPlayButton("▶ 播放", "播放原始视频");
+        headerPanel.add(playOriginalBtn, BorderLayout.EAST);
+
         panel.add(headerPanel, BorderLayout.NORTH);
 
-        // 元数据表单
+        // --- 元数据表单 ---
         JPanel metaPanel = new JPanel(new GridBagLayout());
         metaPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, ThemeUtil.SPACE_LG);
 
         int row = 0;
-
         durationLabel = createMetaRow(metaPanel, gbc, "时长", row++);
         resolutionLabel = createMetaRow(metaPanel, gbc, "分辨率", row++);
         codecLabel = createMetaRow(metaPanel, gbc, "编码", row++);
@@ -152,92 +175,129 @@ public class VideoPreviewPanel extends JPanel {
         bitrateLabel = createMetaRow(metaPanel, gbc, "比特率", row++);
 
         // 弹性填充
-        gbc.gridy = row; gbc.gridx = 0; gbc.gridwidth = 2;
-        gbc.weighty = 1.0; gbc.fill = GridBagConstraints.BOTH;
+        gbc.gridy = row;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
         metaPanel.add(new JLabel(), gbc);
 
         panel.add(metaPanel, BorderLayout.CENTER);
-
-        // 压缩对比区（初始隐藏）
-        panel.add(comparisonPanel, BorderLayout.SOUTH);
 
         return panel;
     }
 
     /**
-     * 压缩对比面板。
+     * 创建播放按钮（▶ 符号 + 扁平样式）。
      */
-    private JPanel createComparisonPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, ThemeUtil.BORDER),
-                BorderFactory.createEmptyBorder(ThemeUtil.SPACE_MD, 0, 0, 0)));
-        panel.setVisible(false);
+    private JButton createPlayButton(String text, String tooltip) {
+        JButton btn = new JButton(text);
+        btn.setFont(ThemeUtil.FONT_SMALL);
+        btn.setToolTipText(tooltip);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+        btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        return btn;
+    }
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(2, 0, 2, ThemeUtil.SPACE_LG);
-        gbc.anchor = GridBagConstraints.LINE_START;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+    /**
+     * 创建持久化对比浮层（样式对齐 PreviewPanel.overlayBar）。
+     *
+     * <p>4 列布局：原始大小 | 压缩后 | 压缩率 | 比特率变化，
+     * 压缩后列内嵌一个小 ▶ 播放按钮。</p>
+     */
+    private JPanel createOverlayBar() {
+        JPanel bar = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setColor(new Color(255, 255, 255, 220));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+                        ThemeUtil.ARC_BUTTON, ThemeUtil.ARC_BUTTON);
+                g2.dispose();
+            }
+        };
+        bar.setOpaque(false);
+        bar.setBorder(BorderFactory.createEmptyBorder(
+                ThemeUtil.SPACE_MD, ThemeUtil.SPACE_LG,
+                ThemeUtil.SPACE_MD, ThemeUtil.SPACE_LG));
 
-        // 标题行
-        gbc.gridx = 0; gbc.gridy = 0;
-        JLabel titleLabel = new JLabel("压缩对比");
-        titleLabel.setFont(ThemeUtil.FONT_TITLE);
-        titleLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
-        panel.add(titleLabel, gbc);
+        // 顶部标题行
+        JPanel headerRow = new JPanel(new BorderLayout());
+        headerRow.setOpaque(false);
+        JLabel title = new JLabel("压缩对比");
+        title.setFont(ThemeUtil.FONT_SMALL);
+        title.setForeground(ThemeUtil.TEXT_SECONDARY);
+        headerRow.add(title, BorderLayout.WEST);
 
-        int row = 1;
+        // 4 列数据行
+        JPanel dataRow = new JPanel(new GridLayout(1, 4, 12, 0));
+        dataRow.setOpaque(false);
 
-        // 原始大小
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
-        JLabel origLabel = new JLabel("原始大小:");
-        origLabel.setFont(ThemeUtil.FONT_SMALL);
-        origLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
-        panel.add(origLabel, gbc);
+        // 列 1：原始大小
+        dataRow.add(createDataItem("原始大小", "—"));
+        origSizeValue = (JLabel) ((JPanel) dataRow.getComponent(0)).getComponent(1);
 
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        originalSizeValue = new JLabel("—");
-        originalSizeValue.setFont(ThemeUtil.FONT_BODY);
-        originalSizeValue.setForeground(ThemeUtil.TEXT_PRIMARY);
-        panel.add(originalSizeValue, gbc);
-        row++;
+        // 列 2：压缩后 + 播放按钮
+        JPanel compCol = new JPanel(new BorderLayout(4, 0));
+        compCol.setOpaque(false);
+        JPanel compLabels = new JPanel(new GridLayout(2, 1));
+        compLabels.setOpaque(false);
+        JLabel compTitle = new JLabel("压缩后");
+        compTitle.setFont(ThemeUtil.FONT_SMALL);
+        compTitle.setForeground(ThemeUtil.TEXT_SECONDARY);
+        compLabels.add(compTitle);
+        compSizeValue = new JLabel("—");
+        compSizeValue.setFont(ThemeUtil.FONT_BODY);
+        compSizeValue.setForeground(ThemeUtil.TEXT_PRIMARY);
+        compLabels.add(compSizeValue);
 
-        // 压缩后
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
-        JLabel compLabel = new JLabel("压缩后:");
-        compLabel.setFont(ThemeUtil.FONT_SMALL);
-        compLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
-        panel.add(compLabel, gbc);
+        compCol.add(compLabels, BorderLayout.CENTER);
+        playCompressedBtn = createPlayButton("▶", "播放压缩后视频");
+        playCompressedBtn.setVisible(false);
+        compCol.add(playCompressedBtn, BorderLayout.EAST);
+        dataRow.add(compCol);
 
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        compressedSizeValue = new JLabel("—");
-        compressedSizeValue.setFont(ThemeUtil.FONT_BODY);
-        compressedSizeValue.setForeground(ThemeUtil.SUCCESS);
-        panel.add(compressedSizeValue, gbc);
-        row++;
+        // 列 3：压缩率
+        dataRow.add(createDataItem("压缩率", "—"));
+        ratioValue = (JLabel) ((JPanel) dataRow.getComponent(2)).getComponent(1);
 
-        // 节省
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
-        JLabel savedLabel = new JLabel("节省:");
-        savedLabel.setFont(ThemeUtil.FONT_SMALL);
-        savedLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
-        panel.add(savedLabel, gbc);
+        // 列 4：比特率变化
+        dataRow.add(createDataItem("比特率", "—"));
+        bitrateChangeValue = (JLabel) ((JPanel) dataRow.getComponent(3)).getComponent(1);
 
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        savedValue = new JLabel("—");
-        savedValue.setFont(ThemeUtil.FONT_BODY);
-        savedValue.setForeground(ThemeUtil.SUCCESS);
-        panel.add(savedValue, gbc);
+        bar.add(headerRow, BorderLayout.NORTH);
+        bar.add(dataRow, BorderLayout.CENTER);
 
-        return panel;
+        return bar;
+    }
+
+    /**
+     * 创建 overlay bar 中的单列数据项（标签在上，值在下）。
+     */
+    private JPanel createDataItem(String label, String value) {
+        JPanel item = new JPanel(new GridLayout(2, 1));
+        item.setOpaque(false);
+
+        JLabel titleLabel = new JLabel(label);
+        titleLabel.setFont(ThemeUtil.FONT_SMALL);
+        titleLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
+        item.add(titleLabel);
+
+        JLabel valueLabel = new JLabel(value);
+        valueLabel.setFont(ThemeUtil.FONT_BODY);
+        valueLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
+        item.add(valueLabel);
+
+        return item;
     }
 
     /**
      * 创建元数据行（标签 + 值）。
      */
     private JLabel createMetaRow(JPanel panel, GridBagConstraints gbc, String label, int row) {
-        gbc.gridy = row; gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.gridx = 0;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
 
@@ -262,6 +322,7 @@ public class VideoPreviewPanel extends JPanel {
 
     /**
      * 显示视频文件信息。
+     * 自动检测 Model 上是否已有压缩数据，有则展示 overlay bar。
      */
     public void showVideoInfo(VideoFileInfo info) {
         if (info == null) {
@@ -269,6 +330,9 @@ public class VideoPreviewPanel extends JPanel {
             return;
         }
 
+        this.currentVideoInfo = info;
+
+        // 填充元数据
         fileNameLabel.setText(info.getFileName());
         durationLabel.setText(info.getFullDurationString());
         resolutionLabel.setText(info.getWidth() > 0
@@ -279,29 +343,105 @@ public class VideoPreviewPanel extends JPanel {
         bitrateLabel.setText(info.getBitrate() > 0
                 ? formatBitrate(info.getBitrate()) : "未知");
 
-        // 隐藏对比区
-        comparisonPanel.setVisible(false);
+        // 根据 Model 是否有压缩数据，展示/隐藏 overlay bar
+        if (info.hasCompressedData()) {
+            refreshOverlayBar(info);
+            overlayBar.setVisible(true);
+            playCompressedBtn.setVisible(info.getCompressedPath() != null
+                    && !info.getCompressedPath().isEmpty());
+        } else {
+            overlayBar.setVisible(false);
+            playCompressedBtn.setVisible(false);
+        }
+
         cardLayout.show(cardPanel, CARD_INFO);
     }
 
     /**
-     * 显示压缩结果对比。
+     * 显示压缩结果（Controller 在压缩完成后调用）。
+     * 将压缩数据写入 Model 并刷新 overlay bar。
      */
-    public void showComparison(long originalSize, long compressedSize, double ratio) {
-        originalSizeValue.setText(VideoFileInfo.formatFileSize(originalSize));
-        compressedSizeValue.setText(VideoFileInfo.formatFileSize(compressedSize));
-        savedValue.setText(String.format("%.1f%% (%s)",
-                ratio,
-                VideoFileInfo.formatFileSize(originalSize - compressedSize)));
-        comparisonPanel.setVisible(true);
+    public void showCompressionResult(VideoFileInfo info) {
+        if (info == null || !info.hasCompressedData()) {
+            overlayBar.setVisible(false);
+            playCompressedBtn.setVisible(false);
+            return;
+        }
+
+        this.currentVideoInfo = info;
+        refreshOverlayBar(info);
+        overlayBar.setVisible(true);
+        playCompressedBtn.setVisible(info.getCompressedPath() != null
+                && !info.getCompressedPath().isEmpty());
         cardLayout.show(cardPanel, CARD_INFO);
+    }
+
+    /**
+     * 刷新 overlay bar 数据。
+     */
+    private void refreshOverlayBar(VideoFileInfo info) {
+        // 原始大小
+        origSizeValue.setText(VideoFileInfo.formatFileSize(info.getOriginalSize()));
+
+        // 压缩后大小
+        compSizeValue.setText(VideoFileInfo.formatFileSize(info.getCompressedSize()));
+        compSizeValue.setForeground(ThemeUtil.TEXT_PRIMARY);
+
+        // 压缩率（条件着色）
+        double ratio = info.getCompressionRatio();
+        if (ratio >= 0) {
+            ratioValue.setText(String.format("−%.1f%%", ratio));
+            ratioValue.setForeground(getRatioColor(ratio));
+        } else {
+            ratioValue.setText("—");
+            ratioValue.setForeground(ThemeUtil.TEXT_TERTIARY);
+        }
+
+        // 比特率变化
+        if (info.getBitrate() > 0 && info.getCompressedBitrate() > 0) {
+            bitrateChangeValue.setText(formatBitrate(info.getBitrate())
+                    + " → " + formatBitrate(info.getCompressedBitrate()));
+            bitrateChangeValue.setForeground(ThemeUtil.TEXT_PRIMARY);
+        } else if (info.getCompressedBitrate() > 0) {
+            bitrateChangeValue.setText(formatBitrate(info.getCompressedBitrate()));
+            bitrateChangeValue.setForeground(ThemeUtil.TEXT_PRIMARY);
+        } else {
+            bitrateChangeValue.setText("—");
+            bitrateChangeValue.setForeground(ThemeUtil.TEXT_TERTIARY);
+        }
     }
 
     /**
      * 清空预览。
      */
     public void clearPreview() {
+        currentVideoInfo = null;
+        overlayBar.setVisible(false);
+        playCompressedBtn.setVisible(false);
         cardLayout.show(cardPanel, CARD_EMPTY);
+    }
+
+    // ==================== Getter（供 Controller 绑定事件） ====================
+
+    /** 获取「播放原始视频」按钮 */
+    public JButton getPlayOriginalButton() { return playOriginalBtn; }
+
+    /** 获取「播放压缩后视频」按钮 */
+    public JButton getPlayCompressedButton() { return playCompressedBtn; }
+
+    /** 获取当前选中的视频信息 */
+    public VideoFileInfo getCurrentVideoInfo() { return currentVideoInfo; }
+
+    // ==================== 工具方法 ====================
+
+    /**
+     * 根据压缩率返回对应颜色。
+     * 对齐 PreviewPanel 的条件着色逻辑：>30% 绿色，>10% 蓝色，其余灰色。
+     */
+    private static Color getRatioColor(double ratio) {
+        if (ratio > 30) return ThemeUtil.SUCCESS;        // 绿色：节省 30% 以上
+        if (ratio > 10) return ThemeUtil.PRIMARY;        // 蓝色：节省 10%-30%
+        return ThemeUtil.TEXT_TERTIARY;                   // 灰色：节省不足 10%
     }
 
     /**

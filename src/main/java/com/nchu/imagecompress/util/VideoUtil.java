@@ -130,6 +130,81 @@ public final class VideoUtil {
         }
     }
 
+    // ==================== ffplay 播放支持 ====================
+
+    /** 缓存的 ffplay 可用性检测结果 */
+    private static Boolean ffplayAvailable = null;
+
+    /**
+     * 检测 ffplay 是否可用（复用 checkCommand 模式）。
+     * 结果缓存，首次调用后不再重复检测。
+     *
+     * @return true 表示 ffplay 可正常调用
+     */
+    public static boolean checkFfplayAvailable() {
+        if (ffplayAvailable != null) {
+            return ffplayAvailable;
+        }
+        String ffplayCmd = resolveCommand("ffplay");
+        ffplayAvailable = checkCommand(ffplayCmd + " -version");
+        LogUtil.info("[VideoUtil] FFplay 可用性: " + ffplayAvailable);
+        return ffplayAvailable;
+    }
+
+    /**
+     * 强制重新检测 ffplay 可用性（清除缓存）。
+     */
+    public static void resetFfplayCheck() {
+        ffplayAvailable = null;
+    }
+
+    /**
+     * 启动 ffplay 播放指定视频文件。
+     * 打开原生 SDL 窗口，内置播放/暂停/进度/音量控制。
+     * 返回 Process 引用，调用方负责生命周期管理。
+     *
+     * @param videoFile 要播放的视频文件
+     * @return 启动的 Process 对象
+     * @throws IOException 如果 ffplay 无法启动
+     */
+    public static Process playVideo(File videoFile) throws IOException {
+        return playVideo(videoFile, -1, -1);
+    }
+
+    /**
+     * 启动 ffplay 播放视频，可指定窗口尺寸。
+     *
+     * @param videoFile 视频文件
+     * @param width     窗口宽度（-1 表示默认）
+     * @param height    窗口高度（-1 表示默认）
+     * @return 启动的 Process 对象
+     * @throws IOException 如果 ffplay 启动失败
+     */
+    public static Process playVideo(File videoFile, int width, int height) throws IOException {
+        String ffplayCmd = resolveCommand("ffplay");
+        String title = "NCHU Compressor - " + videoFile.getName();
+
+        List<String> args = new ArrayList<>();
+        args.add(ffplayCmd);
+        args.add("-window_title");
+        args.add(title);
+        args.add("-autoexit");  // 播放结束后自动关闭窗口
+        if (width > 0) {
+            args.add("-x");
+            args.add(String.valueOf(width));
+        }
+        if (height > 0) {
+            args.add("-y");
+            args.add(String.valueOf(height));
+        }
+        args.add(videoFile.getAbsolutePath());
+
+        ProcessBuilder pb = new ProcessBuilder(args);
+        pb.redirectErrorStream(true);
+        LogUtil.info("[VideoUtil] 启动 ffplay: " + String.join(" ", args));
+        return pb.start();
+    }
+
     // ==================== 格式支持检测 ====================
 
     /**

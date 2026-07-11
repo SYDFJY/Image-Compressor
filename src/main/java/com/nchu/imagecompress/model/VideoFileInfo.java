@@ -62,6 +62,29 @@ public class VideoFileInfo implements FileInfo {
     /** 列表中的索引位置 */
     private int index;
 
+    // ==================== 压缩后数据（持久化在 Model 上，不受文件切换影响） ====================
+
+    /** 压缩后文件大小（字节），-1 表示无压缩数据 */
+    private long compressedSize = -1;
+
+    /** 压缩后文件路径 */
+    private String compressedPath;
+
+    /** 压缩后比特率估算值（bps），-1 表示无数据 */
+    private long compressedBitrate = -1;
+
+    /** 压缩后视频编码器（如 "h264"） */
+    private String compressedCodec;
+
+    /** 压缩后视频宽度 */
+    private int compressedWidth = -1;
+
+    /** 压缩后视频高度 */
+    private int compressedHeight = -1;
+
+    /** 压缩率百分比（缓存值），-1 表示需计算 */
+    private double compressionRatio = -1;
+
     // ==================== 构造函数 ====================
 
     /** 无参构造（用于 JSON 反序列化等场景） */
@@ -149,6 +172,56 @@ public class VideoFileInfo implements FileInfo {
     @Override
     public void setFileInfoStatus(Status status) {
         this.status = status;
+    }
+
+    // ==================== 压缩后数据 Getter / Setter ====================
+
+    public long getCompressedSize() { return compressedSize; }
+    public void setCompressedSize(long compressedSize) { this.compressedSize = compressedSize; }
+
+    public String getCompressedPath() { return compressedPath; }
+    public void setCompressedPath(String compressedPath) { this.compressedPath = compressedPath; }
+
+    public long getCompressedBitrate() { return compressedBitrate; }
+    public void setCompressedBitrate(long compressedBitrate) { this.compressedBitrate = compressedBitrate; }
+
+    public String getCompressedCodec() { return compressedCodec; }
+    public void setCompressedCodec(String compressedCodec) { this.compressedCodec = compressedCodec; }
+
+    public int getCompressedWidth() { return compressedWidth; }
+    public void setCompressedWidth(int compressedWidth) { this.compressedWidth = compressedWidth; }
+
+    public int getCompressedHeight() { return compressedHeight; }
+    public void setCompressedHeight(int compressedHeight) { this.compressedHeight = compressedHeight; }
+
+    /**
+     * 获取或计算压缩率（百分比，如 59.9 表示节省了 59.9%）。
+     */
+    public double getCompressionRatio() {
+        if (compressionRatio < 0 && compressedSize > 0 && originalSize > 0) {
+            compressionRatio = (1.0 - (double) compressedSize / originalSize) * 100.0;
+        }
+        return compressionRatio;
+    }
+
+    /**
+     * 是否有压缩数据可供对比展示。
+     */
+    public boolean hasCompressedData() {
+        return compressedSize > 0;
+    }
+
+    /**
+     * 清除压缩后数据（清空列表或重新压缩时重置）。
+     */
+    public void clearCompressedData() {
+        compressedSize = -1;
+        compressedPath = null;
+        compressedBitrate = -1;
+        compressedCodec = null;
+        compressedWidth = -1;
+        compressedHeight = -1;
+        compressionRatio = -1;
     }
 
     // ==================== Getter / Setter ====================

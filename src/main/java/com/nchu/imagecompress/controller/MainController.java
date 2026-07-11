@@ -53,6 +53,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 主控制器 — 应用核心调度中心。
@@ -108,6 +109,9 @@ public class MainController implements MainControllerCallback {
 
     /** 视频压缩后台线程（简化版） */
     private Thread currentVideoThread;
+
+    /** 当前 ffplay 播放进程（用于生命周期管理，同一时间只允许一个） */
+    private Process currentFfplayProcess;
 
     /** 上次打开的目录（用于文件选择器记忆） */
     private File lastOpenDir;
@@ -269,6 +273,19 @@ public class MainController implements MainControllerCallback {
         // 当文件列表变化时自动触发智能推荐提示
         // （在 addFilesToList 中触发）
 
+        // ---- 视频播放按钮 ----
+        videoPreviewPanel.getPlayOriginalButton().addActionListener(e -> {
+            if (videoPreviewPanel.getCurrentVideoInfo() != null) {
+                onPlayOriginalVideo(videoPreviewPanel.getCurrentVideoInfo());
+            }
+        });
+        videoPreviewPanel.getPlayCompressedButton().addActionListener(e -> {
+            VideoFileInfo info = videoPreviewPanel.getCurrentVideoInfo();
+            if (info != null && info.hasCompressedData()) {
+                onPlayCompressedVideo(info);
+            }
+        });
+
         LogUtil.info("[MainController] 事件绑定完成（含右键菜单、Delete 快捷键）");
     }
 
@@ -426,6 +443,9 @@ public class MainController implements MainControllerCallback {
         if (mainFrame.isVideoMode()) {
             int count = videoFileList.size();
             if (count == 0) return;
+            for (VideoFileInfo info : videoFileList) {
+                info.clearCompressedData();
+            }
             videoFileList.clear();
             fileListPanel.clearAllFiles();
             videoPreviewPanel.clearPreview();
@@ -849,6 +869,9 @@ public class MainController implements MainControllerCallback {
     public void onWindowClosing() {
         if (shuttingDown) return;
 
+        // 关闭 ffplay 播放进程
+        killFfplayProcess();
+
         // 检查是否有运行中的任务
         if (currentWorker != null && !currentWorker.isDone()
                 || currentVideoThread != null && currentVideoThread.isAlive()) {
@@ -1042,6 +1065,17 @@ public class MainController implements MainControllerCallback {
             }
         });
         popupMenu.add(openFolderItem);
+
+        JMenuItem playVideoItem = new JMenuItem("▶ 播放视频");
+        playVideoItem.addActionListener(e -> {
+            FileInfo selected = fileListPanel.getSelectedFile();
+            if (selected instanceof VideoFileInfo) {
+                onPlayOriginalVideo((VideoFileInfo) selected);
+            } else {
+                ToastNotification.info("仅视频文件支持播放");
+            }
+        });
+        popupMenu.add(playVideoItem);
 
         popupMenu.addSeparator();
 
@@ -1437,16 +1471,44 @@ public class MainController implements MainControllerCallback {
                 ? currentVideoConfig.getOutputPath() : "";
         ResultDialog.show(mainFrame, results, outputDir, totalElapsed);
 
-        // 显示第一个成功的对比
+        // 将压缩结果写入 VideoFileInfo Model（持久化，切换文件不丢失）
         for (CompressResult r : results) {
-            if (r.isSuccess()) {
-                File outputFile = new File(r.getOutputPath());
-                if (outputFile.exists() && r.getVideoInputInfo() != null) {
-                    videoPreviewPanel.showComparison(
-                            r.getVideoInputInfo().getOriginalSize(),
-                            r.getOutputSize(),
-                            r.getCompressionRatio());
+            if (r.isSuccess() && r.getVideoInputInfo() != null) {
+                VideoFileInfo info = r.getVideoInputInfo();
+                info.setCompressedSize(r.getOutputSize());
+                info.setCompressedPath(r.getOutputPath());
+
+                // 估算压缩后比特率
+                if (info.getDurationSeconds() > 0) {
+                    long estimatedBitrate = (r.getOutputSize() * 8)
+                            / (long) info.getDurationSeconds();
+                    info.setCompressedBitrate(estimatedBitrate);
                 }
+
+                // 推断压缩后编码器
+                VideoCompressConfig cfg = currentVideoConfig;
+                if (cfg != null) {
+                    if (cfg.getOutputFormat() == VideoCompressConfig.VideoFormat.WEBM) {
+                        info.setCompressedCodec("vp9");
+                    } else {
+                        info.setCompressedCodec("h264");
+                    }
+                    // 分辨率信息
+                    if (cfg.getResolutionMode() != VideoCompressConfig.ResolutionMode.ORIGINAL) {
+                        info.setCompressedWidth(cfg.getResolutionMode().getMaxWidth());
+                        info.setCompressedHeight(cfg.getResolutionMode().getMaxHeight());
+                    } else {
+                        info.setCompressedWidth(info.getWidth());
+                        info.setCompressedHeight(info.getHeight());
+                    }
+                }
+            }
+        }
+
+        // 显示第一个成功文件的压缩对比
+        for (CompressResult r : results) {
+            if (r.isSuccess() && r.getVideoInputInfo() != null) {
+                videoPreviewPanel.showCompressionResult(r.getVideoInputInfo());
                 break;
             }
         }
@@ -1562,5 +1624,116 @@ public class MainController implements MainControllerCallback {
         }
 
         return chooser;
+    }
+
+    // ==================== 视频播放 ====================
+
+    /**
+     * 播放原始视频文件。
+     */
+    private void onPlayOriginalVideo(VideoFileInfo info) {
+        if (info == null || info.getSourceFile() == null || !info.getSourceFile().exists()) {
+            ToastNotification.error("视频文件不存在");
+            return;
+        }
+        if (!VideoUtil.checkFfplayAvailable()) {
+            ToastNotification.error("FFplay 未安装，无法播放视频。请确保 ffplay 在系统 PATH 中。");
+            return;
+        }
+        playVideoFile(info.getSourceFile());
+    }
+
+    /**
+     * 播放压缩后视频文件。
+     */
+    private void onPlayCompressedVideo(VideoFileInfo info) {
+        if (info == null || info.getCompressedPath() == null) {
+            ToastNotification.error("压缩视频不存在");
+            return;
+        }
+        File compressedFile = new File(info.getCompressedPath());
+        if (!compressedFile.exists()) {
+            ToastNotification.error("压缩视频文件已被删除或移动");
+            return;
+        }
+        if (!VideoUtil.checkFfplayAvailable()) {
+            ToastNotification.error("FFplay 未安装。");
+            return;
+        }
+        playVideoFile(compressedFile);
+    }
+
+    /**
+     * 启动 ffplay 播放视频（后台线程，不阻塞 EDT）。
+     * 同一时间只允许一个 ffplay 实例，新播放会自动关闭旧进程。
+     */
+    private void playVideoFile(final File videoFile) {
+        // 终止现有 ffplay 进程
+        killFfplayProcess();
+
+        // 后台线程启动 ffplay
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SwingUtilities.invokeLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            statusBar.setStatus("正在启动播放器: " + videoFile.getName(), "working");
+                        }
+                    });
+
+                    currentFfplayProcess = VideoUtil.playVideo(videoFile);
+
+                    SwingUtilities.invokeLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            statusBar.setStatus("正在播放: " + videoFile.getName(), "ready");
+                        }
+                    });
+
+                    // 等待 ffplay 退出（autoexit 或用户关闭窗口）
+                    int exitCode = currentFfplayProcess.waitFor();
+
+                    final int code = exitCode;
+                    SwingUtilities.invokeLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            statusBar.setStatus("播放结束", "ready");
+                        }
+                    });
+
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (IOException e) {
+                    LogUtil.error("[MainController] ffplay 启动失败: " + e.getMessage());
+                    SwingUtilities.invokeLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            statusBar.setStatus("播放失败: " + e.getMessage(), "error");
+                            ToastNotification.error("无法启动播放器: " + e.getMessage());
+                        }
+                    });
+                } finally {
+                    currentFfplayProcess = null;
+                }
+            }
+        }, "FFplay-Thread").start();
+    }
+
+    /**
+     * 安全终止当前 ffplay 进程。
+     */
+    private void killFfplayProcess() {
+        if (currentFfplayProcess != null && currentFfplayProcess.isAlive()) {
+            currentFfplayProcess.destroy();
+            try {
+                currentFfplayProcess.waitFor(2, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                currentFfplayProcess.destroyForcibly();
+                Thread.currentThread().interrupt();
+            }
+            currentFfplayProcess = null;
+        }
     }
 }
