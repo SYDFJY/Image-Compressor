@@ -190,9 +190,26 @@ public final class VideoCompressUtil {
         pb.redirectErrorStream(false); // 分别处理 stdout 和 stderr
 
         Process process = pb.start();
+
+        // 排空 stdout（防止管道满导致进程挂起）
+        final Process finalProcess = process;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    byte[] buf = new byte[4096];
+                    while (finalProcess.getInputStream().read(buf) != -1) { /* drain */ }
+                } catch (IOException ignored) { /* stdout drained */ }
+            }
+        }, "FFmpeg-Stdout-Drainer").start();
+
         double lastReportedProgress = 0;
 
-        // 读取 stderr（ffmpeg 的进度信息输出在这里）
+        // 读取 stderr（ffmpeg 输出：进度信息 + 错误信息）
+        // 使用 ring buffer 保留最后 5 行非进度输出用于错误诊断
+        final String[] lastErrorLines = new String[5];
+        final int[] errorIdx = {0};
+
         try (BufferedReader errorReader = new BufferedReader(
                 new InputStreamReader(process.getErrorStream()))) {
             String line;
@@ -208,12 +225,19 @@ public final class VideoCompressUtil {
                     double currentTime = parseTime(line);
                     if (currentTime > 0) {
                         double progress = Math.min(currentTime / totalDurationSeconds, 0.99);
-                        // 避免频繁回调（至少 1% 变化）
                         if (progress - lastReportedProgress >= 0.01) {
                             lastReportedProgress = progress;
                             callback.onProgress(progress, "压缩中... " + formatTime(currentTime));
                         }
+                        continue;
                     }
+                }
+
+                // 保留非进度行用于错误诊断
+                if (line != null && !line.isEmpty()
+                        && !line.startsWith("frame=") && !line.startsWith("size=")) {
+                    lastErrorLines[errorIdx[0] % 5] = line;
+                    errorIdx[0]++;
                 }
             }
         }
@@ -227,7 +251,15 @@ public final class VideoCompressUtil {
 
         int exitCode = process.exitValue();
         if (exitCode != 0) {
-            throw new IOException("FFmpeg 返回非零退出码: " + exitCode);
+            // 拼接最后几行错误输出用于诊断
+            StringBuilder errInfo = new StringBuilder();
+            for (String err : lastErrorLines) {
+                if (err != null) errInfo.append(err).append(" | ");
+            }
+            String detail = errInfo.length() > 0
+                    ? " — " + errInfo.toString().trim()
+                    : "";
+            throw new IOException("FFmpeg 返回非零退出码: " + exitCode + detail);
         }
 
         // 验证输出文件存在且非空

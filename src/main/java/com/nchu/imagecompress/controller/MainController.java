@@ -177,6 +177,17 @@ public class MainController implements MainControllerCallback {
         // ⑤ 状态栏就绪
         statusBar.setStatus("就绪，请导入图片开始", "ready");
 
+        // ⑥ 后台预检测 FFmpeg/FFplay（避免首次切换视频模式时阻塞 EDT 10s+）
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                boolean ffmpegOk = VideoUtil.checkFfmpegAvailable();
+                boolean ffplayOk = VideoUtil.checkFfplayAvailable();
+                LogUtil.info("[MainController] 后台环境检测完成 — FFmpeg="
+                        + ffmpegOk + ", FFplay=" + ffplayOk);
+            }
+        }, "FFmpeg-Detection-Thread").start();
+
         LogUtil.info("[MainController] 初始化完成");
     }
 
