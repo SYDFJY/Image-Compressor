@@ -1,0 +1,145 @@
+package com.nchu.imagecompress.model;
+
+/**
+ * 全局应用配置实体（可 JSON 序列化）。
+ *
+ * <p>持久化存储于 {@code ~/.NCHUImageCompressor/config.json}，
+ * 包含主题、窗口状态、上次压缩参数、最近使用目录等信息。
+ * 应用启动时由 ConfigService 加载，关闭时保存。</p>
+ *
+ * @author NCHU-Student
+ * @version 1.0.0
+ * @since 2026-07-08
+ */
+public class AppConfig {
+
+    // ==================== 主题设置 ====================
+
+    /** 当前主题 */
+    private Theme theme = Theme.BLUE_CLASSIC;
+
+    // ==================== 窗口状态 ====================
+
+    /** 窗口左上角 X 坐标（-1 表示使用默认位置） */
+    private int windowX = -1;
+
+    /** 窗口左上角 Y 坐标 */
+    private int windowY = -1;
+
+    /** 窗口宽度 */
+    private int windowWidth = 1000;
+
+    /** 窗口高度 */
+    private int windowHeight = 680;
+
+    /** 是否最大化 */
+    private boolean maximized = false;
+
+    /** 左侧文件列表面板宽度 */
+    private int splitPaneLeftWidth = 360;
+
+    /** 预览/参数面板高度分界 */
+    private int splitPaneRightDivider = 380;
+
+    // ==================== 上次压缩参数 ====================
+
+    /** 上次使用的质量值 */
+    private int lastQuality = 80;
+
+    /** 上次使用的输出格式名称 */
+    private String lastOutputFormat = "ORIGINAL";
+
+    /** 上次使用的输出目录 */
+    private String lastOutputPath = "";
+
+    /** 上次使用的缩放模式 */
+    private String lastScaleMode = "NONE";
+
+    /** 上次使用的缩放百分比 */
+    private int lastScalePercent = 100;
+
+    /** 上次使用的命名规则 */
+    private String lastNamingRule = "ADD_SUFFIX";
+
+    /** 上次使用的后缀 */
+    private String lastSuffix = "_compressed";
+
+    /** 是否启用智能推荐 */
+    private boolean smartRecommendEnabled = false;
+
+    // ==================== 最近目录 ====================
+
+    /** 最近导入文件的目录 */
+    private String recentImportDir = "";
+
+    /** 最近输出目录 */
+    private String recentOutputDir = "";
+
+    // ==================== 默认实例 ====================
+
+    public static AppConfig getDefault() {
+        return new AppConfig();
+    }
+
+    // ==================== Getter / Setter ====================
+
+    public Theme getTheme() { return theme != null ? theme : Theme.BLUE_CLASSIC; }
+    public void setTheme(Theme theme) { this.theme = theme; }
+
+    public int getWindowX() { return windowX; }
+    public void setWindowX(int windowX) { this.windowX = windowX; }
+
+    public int getWindowY() { return windowY; }
+    public void setWindowY(int windowY) { this.windowY = windowY; }
+
+    public int getWindowWidth() { return windowWidth; }
+    public void setWindowWidth(int windowWidth) { this.windowWidth = windowWidth; }
+
+    public int getWindowHeight() { return windowHeight; }
+    public void setWindowHeight(int windowHeight) { this.windowHeight = windowHeight; }
+
+    public boolean isMaximized() { return maximized; }
+    public void setMaximized(boolean maximized) { this.maximized = maximized; }
+
+    public int getSplitPaneLeftWidth() { return splitPaneLeftWidth; }
+    public void setSplitPaneLeftWidth(int splitPaneLeftWidth) { this.splitPaneLeftWidth = splitPaneLeftWidth; }
+
+    public int getSplitPaneRightDivider() { return splitPaneRightDivider; }
+    public void setSplitPaneRightDivider(int splitPaneRightDivider) { this.splitPaneRightDivider = splitPaneRightDivider; }
+
+    public int getLastQuality() { return lastQuality; }
+    public void setLastQuality(int lastQuality) { this.lastQuality = lastQuality; }
+
+    public String getLastOutputFormat() { return lastOutputFormat; }
+    public void setLastOutputFormat(String lastOutputFormat) { this.lastOutputFormat = lastOutputFormat; }
+
+    public String getLastOutputPath() { return lastOutputPath; }
+    public void setLastOutputPath(String lastOutputPath) { this.lastOutputPath = lastOutputPath; }
+
+    public String getLastScaleMode() { return lastScaleMode; }
+    public void setLastScaleMode(String lastScaleMode) { this.lastScaleMode = lastScaleMode; }
+
+    public int getLastScalePercent() { return lastScalePercent; }
+    public void setLastScalePercent(int lastScalePercent) { this.lastScalePercent = lastScalePercent; }
+
+    public String getLastNamingRule() { return lastNamingRule; }
+    public void setLastNamingRule(String lastNamingRule) { this.lastNamingRule = lastNamingRule; }
+
+    public String getLastSuffix() { return lastSuffix; }
+    public void setLastSuffix(String lastSuffix) { this.lastSuffix = lastSuffix; }
+
+    public boolean isSmartRecommendEnabled() { return smartRecommendEnabled; }
+    public void setSmartRecommendEnabled(boolean smartRecommendEnabled) { this.smartRecommendEnabled = smartRecommendEnabled; }
+
+    public String getRecentImportDir() { return recentImportDir; }
+    public void setRecentImportDir(String recentImportDir) { this.recentImportDir = recentImportDir; }
+
+    public String getRecentOutputDir() { return recentOutputDir; }
+    public void setRecentOutputDir(String recentOutputDir) { this.recentOutputDir = recentOutputDir; }
+
+    @Override
+    public String toString() {
+        return "AppConfig{theme=" + theme + ", window=" + windowWidth + "x" + windowHeight
+                + ", lastQuality=" + lastQuality + "}";
+    }
+}

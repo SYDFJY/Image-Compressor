@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+vendor/
+__pycache__/
+*.pyc
+*.pyo
+.pnpm-store/
+
+# Build output
+build/
+out/
+target/
+*.exe
+*.dll
+*.so
+*.dylib
+# 发行版 EXE 启动器允许提交
+!dist/*.exe
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+.venv/
+venv/
+*.log
+
+# OS
+Desktop.ini
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Claude
+.claude/
+
+# Cache
+.cache/
+*.tsbuildinfo
+
+# Test samples
+测试样例/
+
+# Temp files
+*.tmp
+*.tmp.*
+*.bak
+NCHU-Image-Compressor-免安装版.zip
+NCHU-Image-Compressor-免安装版/
+NCHU-Image-Compressor-免安装版.zip
+NCHU-Image-Compressor-免安装版/
+dist/standalone/jre/
