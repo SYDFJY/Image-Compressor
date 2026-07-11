@@ -84,6 +84,18 @@
                 </configuration>
             </plugin>
 
+            <!-- Maven Surefire 插件：单元测试（传递 FFmpeg PATH） -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.2</version>
+                <configuration>
+                    <environmentVariables>
+                        <PATH>${env.PATH}</PATH>
+                    </environmentVariables>
+                </configuration>
+            </plugin>
+
             <!-- Maven Assembly 插件：打包 fat JAR (含所有依赖) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

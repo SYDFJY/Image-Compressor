@@ -39,8 +39,20 @@ public final class VideoCompressUtil {
     /** 解析 ffmpeg stderr 中 time= 的正则 */
     private static final Pattern TIME_PATTERN = Pattern.compile("time=(\\d{2}):(\\d{2}):(\\d{2})\\.(\\d{2})");
 
+    /** FFmpeg 可执行文件路径（可通过系统属性 ffmpeg.bin.path 自定义） */
+    private static final String FFMPEG_PATH = resolveFfmpegPath();
+
     /** 默认 FFmpeg preset（编码速度与压缩率的平衡） */
     private static final String DEFAULT_PRESET = "medium";
+
+    /** 解析 ffmpeg/ffprobe 可执行文件路径 */
+    private static String resolveFfmpegPath() {
+        String binPath = System.getProperty("ffmpeg.bin.path", "");
+        if (!binPath.isEmpty()) {
+            return binPath + File.separator + "ffmpeg";
+        }
+        return "ffmpeg";
+    }
 
     // ==================== 命令构建 ====================
 
@@ -55,7 +67,7 @@ public final class VideoCompressUtil {
     public static List<String> buildFfmpegCommand(File inputFile, File outputFile,
                                                    VideoCompressConfig config) {
         List<String> cmd = new ArrayList<>();
-        cmd.add("ffmpeg");
+        cmd.add(FFMPEG_PATH);
 
         // --- 输入文件 ---
         cmd.add("-i");

@@ -48,12 +48,16 @@ public final class VideoUtil {
     /** 缓存的 FFmpeg 可用性检测结果 */
     private static Boolean ffmpegAvailable = null;
 
+    /** FFmpeg 二进制目录（通过系统属性 ffmpeg.bin.path 配置，用于测试） */
+    private static final String FFMPEG_BIN_PATH = System.getProperty("ffmpeg.bin.path", "");
+
     // ==================== 环境检测 ====================
 
     /**
      * 检测 FFmpeg 是否在系统 PATH 中可用。
      *
-     * <p>结果会被缓存，首次调用后不再重复检测。</p>
+     * <p>结果会被缓存，首次调用后不再重复检测。
+     * 可通过系统属性 {@code ffmpeg.bin.path} 指定 FFmpeg 二进制目录。</p>
      *
      * @return true 表示 ffmpeg 和 ffprobe 均可正常调用
      */
@@ -61,9 +65,22 @@ public final class VideoUtil {
         if (ffmpegAvailable != null) {
             return ffmpegAvailable;
         }
-        ffmpegAvailable = checkCommand("ffmpeg -version") && checkCommand("ffprobe -version");
+        String ffmpegCmd = resolveCommand("ffmpeg");
+        String ffprobeCmd = resolveCommand("ffprobe");
+        ffmpegAvailable = checkCommand(ffmpegCmd + " -version")
+                && checkCommand(ffprobeCmd + " -version");
         LogUtil.info("[VideoUtil] FFmpeg 可用性: " + ffmpegAvailable);
         return ffmpegAvailable;
+    }
+
+    /**
+     * 解析命令路径：如果设置了 ffmpeg.bin.path，则使用完整路径。
+     */
+    private static String resolveCommand(String command) {
+        if (!FFMPEG_BIN_PATH.isEmpty()) {
+            return FFMPEG_BIN_PATH + File.separator + command;
+        }
+        return command;
     }
 
     /**
@@ -99,7 +116,7 @@ public final class VideoUtil {
      */
     public static String getFfmpegVersion() {
         try {
-            ProcessBuilder pb = buildProcess("ffmpeg", "-version");
+            ProcessBuilder pb = buildProcess(resolveCommand("ffmpeg"), "-version");
             pb.redirectErrorStream(true);
             Process process = pb.start();
             try (BufferedReader reader = new BufferedReader(
@@ -174,8 +191,9 @@ public final class VideoUtil {
      * 执行 ffprobe 并返回 JSON 字符串。
      */
     private static String executeFfprobe(File videoFile) throws IOException, InterruptedException {
+        String ffprobeCmd = resolveCommand("ffprobe");
         ProcessBuilder pb = buildProcess(
-                "ffprobe", "-v", "quiet",
+                ffprobeCmd, "-v", "quiet",
                 "-print_format", "json",
                 "-show_format",
                 "-show_streams",
