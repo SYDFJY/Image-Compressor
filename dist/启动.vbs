@@ -1,6 +1,7 @@
 ' ============================================
-'  NCHU Image Compressor — Windows 静默启动器
-'  版本: 1.0.0 | 双击此文件即可无控制台启动
+'  NCHU Compressor — Windows 静默启动器
+'  版本: 1.0.0 | 图片/视频双模压缩工具
+'  双击此文件即可无控制台启动
 ' ============================================
 
 Set objShell = CreateObject("WScript.Shell")
@@ -12,7 +13,7 @@ strJar = strDir & "\image-compressor-1.0.0.jar"
 
 ' 检查 JAR 文件是否存在
 If Not objFSO.FileExists(strJar) Then
-    MsgBox "找不到程序文件: " & vbCrLf & strJar, 48, "NCHU Image Compressor — 错误"
+    MsgBox "找不到程序文件: " & vbCrLf & strJar, 48, "NCHU Compressor — 错误"
     WScript.Quit 1
 End If
 
