@@ -75,9 +75,11 @@ public class VideoPreviewPanel extends JPanel {
         cardPanel = new JPanel(cardLayout);
         cardPanel.setOpaque(false);
 
+        // comparisonPanel 必须在 createInfoPanel() 之前初始化，
+        // 因为 createInfoPanel() 内部引用了 comparisonPanel 字段
+        comparisonPanel = createComparisonPanel();
         emptyPanel = createEmptyPanel();
         infoPanel = createInfoPanel();
-        comparisonPanel = createComparisonPanel();
 
         cardPanel.add(emptyPanel, CARD_EMPTY);
         cardPanel.add(infoPanel, CARD_INFO);
