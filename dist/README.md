@@ -15,6 +15,8 @@
 
 ### 安装 FFmpeg（视频压缩需要）
 
+> **免安装版用户可跳过此步骤**：`standalone/` 目录已内置 FFmpeg（ffmpeg.exe + ffprobe.exe），解压即用，无需额外安装。
+
 **Windows**：
 1. 下载 FFmpeg：https://ffmpeg.org/download.html
 2. 解压到任意目录（如 `C:\ffmpeg\`）
@@ -36,6 +38,19 @@
 | 🖱 双击 `启动.vbs` | 直接运行 | 无控制台窗口，推荐 |
 | 🖱 双击 `启动.bat` | 直接运行 | 显示启动日志 |
 | ⌨ 命令行 | `java -jar image-compressor-1.0.0.jar` | 可附加 JVM 参数 |
+
+### 免安装版（推荐）
+
+`standalone/` 目录提供**解压即用**的便携版，无需安装 Java 或 FFmpeg：
+
+| 组件 | 路径 | 大小 |
+|------|------|------|
+| Java 运行时 | `standalone/jre/` | ~117 MB |
+| FFmpeg 二进制 | `standalone/ffmpeg/bin/` | ~276 MB |
+| 程序 JAR | `standalone/image-compressor-1.0.0.jar` | ~2 MB |
+| 启动脚本 | `standalone/启动.vbs` | — |
+
+**使用方法**：将 `standalone/` 目录整个复制到任意位置，双击 `启动.vbs` 即可运行。启动脚本会自动检测捆绑的 JRE + FFmpeg，无需任何配置。
 
 ### macOS / Linux
 

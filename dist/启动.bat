@@ -23,19 +23,27 @@ echo 检测到 Java 环境:
 java -version 2>&1 | findstr /i "version"
 echo.
 
-:: 检查 FFmpeg（可选）
-where ffmpeg >nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    echo [提示] 未检测到 FFmpeg，视频压缩功能不可用
-    echo   安装 FFmpeg 4.0+ 后可使用视频压缩: https://ffmpeg.org/download.html
+:: 检测 FFmpeg（优先使用捆绑版，其次系统 PATH）
+set FFMPEG_OPTS=
+if exist "%~dp0standalone\ffmpeg\bin\ffmpeg.exe" (
+    echo 检测到捆绑版 FFmpeg（standalone\ffmpeg\bin\），视频压缩功能可用
+    set FFMPEG_OPTS=-Dffmpeg.bin.path="%~dp0standalone\ffmpeg\bin"
     echo.
 ) else (
-    echo 检测到 FFmpeg，视频压缩功能可用
-    echo.
+    where ffmpeg >nul 2>&1
+    if %ERRORLEVEL% NEQ 0 (
+        echo [提示] 未检测到 FFmpeg，视频压缩功能不可用
+        echo   安装 FFmpeg 4.0+ 后可使用视频压缩: https://ffmpeg.org/download.html
+        echo   或将免安装版解压后使用捆绑的 FFmpeg
+        echo.
+    ) else (
+        echo 检测到系统 FFmpeg，视频压缩功能可用
+        echo.
+    )
 )
 
 :: 启动程序（最大堆内存 512MB）
 echo 正在启动 NCHU Compressor...
-start javaw -Xmx512m -jar "%~dp0image-compressor-1.0.0.jar"
+start javaw %FFMPEG_OPTS% -Xmx512m -jar "%~dp0image-compressor-1.0.0.jar"
 
 exit /b 0
