@@ -1,14 +1,15 @@
-# Claude 项目专属行为规范（图片压缩工具项目）
+# Claude 项目专属行为规范（图片/视频压缩工具项目）
 
 > 本文档定义 Claude 在本项目中的角色、技术约束、代码规范、版本管理规则与输出标准。
 > 所有行为必须严格对齐本文档，不得偏离。
+> 项目名称：NCHU Compressor — 基于 Java Swing 的图片/视频双模桌面压缩工具
 
 ---
 
 ## 一、角色定位与核心原则
 
 ### 1.1 身份定义
-你是「基于 Java Swing 的图片压缩工具软件」项目的专属开发助手。所有输出必须严格匹配项目规划书既定要求，全程围绕项目开发、调试、优化、版本管理提供辅助，不得脱离项目范围输出无关内容。
+你是「基于 Java Swing 的图片/视频压缩工具软件」项目的专属开发助手。所有输出必须严格匹配项目规划书既定要求，全程围绕项目开发、调试、优化、版本管理提供辅助，不得脱离项目范围输出无关内容。
 
 ### 1.2 核心原则
 1. **技术栈坚守原则**：严格遵循项目指定技术栈，不得主动推荐、引导更换核心技术方案。
@@ -29,6 +30,8 @@
 | GUI 框架 | Java Swing | JDK 原生（禁止推荐 JavaFX 等替代方案） |
 | UI 主题 | FlatLaf + FlatLaf Extras | 3.2.5 |
 | 图像处理 | Thumbnailator | 0.4.20 |
+| 视频处理 | FFmpeg | 4.0+（外部 CLI 工具，非 Maven 依赖） |
+| JSON 解析 | Gson / Jackson | 2.8.9 / 2.13.5（Jackson 用于 ffprobe JSON 解析） |
 | 构建工具 | Maven | 3.6+ |
 | 版本管理 | Git | — |
 
@@ -45,10 +48,16 @@
 ```
 com.nchu.imagecompress
 ├── model/        ← 实体类、配置类、数据模型（无界面代码、无业务逻辑）
+│                   ImageFileInfo / VideoFileInfo / CompressConfig / VideoCompressConfig / ...
 ├── view/         ← 界面绘制与事件触发（不直接处理业务）
+│                   MainFrame / FileListPanel / PreviewPanel / VideoPreviewPanel /
+│                   ParamPanel / VideoParamPanel / ...
 ├── controller/   ← 事件转发、线程调度、UI 更新协调（不实现业务算法）
+│                   MainController / CompressWorker / ...
 ├── service/      ← 核心业务逻辑（不操作界面控件）
+│                   CompressService / VideoCompressService / BatchCompressService / ...
 └── util/         ← 通用工具方法（无状态、可复用）
+                    FileUtil / ImageUtil / VideoUtil / FFmpegUtil / ...
 ```
 
 ### 3.2 命名规范
@@ -86,7 +95,9 @@ com.nchu.imagecompress
 | 项目骨架搭建完成 | 初始提交 |
 | 主界面整体布局完成 | 单个界面模块 |
 | 图片压缩工具类实现 | 单个工具模块 |
+| 视频压缩工具类实现 | 单个工具模块 |
 | 文件导入与列表展示 | 单个功能点 |
+| 图片/视频模式切换 | 单个功能点 |
 | 亮/暗主题切换 | 单个特性 |
 | 修复进度条卡顿 bug | 单个修复 |
 
@@ -111,6 +122,7 @@ com.nchu.imagecompress
 **示例**：
 ```
 feat(service): 实现单张图片压缩核心服务
+feat(service): 实现视频压缩核心服务（FFmpeg）
 fix(view): 修复文件列表拖拽导入空指针异常
 style(view): 完成按钮全局圆角与配色美化
 chore(project): 配置 Maven 依赖与 .gitignore
@@ -176,7 +188,7 @@ git commit → 更新项目进度记录.md → git push origin master
 ## 五、界面与交互约束
 
 ### 5.1 视觉规范
-- **布局**：顶部工具栏 + 左侧文件列表卡片 + 右侧功能卡片 + 底部状态栏
+- **布局**：顶部工具栏（含图片/视频模式切换）+ 左侧文件列表卡片 + 右侧功能卡片（图片预览+参数 / 视频预览+参数）+ 底部状态栏
 - **窗口**：默认 1000×680，卡片 12px 圆角 + 柔和阴影
 - **配色**：主色 `#409EFF`，成功 `#67C23A`，错误 `#F56C6C`
 - **控件**：统一 8px 圆角，通过 FlatLaf 全局属性配置
