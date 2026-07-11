@@ -87,11 +87,13 @@ public final class VideoCompressUtil {
         cmd.add(DEFAULT_PRESET);
 
         // --- 分辨率缩放 ---
+        // 使用 -2 占位符：自动计算高度、保持宽高比、保证被 2 整除
+        // （H.264/VP9 yuv420p 要求宽高均为偶数，force_original_aspect_ratio
+        //  可能导致竖屏视频缩放后宽度为奇数进而编码失败）
         if (config.getResolutionMode() != VideoCompressConfig.ResolutionMode.ORIGINAL) {
+            int targetWidth = config.getResolutionMode().getMaxWidth();
             cmd.add("-vf");
-            cmd.add("scale=" + config.getResolutionMode().getMaxWidth()
-                    + ":" + config.getResolutionMode().getMaxHeight()
-                    + ":force_original_aspect_ratio=decrease");
+            cmd.add("scale=" + targetWidth + ":-2");
         }
 
         // --- 帧率 ---
