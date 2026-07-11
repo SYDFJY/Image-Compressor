@@ -1636,10 +1636,6 @@ public class MainController implements MainControllerCallback {
             ToastNotification.error("视频文件不存在");
             return;
         }
-        if (!VideoUtil.checkFfplayAvailable()) {
-            ToastNotification.error("FFplay 未安装，无法播放视频。请确保 ffplay 在系统 PATH 中。");
-            return;
-        }
         playVideoFile(info.getSourceFile());
     }
 
@@ -1651,38 +1647,41 @@ public class MainController implements MainControllerCallback {
             ToastNotification.error("压缩视频不存在");
             return;
         }
-        File compressedFile = new File(info.getCompressedPath());
+        final File compressedFile = new File(info.getCompressedPath());
         if (!compressedFile.exists()) {
             ToastNotification.error("压缩视频文件已被删除或移动");
-            return;
-        }
-        if (!VideoUtil.checkFfplayAvailable()) {
-            ToastNotification.error("FFplay 未安装。");
             return;
         }
         playVideoFile(compressedFile);
     }
 
     /**
-     * 启动 ffplay 播放视频（后台线程，不阻塞 EDT）。
-     * 同一时间只允许一个 ffplay 实例，新播放会自动关闭旧进程。
+     * 启动 ffplay 播放视频。
+     * 所有耗时操作（进程检测、旧进程销毁、ffplay 启动）均在后台线程执行，不阻塞 EDT。
      */
     private void playVideoFile(final File videoFile) {
-        // 终止现有 ffplay 进程
-        killFfplayProcess();
+        statusBar.setStatus("正在启动播放器...", "working");
 
-        // 后台线程启动 ffplay
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    SwingUtilities.invokeLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            statusBar.setStatus("正在启动播放器: " + videoFile.getName(), "working");
-                        }
-                    });
+                    // ① 检测 ffplay 可用性
+                    if (!VideoUtil.checkFfplayAvailable()) {
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                statusBar.setStatus("就绪", "ready");
+                                ToastNotification.error("FFplay 未安装，无法播放视频。");
+                            }
+                        });
+                        return;
+                    }
 
+                    // ② 终止旧 ffplay 进程
+                    killFfplayProcess();
+
+                    // ③ 启动新 ffplay
                     currentFfplayProcess = VideoUtil.playVideo(videoFile);
 
                     SwingUtilities.invokeLater(new Runnable() {
@@ -1692,14 +1691,13 @@ public class MainController implements MainControllerCallback {
                         }
                     });
 
-                    // 等待 ffplay 退出（autoexit 或用户关闭窗口）
-                    int exitCode = currentFfplayProcess.waitFor();
+                    // ④ 等待 ffplay 退出
+                    currentFfplayProcess.waitFor();
 
-                    final int code = exitCode;
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override
                         public void run() {
-                            statusBar.setStatus("播放结束", "ready");
+                            statusBar.setStatus("就绪", "ready");
                         }
                     });
 
@@ -1710,7 +1708,7 @@ public class MainController implements MainControllerCallback {
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override
                         public void run() {
-                            statusBar.setStatus("播放失败: " + e.getMessage(), "error");
+                            statusBar.setStatus("播放失败", "error");
                             ToastNotification.error("无法启动播放器: " + e.getMessage());
                         }
                     });
