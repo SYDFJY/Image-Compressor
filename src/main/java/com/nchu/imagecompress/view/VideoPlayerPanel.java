@@ -180,7 +180,8 @@ public class VideoPlayerPanel extends JPanel {
             mediaPlayerComponent = new EmbeddedMediaPlayerComponent();
             mediaPlayer = mediaPlayerComponent.getMediaPlayer();
             panel.add(mediaPlayerComponent, BorderLayout.CENTER);
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            // UnsatisfiedLinkError extends Error，不是 Exception
             LogUtil.error("[VideoPlayerPanel] VLCJ 组件初始化失败: " + e.getMessage());
             vlcUsable = false;
             return createUnavailablePanel();

@@ -59,7 +59,8 @@ public final class VlcUtil {
             NativeDiscovery discovery = new NativeDiscovery();
             vlcAvailable = discovery.discover();
             LogUtil.info("[VlcUtil] NativeDiscovery 结果: " + vlcAvailable);
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            // UnsatisfiedLinkError extends Error，不是 Exception，必须用 Throwable 兜底
             LogUtil.info("[VlcUtil] NativeDiscovery 异常: " + e.getMessage());
             vlcAvailable = false;
         }
@@ -88,7 +89,8 @@ public final class VlcUtil {
             NativeLibrary.getInstance("vlc");
             LogUtil.info("[VlcUtil] 手动加载 libvlc 成功");
             return true;
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            // UnsatisfiedLinkError extends Error, not Exception
             LogUtil.info("[VlcUtil] 手动加载 libvlc 失败: " + e.getMessage());
             return false;
         }
@@ -114,7 +116,7 @@ public final class VlcUtil {
             NativeLibrary lib = NativeLibrary.getInstance("vlc");
             vlcVersion = lib.toString();
             LogUtil.info("[VlcUtil] VLC 版本: " + vlcVersion);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             vlcVersion = "未知版本";
         }
 
