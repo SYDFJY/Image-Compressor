@@ -58,6 +58,9 @@ public class VideoParamPanel extends JPanel {
     private final List<VariantRow> variantRows = new ArrayList<>();
     private static final int MAX_VARIANTS = 20;
 
+    /** 变体行变动回调（通知 MainController 刷新按钮文字） */
+    private Runnable onVariantChanged;
+
     // ==================== 下拉选项映射 ====================
 
     private static final String[] RESOLUTION_OPTIONS = {"原始", "480p", "720p", "1080p", "4K"};
@@ -334,6 +337,7 @@ public class VideoParamPanel extends JPanel {
         VideoCompressConfig.VideoFormat[] formats = VideoCompressConfig.VideoFormat.values();
         config.setOutputFormat(formats[getOutputFormatIndex()]);
 
+        config.setSuffix(config.buildDynamicSuffix());
         config.setOverwrite(isOverwrite());
         return config;
     }
@@ -385,6 +389,9 @@ public class VideoParamPanel extends JPanel {
 
     /** 批量模式复选框（供 Controller 绑定事件） */
     public JCheckBox getBatchModeCheckBox() { return batchModeCheckBox; }
+
+    /** 设置变体行变动回调（Controller 用于刷新按钮文字） */
+    public void setOnVariantChanged(Runnable callback) { this.onVariantChanged = callback; }
 
     // ==================== 批量导出 API ====================
 
@@ -440,7 +447,8 @@ public class VideoParamPanel extends JPanel {
             if (on && variantRows.isEmpty()) {
                 addVariant(); // 默认添加一行
             }
-            updateCompressButtonText(0);
+            // 按钮文字由 MainController.updateVideoCompressButtonState() 负责更新
+            // （MainController 在 batchModeCheckBox 上注册了第二个监听器，持有实际文件数）
         });
         batchSectionPanel.add(batchModeCheckBox, BorderLayout.NORTH);
 
@@ -497,6 +505,7 @@ public class VideoParamPanel extends JPanel {
         variantListPanel.add(row);
         variantListPanel.revalidate();
         variantListPanel.repaint();
+        if (onVariantChanged != null) onVariantChanged.run();
     }
 
     /** 移除指定变体行 */
@@ -505,6 +514,7 @@ public class VideoParamPanel extends JPanel {
         variantListPanel.remove(row);
         variantListPanel.revalidate();
         variantListPanel.repaint();
+        if (onVariantChanged != null) onVariantChanged.run();
     }
 
     // ==================== 变体行内部类 ====================

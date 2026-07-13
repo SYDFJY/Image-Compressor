@@ -3,6 +3,7 @@ package com.nchu.imagecompress.service;
 import com.nchu.imagecompress.model.CompressResult;
 import com.nchu.imagecompress.model.VideoCompressConfig;
 import com.nchu.imagecompress.model.VideoFileInfo;
+import com.nchu.imagecompress.util.FileUtil;
 import com.nchu.imagecompress.util.LogUtil;
 
 import java.io.File;
@@ -50,10 +51,11 @@ public class VideoCompressService {
             }
         }
 
-        // ④ 检查是否覆盖
+        // ④ 检查是否覆盖（非覆盖模式下自动编号，与图片压缩行为一致）
         if (outputFile.exists() && !config.isOverwrite()) {
-            return CompressResult.failure(info,
-                    "输出文件已存在: " + outputFile.getName() + "（请启用覆盖或修改命名规则）");
+            String uniqueName = FileUtil.generateUniqueFilename(
+                    outputDir.getAbsolutePath(), outputFile.getName());
+            outputFile = new File(outputDir, uniqueName);
         }
 
         // ⑤ 执行 FFmpeg 压缩

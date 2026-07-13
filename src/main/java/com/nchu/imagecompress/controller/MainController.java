@@ -227,6 +227,8 @@ public class MainController implements MainControllerCallback {
         // ---- 批量模式复选框切换 → 更新按钮文案 ----
         videoParamPanel.getBatchModeCheckBox().addActionListener(e ->
                 updateVideoCompressButtonState());
+        // ---- 变体行增加/删除 → 实时刷新按钮文案 ----
+        videoParamPanel.setOnVariantChanged(this::updateVideoCompressButtonState);
 
         // ---- 视频 CRF 滑块实时更新 ----
         videoParamPanel.getCrfSlider().addChangeListener(e -> {

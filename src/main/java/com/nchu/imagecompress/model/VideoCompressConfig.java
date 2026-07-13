@@ -223,6 +223,29 @@ public class VideoCompressConfig {
     }
 
     /**
+     * 根据当前压缩参数生成描述性文件名后缀。
+     *
+     * <p>规则与 {@link VariantPreset#buildSuffix()} 一致，确保不同参数产生不同文件名。</p>
+     * <p>示例：{@code _original_origfps_crf23}、{@code _720p_30fps_crf28_noaudio_mp4}</p>
+     *
+     * @return 后缀字符串（不含扩展名）
+     */
+    public String buildDynamicSuffix() {
+        StringBuilder sb = new StringBuilder();
+        if (resolutionMode != ResolutionMode.ORIGINAL)
+            sb.append("_").append(resolutionMode.getDisplayName());
+        else sb.append("_original");
+        if (fpsMode != FpsMode.ORIGINAL)
+            sb.append("_").append(fpsMode.getFps()).append("fps");
+        else sb.append("_origfps");
+        sb.append("_crf").append(crf);
+        if (audioMode == AudioMode.REMOVE) sb.append("_noaudio");
+        if (outputFormat != VideoFormat.ORIGINAL && !outputFormat.getExtension().isEmpty())
+            sb.append("_").append(outputFormat.getExtension());
+        return sb.toString();
+    }
+
+    /**
      * 判断是否为无效压缩。
      */
     public boolean isEffectivelyNoOp() {
