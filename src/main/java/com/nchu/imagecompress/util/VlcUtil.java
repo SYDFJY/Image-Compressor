@@ -82,11 +82,20 @@ public final class VlcUtil {
             // 尝试从 jna.library.path 加载
             if (!JNA_LIBRARY_PATH.isEmpty()) {
                 File vlcDir = new File(JNA_LIBRARY_PATH);
+                if (!vlcDir.isDirectory()) {
+                    // 尝试作为绝对路径
+                    vlcDir = new File(JNA_LIBRARY_PATH);
+                }
                 if (vlcDir.isDirectory()) {
-                    NativeLibrary.addSearchPath("vlc", vlcDir.getAbsolutePath());
+                    String absPath = vlcDir.getAbsolutePath();
+                    // Windows 上 DLL 名为 libvlc.dll，JNA 的 "vlc" → vlc.dll 找不到
+                    // 必须用 "libvlc" 让 JNA 在 Windows 上查找 libvlc.dll
+                    NativeLibrary.addSearchPath("libvlc", absPath);
+                    NativeLibrary.addSearchPath("libvlccore", absPath);
+                    LogUtil.info("[VlcUtil] 添加搜索路径: " + absPath);
                 }
             }
-            NativeLibrary.getInstance("vlc");
+            NativeLibrary.getInstance("libvlc");
             LogUtil.info("[VlcUtil] 手动加载 libvlc 成功");
             return true;
         } catch (Throwable e) {

@@ -28,10 +28,16 @@ End If
 
 ' ---- 启动程序 ----
 ' -Dffmpeg.bin.path 指向捆绑的 FFmpeg 二进制目录
+' -Djava.library.path / -Djna.library.path 指向捆绑的 VLC 运行时
 ' -Xmx512m 限制最大堆内存 512MB
 ' 0 = 隐藏控制台窗口, False = 不等待进程结束
+
+' 将 VLC 目录加入 PATH（Windows DLL 加载器需要）
+Set objEnv = objShell.Environment("Process")
+objEnv("PATH") = strDir & "\vlc;" & objEnv("PATH")
+
 objShell.Run """" & strJre & """ -Dffmpeg.bin.path=""" & strFfmpeg _
-    & """ -Djna.library.path=""" & strDir & "\vlc"" -Xmx512m -jar """ & strJar & """", 0, False
+    & """ -Djna.library.path=""" & strDir & "\vlc"" -Djava.library.path=""" & strDir & "\vlc"" -Xmx512m -jar """ & strJar & """", 0, False
 
 Set objShell = Nothing
 Set objFSO   = Nothing
