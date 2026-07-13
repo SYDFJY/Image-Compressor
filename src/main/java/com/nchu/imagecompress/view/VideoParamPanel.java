@@ -512,7 +512,7 @@ public class VideoParamPanel extends JPanel {
     /**
      * 单个变体配置行。
      *
-     * <p>水平布局：{@code [Q: slider valueLabel] [分辨率: combo] [帧率: combo] [✕]}</p>
+     * <p>水平布局：{@code [Q: slider] [分辨率] [帧率] [音频] [格式] [✕]}</p>
      */
     private static class VariantRow extends JPanel {
 
@@ -520,6 +520,8 @@ public class VideoParamPanel extends JPanel {
         private final JLabel crfLabel;
         private final JComboBox<String> resolutionCombo;
         private final JComboBox<String> fpsCombo;
+        private final JComboBox<String> audioCombo;
+        private final JComboBox<String> formatCombo;
         private final JButton deleteBtn;
         private Runnable onDelete;
 
@@ -538,9 +540,23 @@ public class VideoParamPanel extends JPanel {
             VideoCompressConfig.FpsMode.FPS_30,
             VideoCompressConfig.FpsMode.FPS_60,
         };
+        private static final String[] AUDIO_ITEMS = {"保留音频", "移除音频"};
+        private static final VideoCompressConfig.AudioMode[] AUDIO_MODES = {
+            VideoCompressConfig.AudioMode.KEEP,
+            VideoCompressConfig.AudioMode.REMOVE,
+        };
+        private static final String[] FMT_ITEMS = {"保持原格式", "MP4", "WebM", "AVI", "MOV", "MKV"};
+        private static final VideoCompressConfig.VideoFormat[] FMT_MODES = {
+            VideoCompressConfig.VideoFormat.ORIGINAL,
+            VideoCompressConfig.VideoFormat.MP4,
+            VideoCompressConfig.VideoFormat.WEBM,
+            VideoCompressConfig.VideoFormat.AVI,
+            VideoCompressConfig.VideoFormat.MOV,
+            VideoCompressConfig.VideoFormat.MKV,
+        };
 
         VariantRow(int defaultCrf) {
-            setLayout(new FlowLayout(FlowLayout.LEFT, 6, 2));
+            setLayout(new FlowLayout(FlowLayout.LEFT, 4, 2));
             setOpaque(false);
             setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 
@@ -554,44 +570,39 @@ public class VideoParamPanel extends JPanel {
 
             crfSlider = new JSlider(0, 51, defaultCrf);
             crfSlider.setOpaque(false);
-            crfSlider.setPreferredSize(new Dimension(80, 24));
+            crfSlider.setPreferredSize(new Dimension(70, 24));
             crfSlider.setPaintTicks(false);
 
             crfLabel = new JLabel(String.valueOf(defaultCrf));
             crfLabel.setFont(ThemeUtil.FONT_SMALL);
             crfLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
-            crfLabel.setPreferredSize(new Dimension(24, 24));
+            crfLabel.setPreferredSize(new Dimension(22, 24));
             crfLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
             crfSlider.addChangeListener(e -> crfLabel.setText(String.valueOf(crfSlider.getValue())));
-
             crfPanel.add(crfSlider, BorderLayout.CENTER);
             crfPanel.add(crfLabel, BorderLayout.EAST);
             add(crfPanel);
 
             // --- 分辨率 ---
-            JPanel resPanel = new JPanel(new BorderLayout(2, 0));
-            resPanel.setOpaque(false);
-            JLabel rl = new JLabel("分辨率:");
-            rl.setFont(ThemeUtil.FONT_SMALL);
-            rl.setForeground(ThemeUtil.TEXT_SECONDARY);
-            resPanel.add(rl, BorderLayout.WEST);
-            resolutionCombo = new JComboBox<>(RES_ITEMS);
-            resolutionCombo.setFont(ThemeUtil.FONT_SMALL);
-            resPanel.add(resolutionCombo, BorderLayout.CENTER);
+            JPanel resPanel = labeledCombo("分辨率:", RES_ITEMS);
+            resolutionCombo = (JComboBox<String>) resPanel.getComponent(1);
             add(resPanel);
 
             // --- 帧率 ---
-            JPanel fpsPanel = new JPanel(new BorderLayout(2, 0));
-            fpsPanel.setOpaque(false);
-            JLabel fl = new JLabel("帧率:");
-            fl.setFont(ThemeUtil.FONT_SMALL);
-            fl.setForeground(ThemeUtil.TEXT_SECONDARY);
-            fpsPanel.add(fl, BorderLayout.WEST);
-            fpsCombo = new JComboBox<>(FPS_ITEMS);
-            fpsCombo.setFont(ThemeUtil.FONT_SMALL);
-            fpsPanel.add(fpsCombo, BorderLayout.CENTER);
+            JPanel fpsPanel = labeledCombo("帧率:", FPS_ITEMS);
+            fpsCombo = (JComboBox<String>) fpsPanel.getComponent(1);
             add(fpsPanel);
+
+            // --- 音频 ---
+            JPanel audPanel = labeledCombo("音频:", AUDIO_ITEMS);
+            audioCombo = (JComboBox<String>) audPanel.getComponent(1);
+            add(audPanel);
+
+            // --- 格式 ---
+            JPanel fmtPanel = labeledCombo("格式:", FMT_ITEMS);
+            formatCombo = (JComboBox<String>) fmtPanel.getComponent(1);
+            add(fmtPanel);
 
             // --- 删除按钮 ---
             deleteBtn = new JButton("✕");
@@ -608,6 +619,20 @@ public class VideoParamPanel extends JPanel {
             add(deleteBtn);
         }
 
+        /** 辅助：创建 {label + combo} 水平面板 */
+        private static JPanel labeledCombo(String label, String[] items) {
+            JPanel p = new JPanel(new BorderLayout(2, 0));
+            p.setOpaque(false);
+            JLabel l = new JLabel(label);
+            l.setFont(ThemeUtil.FONT_SMALL);
+            l.setForeground(ThemeUtil.TEXT_SECONDARY);
+            p.add(l, BorderLayout.WEST);
+            JComboBox<String> c = new JComboBox<>(items);
+            c.setFont(ThemeUtil.FONT_SMALL);
+            p.add(c, BorderLayout.CENTER);
+            return p;
+        }
+
         /** 设置删除回调（在 VariantRow 添加到列表后由外部调用） */
         void setOnDelete(Runnable onDelete) {
             this.onDelete = onDelete;
@@ -619,6 +644,8 @@ public class VideoParamPanel extends JPanel {
             preset.setCrf(crfSlider.getValue());
             preset.setResolutionMode(RES_MODES[resolutionCombo.getSelectedIndex()]);
             preset.setFpsMode(FPS_MODES[fpsCombo.getSelectedIndex()]);
+            preset.setAudioMode(AUDIO_MODES[audioCombo.getSelectedIndex()]);
+            preset.setOutputFormat(FMT_MODES[formatCombo.getSelectedIndex()]);
             return preset;
         }
     }

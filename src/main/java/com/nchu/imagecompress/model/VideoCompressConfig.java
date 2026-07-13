@@ -282,8 +282,7 @@ public class VideoCompressConfig {
     /**
      * 批量导出变体预设 — 封装单个输出变体的差异化设置。
      *
-     * <p>每个变体覆盖 resolution / fps / crf 三个维度。
-     * 音频、输出格式等沿用全局设置。</p>
+     * <p>每个变体覆盖 resolution / fps / crf / audio / format 五个维度。</p>
      *
      * @since 2026-07-13
      */
@@ -292,13 +291,18 @@ public class VideoCompressConfig {
         private ResolutionMode resolutionMode = ResolutionMode.ORIGINAL;
         private FpsMode fpsMode = FpsMode.ORIGINAL;
         private int crf = 23;
+        private AudioMode audioMode = AudioMode.KEEP;
+        private VideoFormat outputFormat = VideoFormat.ORIGINAL;
 
         public VariantPreset() {}
 
-        public VariantPreset(ResolutionMode resolutionMode, FpsMode fpsMode, int crf) {
+        public VariantPreset(ResolutionMode resolutionMode, FpsMode fpsMode, int crf,
+                            AudioMode audioMode, VideoFormat outputFormat) {
             this.resolutionMode = resolutionMode;
             this.fpsMode = fpsMode;
             this.crf = crf;
+            this.audioMode = audioMode;
+            this.outputFormat = outputFormat;
         }
 
         // ==================== Getter / Setter ====================
@@ -312,35 +316,53 @@ public class VideoCompressConfig {
         public int getCrf() { return crf; }
         public void setCrf(int crf) { this.crf = Math.max(0, Math.min(51, crf)); }
 
+        public AudioMode getAudioMode() { return audioMode; }
+        public void setAudioMode(AudioMode audioMode) { this.audioMode = audioMode; }
+
+        public VideoFormat getOutputFormat() { return outputFormat; }
+        public void setOutputFormat(VideoFormat outputFormat) { this.outputFormat = outputFormat; }
+
         // ==================== 工具方法 ====================
 
         /**
          * 生成描述性文件后缀。
          *
-         * <p>示例：{@code _480p_24fps_crf30}、{@code _original_origfps_crf23}</p>
+         * <p>示例：{@code _480p_24fps_crf30_noaudio_mp4}、
+         * {@code _original_origfps_crf23}.mp4</p>
          *
          * @return 后缀字符串（不含扩展名）
          */
         public String buildSuffix() {
             StringBuilder sb = new StringBuilder();
+            // 分辨率
             if (resolutionMode != ResolutionMode.ORIGINAL) {
                 sb.append("_").append(resolutionMode.getDisplayName());
             } else {
                 sb.append("_original");
             }
+            // 帧率
             if (fpsMode != FpsMode.ORIGINAL) {
                 sb.append("_").append(fpsMode.getFps()).append("fps");
             } else {
                 sb.append("_origfps");
             }
+            // 质量
             sb.append("_crf").append(crf);
+            // 音频（仅在移除时标注）
+            if (audioMode == AudioMode.REMOVE) {
+                sb.append("_noaudio");
+            }
+            // 格式（仅在非原始时标注）
+            if (outputFormat != VideoFormat.ORIGINAL && !outputFormat.getExtension().isEmpty()) {
+                sb.append("_").append(outputFormat.getExtension());
+            }
             return sb.toString();
         }
 
         /**
-         * 以全局配置为基础，用本变体覆盖差异字段。
+         * 以全局配置为基础，用本变体覆盖全部维度。
          *
-         * @param base 全局基础配置（音频、格式、输出路径等取自此）
+         * @param base 全局基础配置（仅输出路径从 base 取）
          * @return 合并后的配置，suffix 自动设置为变体描述
          */
         public VideoCompressConfig mergeWith(VideoCompressConfig base) {
@@ -348,8 +370,8 @@ public class VideoCompressConfig {
             merged.setCrf(this.crf);
             merged.setResolutionMode(this.resolutionMode);
             merged.setFpsMode(this.fpsMode);
-            merged.setAudioMode(base.getAudioMode());
-            merged.setOutputFormat(base.getOutputFormat());
+            merged.setAudioMode(this.audioMode);
+            merged.setOutputFormat(this.outputFormat);
             merged.setOutputPath(base.getOutputPath());
             merged.setSuffix(buildSuffix());
             merged.setOverwrite(base.isOverwrite());
