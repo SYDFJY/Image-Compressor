@@ -58,6 +58,25 @@
             <version>${gson.version}</version>
         </dependency>
 
+        <!-- VLCJ — VLC 媒体播放器 Java 绑定 (3.x: 最后一个支持 Java 8 的版本) -->
+        <dependency>
+            <groupId>uk.co.caprica</groupId>
+            <artifactId>vlcj</artifactId>
+            <version>3.12.1</version>
+        </dependency>
+
+        <!-- JNA — Java Native Access (VLCJ 依赖，桥接 Java ↔ VLC 原生库) -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>5.13.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna-platform</artifactId>
+            <version>5.13.0</version>
+        </dependency>
+
         <!-- JUnit — 单元测试框架 -->
         <dependency>
             <groupId>junit</groupId>

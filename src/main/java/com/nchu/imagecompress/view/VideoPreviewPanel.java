@@ -4,10 +4,11 @@ import com.nchu.imagecompress.model.VideoFileInfo;
 import com.nchu.imagecompress.util.ThemeUtil;
 
 import javax.swing.BorderFactory;
-import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -20,28 +21,41 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 
 /**
- * 视频预览面板 — 显示视频文件信息、压缩对比浮层、播放按钮。
+ * 视频预览面板（v3 — 双 Tab 布局：预览 + 信息）。
  *
- * <p>支持两个状态：
- * <ul>
- *   <li>空状态：引导信息</li>
- *   <li>视频信息：文件元数据 +（压缩后的）对比 overlay bar + ▶ 播放按钮</li>
- * </ul>
- *
- * <p>对比数据持久化在 {@link VideoFileInfo} Model 上，不受文件列表切换影响。</p>
+ * <pre>
+ * ┌───────────────────────────────────────┐
+ * │  [ 🎬 视频预览 ]  [ 📋 视频信息 ]     │  ← JTabbedPane
+ * ├───────────────────────────────────────┤
+ * │  Tab "视频预览"：                      │
+ * │  ┌─────────────────────────────────┐  │
+ * │  │  VideoPlayerPanel              │  │
+ * │  │  (VLCJ 内嵌播放器 或 降级提示)   │  │
+ * │  └─────────────────────────────────┘  │
+ * ├───────────────────────────────────────┤
+ * │  Tab "视频信息"：                      │
+ * │  🎬 文件名                            │
+ * │  时长 / 分辨率 / 编码 / 帧率 / 大小    │
+ * │  比特率                               │
+ * └───────────────────────────────────────┘
+ * │  压缩对比浮层 (overlayBar)             │
+ * └───────────────────────────────────────┘
+ * </pre>
  *
  * @author NCHU-Student
- * @version 2.1.0
+ * @version 3.0.0
  * @since 2026-07-11
  */
 public class VideoPreviewPanel extends JPanel {
 
-    // ==================== 视图卡片 ====================
+    // ==================== 子面板 ====================
 
-    private final CardLayout cardLayout;
-    private final JPanel cardPanel;
-    private final JPanel emptyPanel;
-    private final JPanel infoPanel;
+    private final JTabbedPane tabbedPane;
+    private final VideoPlayerPanel videoPlayerPanel;
+    private final JPanel infoCardPanel;
+    private final CardLayout infoCardLayout;
+    private final JPanel infoEmptyPanel;
+    private final JPanel infoDetailPanel;
 
     // ==================== 信息面板控件 ====================
 
@@ -53,11 +67,6 @@ public class VideoPreviewPanel extends JPanel {
     private JLabel fpsLabel;
     private JLabel sizeLabel;
     private JLabel bitrateLabel;
-
-    // ==================== 播放按钮 ====================
-
-    private JButton playOriginalBtn;
-    private JButton playCompressedBtn;
 
     // ==================== 对比浮层 ====================
 
@@ -71,62 +80,63 @@ public class VideoPreviewPanel extends JPanel {
 
     private VideoFileInfo currentVideoInfo;
 
-    private static final String CARD_EMPTY = "EMPTY";
-    private static final String CARD_INFO = "INFO";
+    private static final String INFO_EMPTY = "INFO_EMPTY";
+    private static final String INFO_DETAIL = "INFO_DETAIL";
 
     public VideoPreviewPanel() {
         setLayout(new BorderLayout(0, 0));
         setBackground(ThemeUtil.BG_CARD);
-        setBorder(BorderFactory.createEmptyBorder(ThemeUtil.SPACE_LG, ThemeUtil.SPACE_LG,
-                ThemeUtil.SPACE_LG, ThemeUtil.SPACE_LG));
 
-        // === 顶部：标题 ===
-        JLabel titleLabel = new JLabel("视频信息");
-        titleLabel.setFont(ThemeUtil.FONT_TITLE);
-        titleLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, ThemeUtil.SPACE_SM, 0));
-        add(titleLabel, BorderLayout.NORTH);
+        // === Tab 页 ===
+        tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+        tabbedPane.setFont(ThemeUtil.FONT_SMALL);
+        tabbedPane.setBackground(ThemeUtil.BG_CARD);
+        tabbedPane.setForeground(ThemeUtil.TEXT_SECONDARY);
 
-        // === 中部：CardLayout 切换空状态/信息面板 ===
-        cardLayout = new CardLayout();
-        cardPanel = new JPanel(cardLayout);
-        cardPanel.setOpaque(false);
+        // Tab 1: 视频预览（VLCJ 内嵌播放器）
+        videoPlayerPanel = new VideoPlayerPanel();
+        tabbedPane.addTab("🎬 视频预览", videoPlayerPanel);
 
-        emptyPanel = createEmptyPanel();
-        infoPanel = createInfoPanel();
+        // Tab 2: 视频信息
+        infoCardLayout = new CardLayout();
+        infoCardPanel = new JPanel(infoCardLayout);
+        infoCardPanel.setOpaque(false);
 
-        cardPanel.add(emptyPanel, CARD_EMPTY);
-        cardPanel.add(infoPanel, CARD_INFO);
+        infoEmptyPanel = createInfoEmptyPanel();
+        infoDetailPanel = createInfoDetailPanel();
 
-        add(cardPanel, BorderLayout.CENTER);
+        infoCardPanel.add(infoEmptyPanel, INFO_EMPTY);
+        infoCardPanel.add(infoDetailPanel, INFO_DETAIL);
+        infoCardLayout.show(infoCardPanel, INFO_EMPTY);
+
+        tabbedPane.addTab("📋 视频信息", infoCardPanel);
+
+        add(tabbedPane, BorderLayout.CENTER);
 
         // === 底部：对比浮层（初始隐藏） ===
         overlayBar = createOverlayBar();
         overlayBar.setVisible(false);
         add(overlayBar, BorderLayout.SOUTH);
-
-        // 初始显示空状态
-        cardLayout.show(cardPanel, CARD_EMPTY);
     }
 
-    // ==================== 子面板构建 ====================
+    // ==================== 信息面板构建 ====================
 
     /**
-     * 空状态面板。
+     * 信息 Tab 空状态。
      */
-    private JPanel createEmptyPanel() {
+    private JPanel createInfoEmptyPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createEmptyBorder(40, 20, 40, 20));
+        panel.setBorder(BorderFactory.createEmptyBorder(30, 20, 30, 20));
 
         JPanel centerPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_LG));
         centerPanel.setOpaque(false);
 
-        JLabel iconLabel = new JLabel("🎬", SwingConstants.CENTER);
-        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 48));
+        JLabel iconLabel = new JLabel("📋", SwingConstants.CENTER);
+        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 36));
         centerPanel.add(iconLabel, BorderLayout.NORTH);
 
-        JLabel guideLabel = new JLabel("请选择视频文件预览", SwingConstants.CENTER);
+        JLabel guideLabel = new JLabel("请选择视频文件查看信息", SwingConstants.CENTER);
         guideLabel.setFont(ThemeUtil.FONT_BODY);
         guideLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
         centerPanel.add(guideLabel, BorderLayout.CENTER);
@@ -136,27 +146,27 @@ public class VideoPreviewPanel extends JPanel {
     }
 
     /**
-     * 视频信息面板（元数据表单 + 播放按钮）。
+     * 信息 Tab 详情面板（元数据表单，不含播放按钮）。
      */
-    private JPanel createInfoPanel() {
+    private JPanel createInfoDetailPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_MD));
         panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createEmptyBorder(
+                ThemeUtil.SPACE_MD, ThemeUtil.SPACE_LG,
+                ThemeUtil.SPACE_MD, ThemeUtil.SPACE_LG));
 
-        // --- 头部：🎬 图标 + 文件名 + [▶ 播放] ---
+        // --- 头部：🎬 图标 + 文件名 ---
         JPanel headerPanel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
         headerPanel.setOpaque(false);
 
         videoIconLabel = new JLabel("🎬");
-        videoIconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 32));
+        videoIconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
         headerPanel.add(videoIconLabel, BorderLayout.WEST);
 
         fileNameLabel = new JLabel();
         fileNameLabel.setFont(ThemeUtil.FONT_TITLE);
         fileNameLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
         headerPanel.add(fileNameLabel, BorderLayout.CENTER);
-
-        playOriginalBtn = createPlayButton("▶ 播放", "播放原始视频");
-        headerPanel.add(playOriginalBtn, BorderLayout.EAST);
 
         panel.add(headerPanel, BorderLayout.NORTH);
 
@@ -187,24 +197,10 @@ public class VideoPreviewPanel extends JPanel {
         return panel;
     }
 
-    /**
-     * 创建播放按钮（▶ 符号 + 扁平样式）。
-     */
-    private JButton createPlayButton(String text, String tooltip) {
-        JButton btn = new JButton(text);
-        btn.setFont(ThemeUtil.FONT_SMALL);
-        btn.setToolTipText(tooltip);
-        btn.setFocusPainted(false);
-        btn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
-        btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-        return btn;
-    }
+    // ==================== 对比浮层 ====================
 
     /**
      * 创建持久化对比浮层（样式对齐 PreviewPanel.overlayBar）。
-     *
-     * <p>4 列布局：原始大小 | 压缩后 | 压缩率 | 比特率变化，
-     * 压缩后列内嵌一个小 ▶ 播放按钮。</p>
      */
     private JPanel createOverlayBar() {
         JPanel bar = new JPanel(new BorderLayout()) {
@@ -238,24 +234,17 @@ public class VideoPreviewPanel extends JPanel {
         dataRow.add(createDataItem("原始大小", "—"));
         origSizeValue = (JLabel) ((JPanel) dataRow.getComponent(0)).getComponent(1);
 
-        // 列 2：压缩后 + 播放按钮
-        JPanel compCol = new JPanel(new BorderLayout(4, 0));
+        // 列 2：压缩后
+        JPanel compCol = new JPanel(new GridLayout(2, 1));
         compCol.setOpaque(false);
-        JPanel compLabels = new JPanel(new GridLayout(2, 1));
-        compLabels.setOpaque(false);
         JLabel compTitle = new JLabel("压缩后");
         compTitle.setFont(ThemeUtil.FONT_SMALL);
         compTitle.setForeground(ThemeUtil.TEXT_SECONDARY);
-        compLabels.add(compTitle);
+        compCol.add(compTitle);
         compSizeValue = new JLabel("—");
         compSizeValue.setFont(ThemeUtil.FONT_BODY);
         compSizeValue.setForeground(ThemeUtil.TEXT_PRIMARY);
-        compLabels.add(compSizeValue);
-
-        compCol.add(compLabels, BorderLayout.CENTER);
-        playCompressedBtn = createPlayButton("▶", "播放压缩后视频");
-        playCompressedBtn.setVisible(false);
-        compCol.add(playCompressedBtn, BorderLayout.EAST);
+        compCol.add(compSizeValue);
         dataRow.add(compCol);
 
         // 列 3：压缩率
@@ -273,7 +262,7 @@ public class VideoPreviewPanel extends JPanel {
     }
 
     /**
-     * 创建 overlay bar 中的单列数据项（标签在上，值在下）。
+     * 创建 overlay bar 中的单列数据项。
      */
     private JPanel createDataItem(String label, String value) {
         JPanel item = new JPanel(new GridLayout(2, 1));
@@ -321,7 +310,7 @@ public class VideoPreviewPanel extends JPanel {
     // ==================== 公共方法 ====================
 
     /**
-     * 显示视频文件信息。
+     * 显示视频文件信息并自动开始播放。
      * 自动检测 Model 上是否已有压缩数据，有则展示 overlay bar。
      */
     public void showVideoInfo(VideoFileInfo info) {
@@ -332,7 +321,7 @@ public class VideoPreviewPanel extends JPanel {
 
         this.currentVideoInfo = info;
 
-        // 填充元数据
+        // --- 填充信息 Tab 的元数据 ---
         fileNameLabel.setText(info.getFileName());
         durationLabel.setText(info.getFullDurationString());
         resolutionLabel.setText(info.getWidth() > 0
@@ -343,51 +332,45 @@ public class VideoPreviewPanel extends JPanel {
         bitrateLabel.setText(info.getBitrate() > 0
                 ? formatBitrate(info.getBitrate()) : "未知");
 
-        // 根据 Model 是否有压缩数据，展示/隐藏 overlay bar
+        infoCardLayout.show(infoCardPanel, INFO_DETAIL);
+
+        // --- 自动加载到播放器（切换到预览 Tab） ---
+        if (info.getSourceFile() != null && info.getSourceFile().exists()) {
+            videoPlayerPanel.play(info.getSourceFile());
+            tabbedPane.setSelectedIndex(0); // 切换到预览 Tab
+        }
+
+        // --- 根据 Model 是否有压缩数据，展示/隐藏 overlay bar ---
         if (info.hasCompressedData()) {
             refreshOverlayBar(info);
             overlayBar.setVisible(true);
-            playCompressedBtn.setVisible(info.getCompressedPath() != null
-                    && !info.getCompressedPath().isEmpty());
         } else {
             overlayBar.setVisible(false);
-            playCompressedBtn.setVisible(false);
         }
-
-        cardLayout.show(cardPanel, CARD_INFO);
     }
 
     /**
-     * 显示压缩结果（Controller 在压缩完成后调用）。
-     * 将压缩数据写入 Model 并刷新 overlay bar。
+     * 显示压缩结果。将压缩数据写入 Model 并刷新 overlay bar。
      */
     public void showCompressionResult(VideoFileInfo info) {
         if (info == null || !info.hasCompressedData()) {
             overlayBar.setVisible(false);
-            playCompressedBtn.setVisible(false);
             return;
         }
 
         this.currentVideoInfo = info;
         refreshOverlayBar(info);
         overlayBar.setVisible(true);
-        playCompressedBtn.setVisible(info.getCompressedPath() != null
-                && !info.getCompressedPath().isEmpty());
-        cardLayout.show(cardPanel, CARD_INFO);
     }
 
     /**
      * 刷新 overlay bar 数据。
      */
     private void refreshOverlayBar(VideoFileInfo info) {
-        // 原始大小
         origSizeValue.setText(VideoFileInfo.formatFileSize(info.getOriginalSize()));
-
-        // 压缩后大小
         compSizeValue.setText(VideoFileInfo.formatFileSize(info.getCompressedSize()));
         compSizeValue.setForeground(ThemeUtil.TEXT_PRIMARY);
 
-        // 压缩率（条件着色）
         double ratio = info.getCompressionRatio();
         if (ratio >= 0) {
             ratioValue.setText(String.format("−%.1f%%", ratio));
@@ -397,7 +380,6 @@ public class VideoPreviewPanel extends JPanel {
             ratioValue.setForeground(ThemeUtil.TEXT_TERTIARY);
         }
 
-        // 比特率变化
         if (info.getBitrate() > 0 && info.getCompressedBitrate() > 0) {
             bitrateChangeValue.setText(formatBitrate(info.getBitrate())
                     + " → " + formatBitrate(info.getCompressedBitrate()));
@@ -412,41 +394,42 @@ public class VideoPreviewPanel extends JPanel {
     }
 
     /**
-     * 清空预览。
+     * 清空预览（停止播放 + 清空信息）。
      */
     public void clearPreview() {
         currentVideoInfo = null;
+        videoPlayerPanel.stop();
         overlayBar.setVisible(false);
-        playCompressedBtn.setVisible(false);
-        cardLayout.show(cardPanel, CARD_EMPTY);
+        infoCardLayout.show(infoCardPanel, INFO_EMPTY);
     }
 
-    // ==================== Getter（供 Controller 绑定事件） ====================
+    // ==================== Getter（供 Controller 使用） ====================
 
-    /** 获取「播放原始视频」按钮 */
-    public JButton getPlayOriginalButton() { return playOriginalBtn; }
-
-    /** 获取「播放压缩后视频」按钮 */
-    public JButton getPlayCompressedButton() { return playCompressedBtn; }
+    /** 获取内嵌视频播放器面板 */
+    public VideoPlayerPanel getVideoPlayerPanel() {
+        return videoPlayerPanel;
+    }
 
     /** 获取当前选中的视频信息 */
-    public VideoFileInfo getCurrentVideoInfo() { return currentVideoInfo; }
+    public VideoFileInfo getCurrentVideoInfo() {
+        return currentVideoInfo;
+    }
+
+    /**
+     * 释放资源（应用退出时调用）。
+     */
+    public void release() {
+        videoPlayerPanel.release();
+    }
 
     // ==================== 工具方法 ====================
 
-    /**
-     * 根据压缩率返回对应颜色。
-     * 对齐 PreviewPanel 的条件着色逻辑：>30% 绿色，>10% 蓝色，其余灰色。
-     */
     private static Color getRatioColor(double ratio) {
-        if (ratio > 30) return ThemeUtil.SUCCESS;        // 绿色：节省 30% 以上
-        if (ratio > 10) return ThemeUtil.PRIMARY;        // 蓝色：节省 10%-30%
-        return ThemeUtil.TEXT_TERTIARY;                   // 灰色：节省不足 10%
+        if (ratio > 30) return ThemeUtil.SUCCESS;
+        if (ratio > 10) return ThemeUtil.PRIMARY;
+        return ThemeUtil.TEXT_TERTIARY;
     }
 
-    /**
-     * 格式化比特率。
-     */
     private static String formatBitrate(long bps) {
         if (bps < 1000) return bps + " bps";
         double kbps = bps / 1000.0;

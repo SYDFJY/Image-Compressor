@@ -284,19 +284,6 @@ public class MainController implements MainControllerCallback {
         // 当文件列表变化时自动触发智能推荐提示
         // （在 addFilesToList 中触发）
 
-        // ---- 视频播放按钮 ----
-        videoPreviewPanel.getPlayOriginalButton().addActionListener(e -> {
-            if (videoPreviewPanel.getCurrentVideoInfo() != null) {
-                onPlayOriginalVideo(videoPreviewPanel.getCurrentVideoInfo());
-            }
-        });
-        videoPreviewPanel.getPlayCompressedButton().addActionListener(e -> {
-            VideoFileInfo info = videoPreviewPanel.getCurrentVideoInfo();
-            if (info != null && info.hasCompressedData()) {
-                onPlayCompressedVideo(info);
-            }
-        });
-
         LogUtil.info("[MainController] 事件绑定完成（含右键菜单、Delete 快捷键）");
     }
 
@@ -802,6 +789,9 @@ public class MainController implements MainControllerCallback {
         // 刷新主窗口中的自定义绘制组件
         mainFrame.repaint();
 
+        // 更新主题按钮文字
+        mainFrame.updateThemeButtonText(theme);
+
         ToastNotification.info("已切换至 " + theme.getDisplayName());
         LogUtil.info("[MainController] 主题已切换: " + theme.getDisplayName());
     }
@@ -882,6 +872,9 @@ public class MainController implements MainControllerCallback {
 
         // 关闭 ffplay 播放进程
         killFfplayProcess();
+
+        // 释放 VLCJ 内嵌播放器资源
+        videoPreviewPanel.release();
 
         // 检查是否有运行中的任务
         if (currentWorker != null && !currentWorker.isDone()
@@ -1279,6 +1272,9 @@ public class MainController implements MainControllerCallback {
             updateVideoCompressButtonState();
             statusBar.setStatus("视频模式 — 请导入视频文件", "ready");
         } else {
+            // 切换到图片模式 → 先停止视频播放
+            videoPreviewPanel.clearPreview();
+
             // 切换回图片模式
             mainFrame.switchCompressMode("IMAGE");
             // 同步 fileListPanel：清空视频列表（图片列表由用户重新导入或已在内存中）
@@ -1647,7 +1643,12 @@ public class MainController implements MainControllerCallback {
             ToastNotification.error("视频文件不存在");
             return;
         }
-        playVideoFile(info.getSourceFile());
+        // 优先使用内嵌播放器（VLCJ），不可用时降级为外部 ffplay
+        if (videoPreviewPanel.getVideoPlayerPanel().isVlcUsable()) {
+            videoPreviewPanel.showVideoInfo(info); // 显示信息 + 自动播放
+        } else {
+            playVideoFile(info.getSourceFile());
+        }
     }
 
     /**
@@ -1663,7 +1664,12 @@ public class MainController implements MainControllerCallback {
             ToastNotification.error("压缩视频文件已被删除或移动");
             return;
         }
-        playVideoFile(compressedFile);
+        // 优先使用内嵌播放器（VLCJ），不可用时降级为外部 ffplay
+        if (videoPreviewPanel.getVideoPlayerPanel().isVlcUsable()) {
+            videoPreviewPanel.getVideoPlayerPanel().play(compressedFile);
+        } else {
+            playVideoFile(compressedFile);
+        }
     }
 
     /**

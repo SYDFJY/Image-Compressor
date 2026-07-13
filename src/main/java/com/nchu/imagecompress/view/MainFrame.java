@@ -1,5 +1,6 @@
 package com.nchu.imagecompress.view;
 
+import com.nchu.imagecompress.model.Theme;
 import com.nchu.imagecompress.util.ThemeUtil;
 
 import javax.swing.BorderFactory;
@@ -232,14 +233,13 @@ public class MainFrame extends JFrame {
         modeToggleBtn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         rightPanel.add(modeToggleBtn);
 
-        themeBtn = new JButton("🎨");
-        themeBtn.setFont(new java.awt.Font("Segoe UI Emoji", java.awt.Font.PLAIN, 16));
+        themeBtn = new JButton("🎨 默认蓝调");
+        themeBtn.setFont(ThemeUtil.FONT_SMALL);
         themeBtn.setToolTipText("切换主题");
         themeBtn.setFocusPainted(false);
         themeBtn.setBackground(ThemeUtil.BG_CARD);
         themeBtn.setForeground(ThemeUtil.TEXT_SECONDARY);
-        themeBtn.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
-        themeBtn.setPreferredSize(new java.awt.Dimension(32, 32));
+        themeBtn.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         themeBtn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         rightPanel.add(themeBtn);
 
@@ -412,6 +412,15 @@ public class MainFrame extends JFrame {
      */
     public boolean isVideoMode() {
         return modeToggleBtn.isSelected();
+    }
+
+    /**
+     * 更新主题按钮文字（主题切换时由 Controller 调用）。
+     *
+     * @param theme 新主题（用于获取显示名称）
+     */
+    public void updateThemeButtonText(Theme theme) {
+        themeBtn.setText("🎨 " + theme.getDisplayName());
     }
 
     // ==================== Getter（API 兼容） ====================

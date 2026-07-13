@@ -31,7 +31,7 @@ End If
 ' -Xmx512m 限制最大堆内存 512MB
 ' 0 = 隐藏控制台窗口, False = 不等待进程结束
 objShell.Run """" & strJre & """ -Dffmpeg.bin.path=""" & strFfmpeg _
-    & """ -Xmx512m -jar """ & strJar & """", 0, False
+    & """ -Djna.library.path=""" & strDir & "\vlc"" -Xmx512m -jar """ & strJar & """", 0, False
 
 Set objShell = Nothing
 Set objFSO   = Nothing
