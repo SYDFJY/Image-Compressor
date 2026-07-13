@@ -224,6 +224,10 @@ public class MainController implements MainControllerCallback {
         videoParamPanel.getCancelButton().addActionListener(e -> onCancelCompress());
         videoParamPanel.getOutputDirButton().addActionListener(e -> onChooseVideoOutputDir());
 
+        // ---- 批量模式复选框切换 → 更新按钮文案 ----
+        videoParamPanel.getBatchModeCheckBox().addActionListener(e ->
+                updateVideoCompressButtonState());
+
         // ---- 视频 CRF 滑块实时更新 ----
         videoParamPanel.getCrfSlider().addChangeListener(e -> {
             if (!videoParamPanel.getCrfSlider().getValueIsAdjusting()) {
@@ -1397,7 +1401,23 @@ public class MainController implements MainControllerCallback {
             return;
         }
 
-        // 构建配置
+        // 批量模式分支
+        if (videoParamPanel.isBatchMode()) {
+            List<VideoCompressConfig.VariantPreset> variants = videoParamPanel.getBatchVariants();
+            if (variants.isEmpty()) {
+                ToastNotification.warning("请至少添加一个导出变体");
+                return;
+            }
+            startBatchVideoCompress(variants);
+        } else {
+            startSingleVideoCompress();
+        }
+    }
+
+    /**
+     * 单版本视频压缩（原逻辑）。
+     */
+    private void startSingleVideoCompress() {
         currentVideoConfig = videoParamPanel.buildConfig();
         currentVideoConfig.setOutputPath(getVideoOutputPath());
 
@@ -1406,7 +1426,6 @@ public class MainController implements MainControllerCallback {
         statusBar.showProgress(0, "0/" + videoFileList.size(),
                 "准备压缩 " + videoFileList.size() + " 个视频...");
 
-        // 后台线程执行
         final int total = videoFileList.size();
         currentVideoThread = new Thread(() -> {
             List<CompressResult> results = new ArrayList<>();
@@ -1427,7 +1446,6 @@ public class MainController implements MainControllerCallback {
                 final CompressResult result = videoCompressService.compress(info, currentVideoConfig);
                 results.add(result);
 
-                // 更新进度
                 final int finalI = i;
                 SwingUtilities.invokeLater(() -> {
                     statusBar.showProgress(
@@ -1439,11 +1457,87 @@ public class MainController implements MainControllerCallback {
                 });
             }
 
-            // 完成回调
             SwingUtilities.invokeLater(() -> onVideoCompressComplete(results));
         }, "VideoCompress-Thread");
         currentVideoThread.start();
         LogUtil.info("[MainController] 视频压缩任务已启动，共 " + total + " 个文件");
+    }
+
+    /**
+     * 批量多变体视频压缩。
+     *
+     * <p>外层遍历文件，内层遍历变体配置，每个(文件, 变体)组合产出一个输出。</p>
+     *
+     * @param variants 用户配置的变体列表
+     */
+    private void startBatchVideoCompress(List<VideoCompressConfig.VariantPreset> variants) {
+        // 构建基础配置（音频、格式等从全局取）
+        VideoCompressConfig baseConfig = videoParamPanel.buildConfig();
+        baseConfig.setOutputPath(getVideoOutputPath());
+        this.currentVideoConfig = baseConfig;
+
+        final int fileCount = videoFileList.size();
+        final int variantCount = variants.size();
+        final int totalOps = fileCount * variantCount;
+
+        setCompressingState(true);
+        statusBar.showProgress(0, "0/" + totalOps,
+                "批量导出 " + fileCount + " 文件 × " + variantCount + " 变体...");
+
+        currentVideoThread = new Thread(() -> {
+            List<CompressResult> results = new ArrayList<>();
+            int completed = 0;
+
+            for (int fi = 0; fi < fileCount; fi++) {
+                if (Thread.currentThread().isInterrupted()) break;
+
+                final VideoFileInfo info = videoFileList.get(fi);
+                final int fileNum = fi + 1;
+
+                for (int vi = 0; vi < variantCount; vi++) {
+                    if (Thread.currentThread().isInterrupted()) break;
+
+                    VideoCompressConfig.VariantPreset variant = variants.get(vi);
+                    VideoCompressConfig mergedConfig = variant.mergeWith(baseConfig);
+                    String variantLabel = variant.buildSuffix().replaceFirst("^_", "");
+
+                    final int current = completed;
+                    final int varNum = vi + 1;
+                    SwingUtilities.invokeLater(() -> {
+                        statusBar.showProgress(
+                                (int) ((double) current / totalOps * 100),
+                                current + "/" + totalOps,
+                                "文件 " + fileNum + "/" + fileCount
+                                        + ", 变体 " + varNum + "/" + variantCount
+                                        + " — " + info.getFileName()
+                                        + " → " + variantLabel);
+                    });
+
+                    final CompressResult result = videoCompressService.compress(info, mergedConfig);
+                    result.setVariantLabel(variantLabel);
+                    results.add(result);
+                    completed++;
+                    final int done = completed;
+
+                    final VideoFileInfo resultInfo = info;
+                    final String resultLabel = variantLabel;
+                    SwingUtilities.invokeLater(() -> {
+                        String status = result.isSuccess()
+                                ? resultInfo.getFileName() + " ✓ " + resultLabel
+                                : resultInfo.getFileName() + " ✗ " + resultLabel;
+                        statusBar.showProgress(
+                                (int) ((double) done / totalOps * 100),
+                                done + "/" + totalOps, status);
+                    });
+                }
+            }
+
+            final List<CompressResult> finalResults = results;
+            SwingUtilities.invokeLater(() -> onVideoCompressComplete(finalResults));
+        }, "VideoCompress-Batch-Thread");
+        currentVideoThread.start();
+        LogUtil.info("[MainController] 批量视频压缩已启动，共 "
+                + fileCount + " 文件 × " + variantCount + " 变体 = " + totalOps + " 个任务");
     }
 
     /**
@@ -1563,6 +1657,7 @@ public class MainController implements MainControllerCallback {
     private void updateVideoCompressButtonState() {
         boolean hasFiles = !fileListPanel.getFileList().isEmpty();
         videoParamPanel.getCompressButton().setEnabled(hasFiles);
+        videoParamPanel.updateCompressButtonText(hasFiles ? videoFileList.size() : 0);
         mainFrame.getCompressBtn().setEnabled(hasFiles);
     }
 

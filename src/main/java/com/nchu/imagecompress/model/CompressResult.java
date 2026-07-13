@@ -48,6 +48,9 @@ public class CompressResult {
     /** 处理耗时（毫秒） */
     private long elapsedMs;
 
+    /** 变体标签（批量导出模式，如 "720p_30fps_crf23"；单版本模式为 null） */
+    private String variantLabel;
+
     // ==================== 构造 ====================
 
     public CompressResult() {
@@ -190,6 +193,9 @@ public class CompressResult {
 
     public long getElapsedMs() { return elapsedMs; }
     public void setElapsedMs(long elapsedMs) { this.elapsedMs = elapsedMs; }
+
+    public String getVariantLabel() { return variantLabel; }
+    public void setVariantLabel(String variantLabel) { this.variantLabel = variantLabel; }
 
     @Override
     public String toString() {

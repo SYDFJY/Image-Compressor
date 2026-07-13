@@ -276,4 +276,89 @@ public class VideoCompressConfig {
                 + ", audio=" + audioMode
                 + ", format=" + outputFormat + "}";
     }
+
+    // ==================== 多变体批量导出 ====================
+
+    /**
+     * 批量导出变体预设 — 封装单个输出变体的差异化设置。
+     *
+     * <p>每个变体覆盖 resolution / fps / crf 三个维度。
+     * 音频、输出格式等沿用全局设置。</p>
+     *
+     * @since 2026-07-13
+     */
+    public static class VariantPreset {
+
+        private ResolutionMode resolutionMode = ResolutionMode.ORIGINAL;
+        private FpsMode fpsMode = FpsMode.ORIGINAL;
+        private int crf = 23;
+
+        public VariantPreset() {}
+
+        public VariantPreset(ResolutionMode resolutionMode, FpsMode fpsMode, int crf) {
+            this.resolutionMode = resolutionMode;
+            this.fpsMode = fpsMode;
+            this.crf = crf;
+        }
+
+        // ==================== Getter / Setter ====================
+
+        public ResolutionMode getResolutionMode() { return resolutionMode; }
+        public void setResolutionMode(ResolutionMode resolutionMode) { this.resolutionMode = resolutionMode; }
+
+        public FpsMode getFpsMode() { return fpsMode; }
+        public void setFpsMode(FpsMode fpsMode) { this.fpsMode = fpsMode; }
+
+        public int getCrf() { return crf; }
+        public void setCrf(int crf) { this.crf = Math.max(0, Math.min(51, crf)); }
+
+        // ==================== 工具方法 ====================
+
+        /**
+         * 生成描述性文件后缀。
+         *
+         * <p>示例：{@code _480p_24fps_crf30}、{@code _original_origfps_crf23}</p>
+         *
+         * @return 后缀字符串（不含扩展名）
+         */
+        public String buildSuffix() {
+            StringBuilder sb = new StringBuilder();
+            if (resolutionMode != ResolutionMode.ORIGINAL) {
+                sb.append("_").append(resolutionMode.getDisplayName());
+            } else {
+                sb.append("_original");
+            }
+            if (fpsMode != FpsMode.ORIGINAL) {
+                sb.append("_").append(fpsMode.getFps()).append("fps");
+            } else {
+                sb.append("_origfps");
+            }
+            sb.append("_crf").append(crf);
+            return sb.toString();
+        }
+
+        /**
+         * 以全局配置为基础，用本变体覆盖差异字段。
+         *
+         * @param base 全局基础配置（音频、格式、输出路径等取自此）
+         * @return 合并后的配置，suffix 自动设置为变体描述
+         */
+        public VideoCompressConfig mergeWith(VideoCompressConfig base) {
+            VideoCompressConfig merged = new VideoCompressConfig();
+            merged.setCrf(this.crf);
+            merged.setResolutionMode(this.resolutionMode);
+            merged.setFpsMode(this.fpsMode);
+            merged.setAudioMode(base.getAudioMode());
+            merged.setOutputFormat(base.getOutputFormat());
+            merged.setOutputPath(base.getOutputPath());
+            merged.setSuffix(buildSuffix());
+            merged.setOverwrite(base.isOverwrite());
+            return merged;
+        }
+
+        @Override
+        public String toString() {
+            return "VariantPreset{" + buildSuffix().replaceFirst("^_", "") + "}";
+        }
+    }
 }

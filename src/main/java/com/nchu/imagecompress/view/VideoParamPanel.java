@@ -13,10 +13,14 @@ import javax.swing.JSlider;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 视频压缩参数面板 — 与 ParamPanel 风格一致。
@@ -44,6 +48,15 @@ public class VideoParamPanel extends JPanel {
     private JCheckBox overwriteCheckBox;
     private JButton activePresetBtn;
 
+    // ==================== 批量导出控件 ====================
+
+    private JCheckBox batchModeCheckBox;
+    private JPanel batchSectionPanel;
+    private JPanel variantListPanel;
+    private JButton addVariantButton;
+    private final List<VariantRow> variantRows = new ArrayList<>();
+    private static final int MAX_VARIANTS = 20;
+
     // ==================== 下拉选项映射 ====================
 
     private static final String[] RESOLUTION_OPTIONS = {"原始", "480p", "720p", "1080p", "4K"};
@@ -64,8 +77,12 @@ public class VideoParamPanel extends JPanel {
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, ThemeUtil.SPACE_SM, 0));
         add(titleLabel, BorderLayout.NORTH);
 
-        // === 中部：参数表单 ===
-        add(createParamForm(), BorderLayout.CENTER);
+        // === 中部：参数表单 + 批量导出区块 ===
+        JPanel centerWrapper = new JPanel(new BorderLayout(0, 0));
+        centerWrapper.setOpaque(false);
+        centerWrapper.add(createParamForm(), BorderLayout.NORTH);
+        centerWrapper.add(createBatchSection(), BorderLayout.CENTER);
+        add(centerWrapper, BorderLayout.CENTER);
 
         // === 底部：操作按钮 ===
         add(createButtonPanel(), BorderLayout.SOUTH);
@@ -364,4 +381,240 @@ public class VideoParamPanel extends JPanel {
     public JComboBox<String> getAudioCombo() { return audioCombo; }
     public JComboBox<String> getOutputFormatCombo() { return outputFormatCombo; }
     public JCheckBox getOverwriteCheckBox() { return overwriteCheckBox; }
+
+    /** 批量模式复选框（供 Controller 绑定事件） */
+    public JCheckBox getBatchModeCheckBox() { return batchModeCheckBox; }
+
+    // ==================== 批量导出 API ====================
+
+    /** 批量模式开关 */
+    public boolean isBatchMode() {
+        return batchModeCheckBox.isSelected();
+    }
+
+    /** 获取所有变体（批量模式下调用） */
+    public List<VideoCompressConfig.VariantPreset> getBatchVariants() {
+        List<VideoCompressConfig.VariantPreset> presets = new ArrayList<>();
+        for (VariantRow row : variantRows) {
+            presets.add(row.buildPreset());
+        }
+        return presets;
+    }
+
+    /** 变体数量（用于按钮文案动态更新） */
+    public int getBatchVariantCount() {
+        return variantRows.size();
+    }
+
+    /** 更新压缩按钮文案（批量模式 ↔ 单版本模式） */
+    public void updateCompressButtonText(int fileCount) {
+        if (isBatchMode()) {
+            int total = fileCount * variantRows.size();
+            compressButton.setText("▶  批量导出 " + total + " 个版本");
+        } else {
+            compressButton.setText("▶  开始压缩");
+        }
+    }
+
+    // ==================== 批量导出 UI 构建 ====================
+
+    /**
+     * 创建批量导出区块（复选框 + 变体列表 + 添加按钮）。
+     */
+    private JPanel createBatchSection() {
+        batchSectionPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_SM));
+        batchSectionPanel.setOpaque(false);
+        batchSectionPanel.setVisible(false);
+        batchSectionPanel.setBorder(BorderFactory.createEmptyBorder(
+                ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0));
+
+        // --- 复选框 ---
+        batchModeCheckBox = new JCheckBox("启用多版本批量导出");
+        batchModeCheckBox.setFont(ThemeUtil.FONT_BODY);
+        batchModeCheckBox.setForeground(ThemeUtil.TEXT_PRIMARY);
+        batchModeCheckBox.setOpaque(false);
+        batchModeCheckBox.addActionListener(e -> {
+            boolean on = batchModeCheckBox.isSelected();
+            batchSectionPanel.setVisible(on);
+            // 动态更新按钮文案
+            if (on && variantRows.isEmpty()) {
+                addVariant(); // 默认添加一行
+            }
+            updateCompressButtonText(0); // fileCount 由外部调用时更新
+        });
+        batchSectionPanel.add(batchModeCheckBox, BorderLayout.NORTH);
+
+        // --- 变体列表（可滚动） ---
+        variantListPanel = new JPanel();
+        variantListPanel.setLayout(new javax.swing.BoxLayout(
+                variantListPanel, javax.swing.BoxLayout.Y_AXIS));
+        variantListPanel.setOpaque(false);
+
+        JPanel scrollWrapper = new JPanel(new BorderLayout());
+        scrollWrapper.setOpaque(false);
+        scrollWrapper.add(variantListPanel, BorderLayout.NORTH);
+
+        javax.swing.JScrollPane scrollPane = new javax.swing.JScrollPane(scrollWrapper);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setPreferredSize(new Dimension(400, 180));
+        scrollPane.setHorizontalScrollBarPolicy(
+                javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        batchSectionPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // --- 添加变体按钮 ---
+        addVariantButton = new JButton("＋ 添加变体");
+        addVariantButton.setFont(ThemeUtil.FONT_SMALL);
+        addVariantButton.setFocusPainted(false);
+        addVariantButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        addVariantButton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createDashedBorder(
+                        ThemeUtil.TEXT_TERTIARY, 2.0f, 4.0f, 2.0f, true),
+                BorderFactory.createEmptyBorder(4, 12, 4, 12)));
+        addVariantButton.setBackground(ThemeUtil.BG_CARD);
+        addVariantButton.setForeground(ThemeUtil.TEXT_SECONDARY);
+        addVariantButton.addActionListener(e -> addVariant());
+        batchSectionPanel.add(addVariantButton, BorderLayout.SOUTH);
+
+        return batchSectionPanel;
+    }
+
+    /** 添加一个新变体行 */
+    private void addVariant() {
+        if (variantRows.size() >= MAX_VARIANTS) {
+            ToastNotification.warning("最多添加 " + MAX_VARIANTS + " 个变体");
+            return;
+        }
+        VariantRow row = new VariantRow(getCrf());
+        row.setOnDelete(() -> removeVariant(row));
+        variantRows.add(row);
+        variantListPanel.add(row);
+        variantListPanel.revalidate();
+        variantListPanel.repaint();
+    }
+
+    /** 移除指定变体行 */
+    private void removeVariant(VariantRow row) {
+        variantRows.remove(row);
+        variantListPanel.remove(row);
+        variantListPanel.revalidate();
+        variantListPanel.repaint();
+    }
+
+    // ==================== 变体行内部类 ====================
+
+    /**
+     * 单个变体配置行。
+     *
+     * <p>水平布局：{@code [Q: slider valueLabel] [分辨率: combo] [帧率: combo] [✕]}</p>
+     */
+    private static class VariantRow extends JPanel {
+
+        private final JSlider crfSlider;
+        private final JLabel crfLabel;
+        private final JComboBox<String> resolutionCombo;
+        private final JComboBox<String> fpsCombo;
+        private final JButton deleteBtn;
+        private Runnable onDelete;
+
+        private static final String[] RES_ITEMS = {"原始", "480p", "720p", "1080p", "4K"};
+        private static final VideoCompressConfig.ResolutionMode[] RES_MODES = {
+            VideoCompressConfig.ResolutionMode.ORIGINAL,
+            VideoCompressConfig.ResolutionMode.R480P,
+            VideoCompressConfig.ResolutionMode.R720P,
+            VideoCompressConfig.ResolutionMode.R1080P,
+            VideoCompressConfig.ResolutionMode.R4K,
+        };
+        private static final String[] FPS_ITEMS = {"保持原始", "24 fps", "30 fps", "60 fps"};
+        private static final VideoCompressConfig.FpsMode[] FPS_MODES = {
+            VideoCompressConfig.FpsMode.ORIGINAL,
+            VideoCompressConfig.FpsMode.FPS_24,
+            VideoCompressConfig.FpsMode.FPS_30,
+            VideoCompressConfig.FpsMode.FPS_60,
+        };
+
+        VariantRow(int defaultCrf) {
+            setLayout(new FlowLayout(FlowLayout.LEFT, 6, 2));
+            setOpaque(false);
+            setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+
+            // --- CRF 滑块 + 标签 ---
+            JPanel crfPanel = new JPanel(new BorderLayout(2, 0));
+            crfPanel.setOpaque(false);
+            JLabel ql = new JLabel("Q:");
+            ql.setFont(ThemeUtil.FONT_SMALL);
+            ql.setForeground(ThemeUtil.TEXT_SECONDARY);
+            crfPanel.add(ql, BorderLayout.WEST);
+
+            crfSlider = new JSlider(0, 51, defaultCrf);
+            crfSlider.setOpaque(false);
+            crfSlider.setPreferredSize(new Dimension(80, 24));
+            crfSlider.setPaintTicks(false);
+
+            crfLabel = new JLabel(String.valueOf(defaultCrf));
+            crfLabel.setFont(ThemeUtil.FONT_SMALL);
+            crfLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
+            crfLabel.setPreferredSize(new Dimension(24, 24));
+            crfLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+            crfSlider.addChangeListener(e -> crfLabel.setText(String.valueOf(crfSlider.getValue())));
+
+            crfPanel.add(crfSlider, BorderLayout.CENTER);
+            crfPanel.add(crfLabel, BorderLayout.EAST);
+            add(crfPanel);
+
+            // --- 分辨率 ---
+            JPanel resPanel = new JPanel(new BorderLayout(2, 0));
+            resPanel.setOpaque(false);
+            JLabel rl = new JLabel("分辨率:");
+            rl.setFont(ThemeUtil.FONT_SMALL);
+            rl.setForeground(ThemeUtil.TEXT_SECONDARY);
+            resPanel.add(rl, BorderLayout.WEST);
+            resolutionCombo = new JComboBox<>(RES_ITEMS);
+            resolutionCombo.setFont(ThemeUtil.FONT_SMALL);
+            resPanel.add(resolutionCombo, BorderLayout.CENTER);
+            add(resPanel);
+
+            // --- 帧率 ---
+            JPanel fpsPanel = new JPanel(new BorderLayout(2, 0));
+            fpsPanel.setOpaque(false);
+            JLabel fl = new JLabel("帧率:");
+            fl.setFont(ThemeUtil.FONT_SMALL);
+            fl.setForeground(ThemeUtil.TEXT_SECONDARY);
+            fpsPanel.add(fl, BorderLayout.WEST);
+            fpsCombo = new JComboBox<>(FPS_ITEMS);
+            fpsCombo.setFont(ThemeUtil.FONT_SMALL);
+            fpsPanel.add(fpsCombo, BorderLayout.CENTER);
+            add(fpsPanel);
+
+            // --- 删除按钮 ---
+            deleteBtn = new JButton("✕");
+            deleteBtn.setFont(new Font("Dialog", Font.PLAIN, 10));
+            deleteBtn.setFocusPainted(false);
+            deleteBtn.setPreferredSize(new Dimension(24, 24));
+            deleteBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            deleteBtn.setForeground(ThemeUtil.ERROR);
+            deleteBtn.setBorder(BorderFactory.createEmptyBorder());
+            deleteBtn.setContentAreaFilled(false);
+            deleteBtn.addActionListener(e -> {
+                if (onDelete != null) onDelete.run();
+            });
+            add(deleteBtn);
+        }
+
+        /** 设置删除回调（在 VariantRow 添加到列表后由外部调用） */
+        void setOnDelete(Runnable onDelete) {
+            this.onDelete = onDelete;
+        }
+
+        /** 从 UI 控件构建 VariantPreset */
+        VideoCompressConfig.VariantPreset buildPreset() {
+            VideoCompressConfig.VariantPreset preset = new VideoCompressConfig.VariantPreset();
+            preset.setCrf(crfSlider.getValue());
+            preset.setResolutionMode(RES_MODES[resolutionCombo.getSelectedIndex()]);
+            preset.setFpsMode(FPS_MODES[fpsCombo.getSelectedIndex()]);
+            return preset;
+        }
+    }
 }
