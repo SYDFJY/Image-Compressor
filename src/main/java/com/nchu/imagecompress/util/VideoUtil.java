@@ -202,7 +202,27 @@ public final class VideoUtil {
         ProcessBuilder pb = new ProcessBuilder(args);
         pb.redirectErrorStream(true);
         LogUtil.info("[VideoUtil] 启动 ffplay: " + String.join(" ", args));
-        return pb.start();
+
+        Process process = pb.start();
+
+        // 排空 stdout（防止管道缓冲区满导致 ffplay 阻塞 → waitFor 死锁）
+        // 与 VideoCompressUtil.executeCompress() 中的 stdout drainer 原理相同
+        // JDK 8 无 Redirect.DISCARD，必须用守护线程手动排空
+        final Process finalProcess = process;
+        Thread drainer = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    byte[] buf = new byte[4096];
+                    java.io.InputStream is = finalProcess.getInputStream();
+                    while (is.read(buf) != -1) { /* drain silently */ }
+                } catch (IOException ignored) { /* process terminated */ }
+            }
+        }, "FFplay-Stdout-Drainer");
+        drainer.setDaemon(true);
+        drainer.start();
+
+        return process;
     }
 
     // ==================== 格式支持检测 ====================
