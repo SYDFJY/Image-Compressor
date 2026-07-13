@@ -122,7 +122,7 @@ public final class VlcUtil {
 
         try {
             // 通过 JNA 读取 libvlc 版本
-            NativeLibrary lib = NativeLibrary.getInstance("vlc");
+            NativeLibrary lib = NativeLibrary.getInstance("libvlc");
             vlcVersion = lib.toString();
             LogUtil.info("[VlcUtil] VLC 版本: " + vlcVersion);
         } catch (Throwable e) {
