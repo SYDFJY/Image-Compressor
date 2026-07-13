@@ -1643,8 +1643,9 @@ public class MainController implements MainControllerCallback {
             ToastNotification.error("视频文件不存在");
             return;
         }
-        // 优先使用内嵌播放器（VLCJ），不可用时降级为外部 ffplay
-        if (videoPreviewPanel.getVideoPlayerPanel().isVlcUsable()) {
+        // 优先使用内嵌播放器（VLCJ → ffmpeg 降级），都不行才用外部 ffplay
+        if (videoPreviewPanel.getVideoPlayerPanel().isVlcUsable()
+                || VideoUtil.checkFfmpegAvailable()) {
             videoPreviewPanel.showVideoInfo(info); // 显示信息 + 自动播放
         } else {
             playVideoFile(info.getSourceFile());
@@ -1664,8 +1665,9 @@ public class MainController implements MainControllerCallback {
             ToastNotification.error("压缩视频文件已被删除或移动");
             return;
         }
-        // 优先使用内嵌播放器（VLCJ），不可用时降级为外部 ffplay
-        if (videoPreviewPanel.getVideoPlayerPanel().isVlcUsable()) {
+        // 优先使用内嵌播放器（VLCJ → ffmpeg 降级），都不行才用外部 ffplay
+        if (videoPreviewPanel.getVideoPlayerPanel().isVlcUsable()
+                || VideoUtil.checkFfmpegAvailable()) {
             videoPreviewPanel.getVideoPlayerPanel().play(compressedFile);
         } else {
             playVideoFile(compressedFile);

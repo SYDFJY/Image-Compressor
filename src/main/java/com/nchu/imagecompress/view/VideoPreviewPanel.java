@@ -336,7 +336,7 @@ public class VideoPreviewPanel extends JPanel {
 
         // --- 自动加载到播放器（切换到预览 Tab） ---
         if (info.getSourceFile() != null && info.getSourceFile().exists()) {
-            videoPlayerPanel.play(info.getSourceFile());
+            videoPlayerPanel.play(info);  // 传递完整 VideoFileInfo，含 fps/分辨率
             tabbedPane.setSelectedIndex(0); // 切换到预览 Tab
         }
 

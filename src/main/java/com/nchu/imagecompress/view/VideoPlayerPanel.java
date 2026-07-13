@@ -1,7 +1,9 @@
 package com.nchu.imagecompress.view;
 
+import com.nchu.imagecompress.model.VideoFileInfo;
 import com.nchu.imagecompress.util.LogUtil;
 import com.nchu.imagecompress.util.ThemeUtil;
+import com.nchu.imagecompress.util.VideoUtil;
 import com.nchu.imagecompress.util.VlcUtil;
 import uk.co.caprica.vlcj.component.EmbeddedMediaPlayerComponent;
 import uk.co.caprica.vlcj.player.MediaPlayer;
@@ -51,6 +53,7 @@ public class VideoPlayerPanel extends JPanel {
 
     private static final String CARD_EMPTY = "EMPTY";
     private static final String CARD_PLAYER = "PLAYER";
+    private static final String CARD_FFMPEG = "FFMPEG";
     private static final String CARD_UNAVAILABLE = "UNAVAILABLE";
 
     private final CardLayout cardLayout;
@@ -60,6 +63,10 @@ public class VideoPlayerPanel extends JPanel {
 
     private EmbeddedMediaPlayerComponent mediaPlayerComponent;
     private MediaPlayer mediaPlayer;
+
+    // ==================== ffmpeg 降级组件 ====================
+
+    private FfmpegPlayerPanel ffmpegPlayer;
 
     // ==================== 控件 ====================
 
@@ -102,6 +109,13 @@ public class VideoPlayerPanel extends JPanel {
         if (vlcUsable) {
             JPanel playerPanel = createPlayerPanel();
             cardPanel.add(playerPanel, CARD_PLAYER);
+        } else if (VideoUtil.checkFfmpegAvailable()) {
+            // ffmpeg 降级：创建 ffmpeg 帧渲染面板 + 保留不可用兜底
+            ffmpegPlayer = new FfmpegPlayerPanel();
+            cardPanel.add(ffmpegPlayer, CARD_FFMPEG);
+            JPanel unavailablePanel = createUnavailablePanel();
+            cardPanel.add(unavailablePanel, CARD_UNAVAILABLE);
+            LogUtil.info("[VideoPlayerPanel] 使用 ffmpeg 降级播放引擎");
         } else {
             JPanel unavailablePanel = createUnavailablePanel();
             cardPanel.add(unavailablePanel, CARD_UNAVAILABLE);
@@ -315,7 +329,25 @@ public class VideoPlayerPanel extends JPanel {
         }
 
         if (!vlcUsable) {
-            LogUtil.info("[VideoPlayerPanel] VLC 不可用，无法内嵌播放");
+            LogUtil.info("[VideoPlayerPanel] VLC 不可用，尝试降级引擎");
+            this.currentVideo = videoFile;
+            if (ffmpegPlayer != null) {
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        cardLayout.show(cardPanel, CARD_FFMPEG);
+                    }
+                });
+                // play(File) 没有元数据，ffmpeg 内部自行处理
+                ffmpegPlayer.play(videoFile, 0, 0, 0);
+            } else {
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        cardLayout.show(cardPanel, CARD_UNAVAILABLE);
+                    }
+                });
+            }
             return;
         }
 
@@ -375,13 +407,67 @@ public class VideoPlayerPanel extends JPanel {
     }
 
     /**
+     * 加载并自动播放视频文件（带元数据的重载版本）。
+     *
+     * <p>优先使用已有元数据（fps、分辨率），避免 ffmpeg 降级时重复探测。
+     * VLC 可用时行为与 {@link #play(File)} 相同。</p>
+     *
+     * @param info 视频文件信息（含元数据）
+     */
+    public void play(final VideoFileInfo info) {
+        if (info == null || info.getSourceFile() == null) return;
+
+        final File videoFile = info.getSourceFile();
+
+        // VLC 可用 → 走原有 VLCJ 路径
+        if (vlcUsable) {
+            play(videoFile);
+            return;
+        }
+
+        // VLC 不可用 → 走 ffmpeg 降级或显示不可用
+        if (videoFile == null || !videoFile.exists()) {
+            LogUtil.info("[VideoPlayerPanel] 视频文件不存在: " + videoFile);
+            return;
+        }
+
+        LogUtil.info("[VideoPlayerPanel] VLC 不可用，使用 ffmpeg 降级引擎");
+        this.currentVideo = videoFile;
+
+        if (ffmpegPlayer != null) {
+            final double fps = info.getFps();
+            final int w = info.getWidth();
+            final int h = info.getHeight();
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    cardLayout.show(cardPanel, CARD_FFMPEG);
+                }
+            });
+            ffmpegPlayer.play(videoFile, fps, w, h);
+        } else {
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    cardLayout.show(cardPanel, CARD_UNAVAILABLE);
+                }
+            });
+        }
+    }
+
+    /**
      * 停止播放并清空画面。
      */
     public void stop() {
+        // 停止 VLCJ
         if (mediaPlayer != null) {
             try {
                 mediaPlayer.stop();
             } catch (Exception ignored) { /* already stopped */ }
+        }
+        // 停止 ffmpeg 降级
+        if (ffmpegPlayer != null) {
+            ffmpegPlayer.stop();
         }
         isPlaying = false;
         if (syncTimer != null) {
@@ -450,9 +536,12 @@ public class VideoPlayerPanel extends JPanel {
         if (mediaPlayerComponent != null) {
             mediaPlayerComponent.release();
         }
+        if (ffmpegPlayer != null) {
+            ffmpegPlayer.release();
+        }
         mediaPlayer = null;
         mediaPlayerComponent = null;
-        LogUtil.info("[VideoPlayerPanel] VLCJ 资源已释放");
+        LogUtil.info("[VideoPlayerPanel] 播放资源已释放");
     }
 
     // ==================== 内部状态同步 ====================
