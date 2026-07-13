@@ -26,8 +26,20 @@ If objFSO.FileExists(strBundledFfmpeg) Then
     strFfmpegOpts = "-Dffmpeg.bin.path=""" & strFfmpegPath & """"
 End If
 
+' ---- 检测 VLC（优先捆绑版）----
+strVlcOpts = ""
+strBundledVlc = strDir & "\standalone\vlc\libvlc.dll"
+If objFSO.FileExists(strBundledVlc) Then
+    strVlcPath = strDir & "\standalone\vlc"
+    strVlcPlugins = strDir & "\standalone\vlc\plugins"
+    ' 设置环境变量（VLC 原生读取 VLC_PLUGIN_PATH）
+    objShell.Environment("Process")("VLC_PLUGIN_PATH") = strVlcPlugins
+    objShell.Environment("Process")("PATH") = strVlcPath & ";" & objShell.Environment("Process")("PATH")
+    strVlcOpts = " -Djna.library.path=""" & strVlcPath & """"
+End If
+
 ' ---- 静默启动（0=隐藏窗口, False=不等待）----
-objShell.Run "javaw " & strFfmpegOpts & " -Xmx512m -jar """ & strJar & """", 0, False
+objShell.Run "javaw " & strFfmpegOpts & strVlcOpts & " -Xmx512m -jar """ & strJar & """", 0, False
 
 Set objShell = Nothing
 Set objFSO   = Nothing

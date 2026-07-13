@@ -191,7 +191,23 @@ public class VideoPlayerPanel extends JPanel {
 
         // --- VLCJ 画布（视频渲染区） ---
         try {
-            mediaPlayerComponent = new EmbeddedMediaPlayerComponent();
+            // 探测捆绑版 VLC 插件路径，通过 --plugin-path 传给 libvlc
+            // 否则 VLC 找不到 plugins/ 目录 → 音频输出模块缺失 → 无声 + 控件异常
+            final String pluginsPath = VlcUtil.getVlcPluginsPath();
+            if (pluginsPath != null) {
+                mediaPlayerComponent = new EmbeddedMediaPlayerComponent() {
+                    @Override
+                    protected String[] onGetMediaPlayerFactoryArgs() {
+                        return new String[] {
+                                "--plugin-path=" + pluginsPath,
+                                "--no-video-title-show"
+                        };
+                    }
+                };
+                LogUtil.info("[VideoPlayerPanel] 使用捆绑版 VLC 插件: " + pluginsPath);
+            } else {
+                mediaPlayerComponent = new EmbeddedMediaPlayerComponent();
+            }
             mediaPlayer = mediaPlayerComponent.getMediaPlayer();
             panel.add(mediaPlayerComponent, BorderLayout.CENTER);
         } catch (Throwable e) {

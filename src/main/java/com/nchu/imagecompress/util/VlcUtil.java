@@ -39,6 +39,12 @@ public final class VlcUtil {
     /** 通过系统属性 jna.library.path 自定义 VLC 原生库路径 */
     private static final String JNA_LIBRARY_PATH = System.getProperty("jna.library.path", "");
 
+    /** 捆绑版 VLC 目录路径（自动探测结果缓存） */
+    private static String bundledVlcDir = null;
+
+    /** 捆绑版 VLC 插件目录路径（供 VideoPlayerPanel 传入 --plugin-path） */
+    private static String bundledVlcPluginsPath = null;
+
     // ==================== 环境检测 ====================
 
     /**
@@ -63,6 +69,20 @@ public final class VlcUtil {
             // UnsatisfiedLinkError extends Error，不是 Exception，必须用 Throwable 兜底
             LogUtil.info("[VlcUtil] NativeDiscovery 异常: " + e.getMessage());
             vlcAvailable = false;
+        }
+
+        // 方式 1.5：始终探测捆绑版 VLC，获取插件路径供 MediaPlayerFactory 使用
+        String bundledPath = findBundledVlc();
+        if (bundledPath != null) {
+            if (!vlcAvailable) {
+                NativeLibrary.addSearchPath("libvlc", bundledPath);
+                NativeLibrary.addSearchPath("libvlccore", bundledPath);
+            }
+            File pluginsDir = new File(bundledPath, "plugins");
+            if (pluginsDir.isDirectory()) {
+                bundledVlcPluginsPath = pluginsDir.getAbsolutePath();
+                LogUtil.info("[VlcUtil] 捆绑版 VLC 插件目录: " + bundledVlcPluginsPath);
+            }
         }
 
         // 方式 2：NativeDiscovery 失败时，手动尝试加载 libvlc
@@ -106,6 +126,54 @@ public final class VlcUtil {
     }
 
     /**
+     * 自动探测应用目录下的捆绑版 VLC（standalone/vlc/）。
+     *
+     * @return 捆绑版 VLC 目录的绝对路径，未找到时返回 null
+     */
+    private static String findBundledVlc() {
+        try {
+            String jarPath = VlcUtil.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI().getPath();
+            File jarFile = new File(jarPath);
+            File jarDir = jarFile.getParentFile();
+            if (jarDir == null) return null;
+
+            File vlcDir = new File(jarDir, "standalone/vlc");
+            if (!vlcDir.isDirectory()) {
+                // 开发环境：从 target/classes 向上查找
+                File altDir = new File(jarDir.getParentFile(), "dist/standalone/vlc");
+                if (altDir.isDirectory()) vlcDir = altDir;
+                else return null;
+            }
+
+            File libvlcDll = new File(vlcDir, "libvlc.dll");
+            File libvlccoreDll = new File(vlcDir, "libvlccore.dll");
+            if (libvlcDll.exists() && libvlccoreDll.exists()) {
+                bundledVlcDir = vlcDir.getAbsolutePath();
+                LogUtil.info("[VlcUtil] 发现捆绑版 VLC: " + bundledVlcDir);
+                return bundledVlcDir;
+            }
+        } catch (Exception e) {
+            LogUtil.info("[VlcUtil] 探测捆绑版 VLC 失败: " + e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 获取捆绑版 VLC 插件目录路径。
+     *
+     * <p>供 VideoPlayerPanel 创建 MediaPlayerFactory 时传入 --plugin-path。</p>
+     *
+     * @return 插件目录绝对路径，未找到时返回 null
+     */
+    public static String getVlcPluginsPath() {
+        if (bundledVlcPluginsPath == null) {
+            checkVlcAvailable();
+        }
+        return bundledVlcPluginsPath;
+    }
+
+    /**
      * 获取 VLC 版本字符串。
      *
      * @return 版本字符串（如 "3.0.20 Vetinari"），不可用时返回 "不可用"
@@ -138,5 +206,7 @@ public final class VlcUtil {
     public static void resetVlcCheck() {
         vlcAvailable = null;
         vlcVersion = null;
+        bundledVlcDir = null;
+        bundledVlcPluginsPath = null;
     }
 }

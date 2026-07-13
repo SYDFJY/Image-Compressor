@@ -42,8 +42,21 @@ if exist "%~dp0standalone\ffmpeg\bin\ffmpeg.exe" (
     )
 )
 
+:: 检测 VLC（优先使用捆绑版，其次系统 PATH）
+set VLC_OPTS=
+if exist "%~dp0standalone\vlc\libvlc.dll" (
+    echo 检测到捆绑版 VLC（standalone\vlc\），内嵌播放功能可用
+    set "PATH=%~dp0standalone\vlc;%PATH%"
+    set VLC_PLUGIN_PATH=%~dp0standalone\vlc\plugins
+    set VLC_OPTS=-Djna.library.path="%~dp0standalone\vlc"
+    echo.
+) else (
+    echo [提示] 未检测到 VLC，内嵌视频播放功能不可用
+    echo.
+)
+
 :: 启动程序（最大堆内存 512MB）
 echo 正在启动 NCHU Compressor...
-start javaw %FFMPEG_OPTS% -Xmx512m -jar "%~dp0image-compressor-1.0.0.jar"
+start javaw %FFMPEG_OPTS% %VLC_OPTS% -Xmx512m -jar "%~dp0image-compressor-1.0.0.jar"
 
 exit /b 0
