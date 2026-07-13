@@ -52,6 +52,7 @@ public class VideoParamPanel extends JPanel {
 
     private JCheckBox batchModeCheckBox;
     private JPanel batchSectionPanel;
+    private JPanel batchContentPanel;
     private JPanel variantListPanel;
     private JButton addVariantButton;
     private final List<VariantRow> variantRows = new ArrayList<>();
@@ -419,32 +420,35 @@ public class VideoParamPanel extends JPanel {
     // ==================== 批量导出 UI 构建 ====================
 
     /**
-     * 创建批量导出区块（复选框 + 变体列表 + 添加按钮）。
+     * 创建批量导出区块（复选框始终可见，变体列表可折叠）。
      */
     private JPanel createBatchSection() {
+        // 外层容器 — 始终可见
         batchSectionPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_SM));
         batchSectionPanel.setOpaque(false);
-        batchSectionPanel.setVisible(false);
         batchSectionPanel.setBorder(BorderFactory.createEmptyBorder(
                 ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0));
 
-        // --- 复选框 ---
+        // --- 复选框（始终可见） ---
         batchModeCheckBox = new JCheckBox("启用多版本批量导出");
         batchModeCheckBox.setFont(ThemeUtil.FONT_BODY);
         batchModeCheckBox.setForeground(ThemeUtil.TEXT_PRIMARY);
         batchModeCheckBox.setOpaque(false);
         batchModeCheckBox.addActionListener(e -> {
             boolean on = batchModeCheckBox.isSelected();
-            batchSectionPanel.setVisible(on);
-            // 动态更新按钮文案
+            batchContentPanel.setVisible(on);
             if (on && variantRows.isEmpty()) {
                 addVariant(); // 默认添加一行
             }
-            updateCompressButtonText(0); // fileCount 由外部调用时更新
+            updateCompressButtonText(0);
         });
         batchSectionPanel.add(batchModeCheckBox, BorderLayout.NORTH);
 
-        // --- 变体列表（可滚动） ---
+        // --- 变体内容区（可折叠） ---
+        batchContentPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_SM));
+        batchContentPanel.setOpaque(false);
+        batchContentPanel.setVisible(false); // 默认折叠
+
         variantListPanel = new JPanel();
         variantListPanel.setLayout(new javax.swing.BoxLayout(
                 variantListPanel, javax.swing.BoxLayout.Y_AXIS));
@@ -461,9 +465,8 @@ public class VideoParamPanel extends JPanel {
         scrollPane.setPreferredSize(new Dimension(400, 180));
         scrollPane.setHorizontalScrollBarPolicy(
                 javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        batchSectionPanel.add(scrollPane, BorderLayout.CENTER);
+        batchContentPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // --- 添加变体按钮 ---
         addVariantButton = new JButton("＋ 添加变体");
         addVariantButton.setFont(ThemeUtil.FONT_SMALL);
         addVariantButton.setFocusPainted(false);
@@ -475,7 +478,9 @@ public class VideoParamPanel extends JPanel {
         addVariantButton.setBackground(ThemeUtil.BG_CARD);
         addVariantButton.setForeground(ThemeUtil.TEXT_SECONDARY);
         addVariantButton.addActionListener(e -> addVariant());
-        batchSectionPanel.add(addVariantButton, BorderLayout.SOUTH);
+        batchContentPanel.add(addVariantButton, BorderLayout.SOUTH);
+
+        batchSectionPanel.add(batchContentPanel, BorderLayout.CENTER);
 
         return batchSectionPanel;
     }
