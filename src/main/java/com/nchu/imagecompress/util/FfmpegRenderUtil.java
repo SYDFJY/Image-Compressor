@@ -39,9 +39,6 @@ public final class FfmpegRenderUtil {
     /** 预览目标宽度（像素），高度按比例缩放保持宽高比 */
     private static final int PREVIEW_WIDTH = 640;
 
-    /** 预览帧率（fps），平衡流畅度与性能 */
-    private static final int PREVIEW_FPS = 15;
-
     /** FFmpeg 二进制目录（通过系统属性 ffmpeg.bin.path 配置） */
     private static final String FFMPEG_BIN_PATH = System.getProperty("ffmpeg.bin.path", "");
 
@@ -51,8 +48,10 @@ public final class FfmpegRenderUtil {
      * 启动 ffmpeg 子进程，持续输出 raw RGB24 帧到 stdout。
      *
      * <p>ffmpeg 命令等效于：
-     * {@code ffmpeg -loglevel error -i <file> -f rawvideo -pix_fmt rgb24
-     *   -r 15 -vf scale=<w>:<h> -}</p>
+     * {@code ffmpeg -re -loglevel error -i <file> -f rawvideo -pix_fmt rgb24
+     *   -r <fps> -vf scale=<w>:<h> -}</p>
+     *
+     * <p>{@code -re} 标志确保以原生帧率读取输入，输出节奏与实时播放一致。</p>
      *
      * <p>调用方负责：
      * <ul>
@@ -62,25 +61,28 @@ public final class FfmpegRenderUtil {
      *
      * @param videoFile   视频文件
      * @param targetWidth 目标宽度（像素），高度按比例计算
+     * @param fps         目标帧率（fps），传入原始视频帧率以保持播放节奏
      * @return 已启动的 ffmpeg Process 对象
      * @throws IOException 如果 ffmpeg 无法启动
      */
-    public static Process startFrameStream(File videoFile, int targetWidth) throws IOException {
-        return startFrameStream(videoFile, targetWidth, -1, 0);
+    public static Process startFrameStream(File videoFile, int targetWidth, double fps)
+            throws IOException {
+        return startFrameStream(videoFile, targetWidth, -1, 0, fps);
     }
 
     /**
-     * 启动 ffmpeg 子进程，可指定宽高和跳帧起始时间。
+     * 启动 ffmpeg 子进程，可指定宽高、跳帧起始时间和输出帧率。
      *
      * @param videoFile   视频文件
      * @param targetWidth 目标宽度（像素），-1 表示使用原始尺寸
      * @param targetHeight 目标高度（像素），-1 表示按宽度比例计算
      * @param seekSeconds 跳转到指定秒数开始输出（0 表示从头开始）
+     * @param fps         输出帧率（fps），传入原始视频帧率以保持播放节奏
      * @return 已启动的 ffmpeg Process 对象
      * @throws IOException 如果 ffmpeg 无法启动
      */
     public static Process startFrameStream(File videoFile, int targetWidth,
-                                           int targetHeight, double seekSeconds)
+                                           int targetHeight, double seekSeconds, double fps)
             throws IOException {
         if (videoFile == null || !videoFile.exists()) {
             throw new IOException("视频文件不存在: " + videoFile);
@@ -95,6 +97,8 @@ public final class FfmpegRenderUtil {
             args.add(String.format("%.3f", seekSeconds));
         }
 
+        // -re: 以原生帧率读取输入，保证输出节奏 = 实际播放速度
+        args.add("-re");
         args.add("-loglevel");
         args.add("error");
         args.add("-i");
@@ -103,8 +107,11 @@ public final class FfmpegRenderUtil {
         args.add("rawvideo");
         args.add("-pix_fmt");
         args.add("rgb24");
+
+        // 帧率：优先使用传入的 fps，否则用默认 24
+        double outputFps = (fps > 0) ? fps : 24.0;
         args.add("-r");
-        args.add(String.valueOf(PREVIEW_FPS));
+        args.add(String.format("%.2f", outputFps));
 
         // 缩放
         if (targetWidth > 0 || targetHeight > 0) {
@@ -310,17 +317,21 @@ public final class FfmpegRenderUtil {
     }
 
     /**
-     * 获取默认预览帧率。
+     * 获取默认预览帧率（当无法获取原始帧率时的兜底值）。
      */
-    public static int getPreviewFps() {
-        return PREVIEW_FPS;
+    public static int getDefaultFps() {
+        return 24; // 电影标准帧率，通用兜底
     }
 
     /**
-     * 获取帧间隔（毫秒），用于 Timer 周期。
+     * 根据帧率计算帧间隔（毫秒），用于 Timer 周期。
+     *
+     * @param fps 目标帧率
+     * @return 帧间隔（毫秒），fps ≤ 0 时返回默认 42ms（≈24fps）
      */
-    public static int getFrameIntervalMs() {
-        return 1000 / PREVIEW_FPS; // ~66ms
+    public static int getFrameIntervalMs(double fps) {
+        if (fps <= 0) return 42; // 兜底 ~24fps
+        return (int) (1000.0 / fps);
     }
 
     // ==================== 内部工具 ====================

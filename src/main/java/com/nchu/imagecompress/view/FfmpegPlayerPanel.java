@@ -182,7 +182,9 @@ public class FfmpegPlayerPanel extends JPanel {
         this.displayWidth = size.width;
         this.displayHeight = size.height;
         this.frameSize = displayWidth * displayHeight * 3;
-        this.frameIntervalMs = FfmpegRenderUtil.getFrameIntervalMs();
+        // 使用原始视频帧率计算 Timer 间隔（fps=0 时默认 24fps）
+        double effectiveFps = (origFps > 0) ? origFps : 24.0;
+        this.frameIntervalMs = (int) (1000.0 / effectiveFps);
 
         // 切换到加载状态
         setState(State.LOADING);
@@ -203,7 +205,7 @@ public class FfmpegPlayerPanel extends JPanel {
             public void run() {
                 try {
                     ffmpegProcess = FfmpegRenderUtil.startFrameStream(
-                            videoFile, TARGET_WIDTH);
+                            videoFile, TARGET_WIDTH, effectiveFps);
                     InputStream in = ffmpegProcess.getInputStream();
 
                     // 启动渲染 Timer
