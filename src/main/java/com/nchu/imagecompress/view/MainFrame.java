@@ -419,10 +419,17 @@ public class MainFrame extends JFrame {
         paramScroll.getVerticalScrollBar().setUnitIncrement(16);
         JPanel paramCard = new CardWrapper(paramScroll);
 
-        imageRightPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_BLOCK));
+        // 垂直可拖拽分割：预览(上) | 参数(下)
+        JSplitPane rightSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+                previewCard, paramCard);
+        rightSplit.setDividerLocation(380);
+        rightSplit.setResizeWeight(0.65); // 65% 给预览
+        rightSplit.setBorder(BorderFactory.createEmptyBorder());
+        rightSplit.setOpaque(false);
+
+        imageRightPanel = new JPanel(new BorderLayout());
         imageRightPanel.setOpaque(false);
-        imageRightPanel.add(previewCard, BorderLayout.CENTER);
-        imageRightPanel.add(paramCard, BorderLayout.SOUTH);
+        imageRightPanel.add(rightSplit, BorderLayout.CENTER);
 
         // ========== 视频模式右侧面板 ==========
         videoPreviewPanel = new VideoPreviewPanel();
@@ -434,6 +441,18 @@ public class MainFrame extends JFrame {
         videoParamScroll.setBorder(BorderFactory.createEmptyBorder());
         videoParamScroll.getVerticalScrollBar().setUnitIncrement(16);
         JPanel videoParamCard = new CardWrapper(videoParamScroll);
+
+        // 垂直可拖拽分割：视频预览(上) | 参数(下)
+        JSplitPane videoRightSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+                videoPreviewCard, videoParamCard);
+        videoRightSplit.setDividerLocation(400);
+        videoRightSplit.setResizeWeight(0.60); // 60% 给预览
+        videoRightSplit.setBorder(BorderFactory.createEmptyBorder());
+        videoRightSplit.setOpaque(false);
+
+        videoRightPanel = new JPanel(new BorderLayout());
+        videoRightPanel.setOpaque(false);
+        videoRightPanel.add(videoRightSplit, BorderLayout.CENTER);
 
         videoRightPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_BLOCK));
         videoRightPanel.setOpaque(false);
