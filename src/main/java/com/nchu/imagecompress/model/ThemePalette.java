@@ -307,6 +307,21 @@ public class ThemePalette {
                 .build();
     }
 
+    /** 主题七：多巴胺暖 · 温暖活力风 */
+    public static ThemePalette dopamineWarm() {
+        return new Builder()
+                .primary(c(0xE04A60), c(0xFF7185), c(0xFF8A7A), c(0xFFA562), c(0xFFB26B))
+                .background(c(0xFFFAF7), c(0xFFFFFF), c(0xFFFBF8), c(0xFFF0EB), c(0xFFEDE4))
+                .text(c(0x2D1B1E), c(0x6B4C52), c(0xA08088))
+                .border(c(0xF5E0D3), c(0xE8CDBD))
+                .status(c(0x10B981), c(0xECFDF5), c(0xE04A60), c(0xFFF0EB), c(0xF59E0B), c(0xFFFBEB))
+                .shadow1(255, 113, 133, 20)
+                .shadow2(255, 113, 133, 25)
+                .buttonGlow(new Color(255, 141, 122, 60))
+                .segmented("B")
+                .build();
+    }
+
     /** 主题六：深海蓝调 · 藏青沉稳风 */
     public static ThemePalette deepNavy() {
         return new Builder()
