@@ -448,11 +448,6 @@ public class MainFrame extends JFrame {
         videoRightPanel.setOpaque(false);
         videoRightPanel.add(videoRightSplit, BorderLayout.CENTER);
 
-        videoRightPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_BLOCK));
-        videoRightPanel.setOpaque(false);
-        videoRightPanel.add(videoPreviewCard, BorderLayout.CENTER);
-        videoRightPanel.add(videoParamCard, BorderLayout.SOUTH);
-
         // ========== CardLayout 切换图片/视频右侧面板 ==========
         rightCardLayout = new CardLayout();
         rightCardPanel = new JPanel(rightCardLayout);
