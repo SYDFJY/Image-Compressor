@@ -13,6 +13,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
+import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
@@ -412,7 +413,11 @@ public class MainFrame extends JFrame {
         JPanel previewCard = new CardWrapper(previewPanel);
 
         paramPanel = new ParamPanel();
-        JPanel paramCard = new CardWrapper(paramPanel);
+        JScrollPane paramScroll = new JScrollPane(paramPanel);
+        paramScroll.setPreferredSize(new Dimension(0, 240));
+        paramScroll.setBorder(BorderFactory.createEmptyBorder());
+        paramScroll.getVerticalScrollBar().setUnitIncrement(16);
+        JPanel paramCard = new CardWrapper(paramScroll);
 
         imageRightPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_BLOCK));
         imageRightPanel.setOpaque(false);
@@ -424,7 +429,11 @@ public class MainFrame extends JFrame {
         JPanel videoPreviewCard = new CardWrapper(videoPreviewPanel);
 
         videoParamPanel = new VideoParamPanel();
-        JPanel videoParamCard = new CardWrapper(videoParamPanel);
+        JScrollPane videoParamScroll = new JScrollPane(videoParamPanel);
+        videoParamScroll.setPreferredSize(new Dimension(0, 280));
+        videoParamScroll.setBorder(BorderFactory.createEmptyBorder());
+        videoParamScroll.getVerticalScrollBar().setUnitIncrement(16);
+        JPanel videoParamCard = new CardWrapper(videoParamScroll);
 
         videoRightPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_BLOCK));
         videoRightPanel.setOpaque(false);
