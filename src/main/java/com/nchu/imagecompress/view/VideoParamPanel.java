@@ -111,7 +111,7 @@ public class VideoParamPanel extends JPanel {
     }
 
     /**
-     * 创建参数表单（GridBagLayout 对齐）。
+     * 创建参数表单（GridBagLayout 对齐，含视觉分组）。
      */
     private JPanel createParamForm() {
         JPanel panel = new JPanel(new GridBagLayout());
@@ -119,6 +119,9 @@ public class VideoParamPanel extends JPanel {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0);
         int row = 0;
+
+        // ==================== 画质预设组 ====================
+        addGroupHeader(panel, gbc, "🎯 画质预设", row++);
 
         // --- 视频画质 ---
         addFormLabel(panel, gbc, "视频画质", row);
@@ -157,6 +160,9 @@ public class VideoParamPanel extends JPanel {
         addFormControl(panel, gbc, presetWrapper, row);
         row++;
 
+        // ==================== 画面参数组 ====================
+        addGroupHeader(panel, gbc, "🎬 画面参数", row++);
+
         // --- 分辨率 ---
         addFormLabel(panel, gbc, "分辨率", row);
         resolutionCombo = new JComboBox<>(RESOLUTION_OPTIONS);
@@ -171,6 +177,9 @@ public class VideoParamPanel extends JPanel {
         addFormControl(panel, gbc, fpsCombo, row);
         row++;
 
+        // ==================== 音视频格式组 ====================
+        addGroupHeader(panel, gbc, "🎵 音视频格式", row++);
+
         // --- 音频 ---
         addFormLabel(panel, gbc, "音频", row);
         audioCombo = new JComboBox<>(AUDIO_OPTIONS);
@@ -184,6 +193,9 @@ public class VideoParamPanel extends JPanel {
         outputFormatCombo.setUI(new RoundedComboBoxUI());
         addFormControl(panel, gbc, outputFormatCombo, row);
         row++;
+
+        // ==================== 输出设置组 ====================
+        addGroupHeader(panel, gbc, "📂 输出设置", row++);
 
         // --- 输出目录 ---
         addFormLabel(panel, gbc, "输出目录", row);
@@ -290,6 +302,28 @@ public class VideoParamPanel extends JPanel {
     }
 
     // ==================== 表单辅助方法 ====================
+
+    /** 添加分组标题行（加粗标题 + 底部 2px 主题色分隔线，跨 2 列） */
+    private static void addGroupHeader(JPanel panel, GridBagConstraints gbc, String title, int row) {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+        headerPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 2, 0, ThemeUtil.PRIMARY),
+                BorderFactory.createEmptyBorder(ThemeUtil.SPACE_BLOCK, 0, 4, 0)));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(ThemeUtil.FONT_TITLE);
+        titleLabel.setForeground(ThemeUtil.PRIMARY);
+        headerPanel.add(titleLabel, BorderLayout.WEST);
+
+        gbc.gridy = row; gbc.gridx = 0; gbc.gridwidth = 2;
+        gbc.weightx = 1.0; gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, ThemeUtil.SPACE_SM, 0);
+        gbc.anchor = GridBagConstraints.LINE_START;
+        panel.add(headerPanel, gbc);
+        gbc.insets = new Insets(ThemeUtil.SPACE_ROW, 0, ThemeUtil.SPACE_ROW,
+                ThemeUtil.SPACE_LABEL_GAP);
+    }
 
     private static void addFormLabel(JPanel panel, GridBagConstraints gbc, String text, int row) {
         JLabel label = new JLabel(text);

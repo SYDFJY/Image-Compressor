@@ -245,7 +245,7 @@ public class MainFrame extends JFrame {
         add(toolBarPanel, BorderLayout.NORTH);
     }
 
-    /** 创建次要按钮（图标+文字，32px 高，浅底色） */
+    /** 创建次要按钮（图标+文字，32px 高，浅底色，hover 变色） */
     private JButton createSecondaryButton(String text) {
         JButton btn = new JButton(text);
         btn.setFont(ThemeUtil.FONT_BODY);
@@ -256,10 +256,31 @@ public class MainFrame extends JFrame {
                 BorderFactory.createLineBorder(ThemeUtil.BORDER, 1),
                 BorderFactory.createEmptyBorder(5, 14, 5, 14)));
         btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        // hover/press 效果
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                btn.setBackground(ThemeUtil.BG_SELECTED);
+                btn.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(ThemeUtil.PRIMARY, 1),
+                        BorderFactory.createEmptyBorder(5, 14, 5, 14)));
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                btn.setBackground(ThemeUtil.BG_HOVER);
+                btn.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(ThemeUtil.BORDER, 1),
+                        BorderFactory.createEmptyBorder(5, 14, 5, 14)));
+            }
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                btn.setBackground(ThemeUtil.PRIMARY_LIGHTEST);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent e) {
+                btn.setBackground(ThemeUtil.BG_SELECTED);
+            }
+        });
         return btn;
     }
 
-    /** 创建三级文字按钮（无边框，弱化） */
+    /** 创建三级文字按钮（无边框，弱化，hover 加深） */
     private JButton createTertiaryButton(String text) {
         JButton btn = new JButton(text);
         btn.setFont(ThemeUtil.FONT_SMALL);
@@ -269,10 +290,22 @@ public class MainFrame extends JFrame {
         btn.setForeground(ThemeUtil.TEXT_TERTIARY);
         btn.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
         btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                btn.setForeground(ThemeUtil.TEXT_PRIMARY);
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                btn.setForeground(ThemeUtil.TEXT_TERTIARY);
+            }
+        });
         return btn;
     }
 
-    /** 创建渐变主操作按钮（40px 高，渐变填充，发光投影） */
+    /** 渐变按钮 hover 状态标记 */
+    private boolean gradientBtnHovered = false;
+    private boolean gradientBtnPressed = false;
+
+    /** 创建渐变主操作按钮（40px 高，渐变填充，发光投影，hover 增强发光） */
     private JButton createGradientButton(String text) {
         JButton btn = new JButton(text) {
             @Override
@@ -283,23 +316,33 @@ public class MainFrame extends JFrame {
                 int w = getWidth();
                 int h = getHeight();
 
-                // 发光投影
+                // hover 增强发光 / press 加深
+                int glowAlpha = gradientBtnPressed ? 100 : (gradientBtnHovered ? 90 : 60);
                 java.awt.Color glow = ThemeUtil.PRIMARY_DEEP;
                 g2.setColor(new java.awt.Color(glow.getRed(), glow.getGreen(),
-                        glow.getBlue(), 60));
+                        glow.getBlue(), glowAlpha));
                 g2.fillRoundRect(2, 4, w - 4, h, ThemeUtil.ARC_BUTTON,
                         ThemeUtil.ARC_BUTTON);
 
-                // 渐变填充
-                java.awt.GradientPaint gp = new java.awt.GradientPaint(
-                        0, 0, ThemeUtil.PRIMARY_DEEP,
-                        0, h, ThemeUtil.PRIMARY);
+                // 渐变填充（press 时加深）
+                java.awt.Color top = gradientBtnPressed
+                        ? new java.awt.Color(
+                                Math.max(0, ThemeUtil.PRIMARY_DEEP.getRed() - 30),
+                                Math.max(0, ThemeUtil.PRIMARY_DEEP.getGreen() - 30),
+                                Math.max(0, ThemeUtil.PRIMARY_DEEP.getBlue() - 30))
+                        : ThemeUtil.PRIMARY_DEEP;
+                java.awt.Color bottom = gradientBtnPressed
+                        ? new java.awt.Color(
+                                Math.max(0, ThemeUtil.PRIMARY.getRed() - 20),
+                                Math.max(0, ThemeUtil.PRIMARY.getGreen() - 20),
+                                Math.max(0, ThemeUtil.PRIMARY.getBlue() - 20))
+                        : ThemeUtil.PRIMARY;
+                java.awt.GradientPaint gp = new java.awt.GradientPaint(0, 0, top, 0, h, bottom);
                 g2.setPaint(gp);
                 g2.fillRoundRect(0, 0, w, h - 2, ThemeUtil.ARC_BUTTON,
                         ThemeUtil.ARC_BUTTON);
                 g2.dispose();
 
-                // 文字（白色）
                 setForeground(java.awt.Color.WHITE);
                 super.paintComponent(g);
             }
@@ -311,7 +354,20 @@ public class MainFrame extends JFrame {
         btn.setForeground(java.awt.Color.WHITE);
         btn.setBorder(BorderFactory.createEmptyBorder(10, 24, 10, 24));
         btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-        // 注册主题变更后重绘
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                gradientBtnHovered = true; btn.repaint();
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                gradientBtnHovered = false; btn.repaint();
+            }
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                gradientBtnPressed = true; btn.repaint();
+            }
+            public void mouseReleased(java.awt.event.MouseEvent e) {
+                gradientBtnPressed = false; btn.repaint();
+            }
+        });
         ThemeUtil.addThemeChangeListener(btn::repaint);
         return btn;
     }
