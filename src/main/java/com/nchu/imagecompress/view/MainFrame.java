@@ -411,13 +411,22 @@ public class MainFrame extends JFrame {
         // ========== 图片模式右侧面板 ==========
         previewPanel = new PreviewPanel();
         JPanel previewCard = new CardWrapper(previewPanel);
+        previewCard.setMinimumSize(new Dimension(0, 60));
 
         paramPanel = new ParamPanel();
         JPanel paramCard = new CardWrapper(paramPanel);
 
+        // 参数面板包滚动条：压缩到很小时可滚动，不丢失内容
+        JScrollPane imgParamScroll = new JScrollPane(paramCard);
+        imgParamScroll.setMinimumSize(new Dimension(0, 60));
+        imgParamScroll.setBorder(BorderFactory.createEmptyBorder());
+        imgParamScroll.setOpaque(false);
+        imgParamScroll.getViewport().setOpaque(false);
+        imgParamScroll.getVerticalScrollBar().setUnitIncrement(16);
+
         // 垂直可拖拽分割：预览(上) | 参数(下)
         JSplitPane rightSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
-                previewCard, paramCard);
+                previewCard, imgParamScroll);
         rightSplit.setDividerLocation(380);
         rightSplit.setResizeWeight(0.65);
         rightSplit.setDividerSize(5);
@@ -431,13 +440,22 @@ public class MainFrame extends JFrame {
         // ========== 视频模式右侧面板 ==========
         videoPreviewPanel = new VideoPreviewPanel();
         JPanel videoPreviewCard = new CardWrapper(videoPreviewPanel);
+        videoPreviewCard.setMinimumSize(new Dimension(0, 60));
 
         videoParamPanel = new VideoParamPanel();
         JPanel videoParamCard = new CardWrapper(videoParamPanel);
 
+        // 参数面板包滚动条：压缩到很小时可滚动，不丢失内容
+        JScrollPane vidParamScroll = new JScrollPane(videoParamCard);
+        vidParamScroll.setMinimumSize(new Dimension(0, 60));
+        vidParamScroll.setBorder(BorderFactory.createEmptyBorder());
+        vidParamScroll.setOpaque(false);
+        vidParamScroll.getViewport().setOpaque(false);
+        vidParamScroll.getVerticalScrollBar().setUnitIncrement(16);
+
         // 垂直可拖拽分割：视频预览(上) | 参数(下)
         JSplitPane videoRightSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
-                videoPreviewCard, videoParamCard);
+                videoPreviewCard, vidParamScroll);
         videoRightSplit.setDividerLocation(400);
         videoRightSplit.setResizeWeight(0.60);
         videoRightSplit.setDividerSize(5);
