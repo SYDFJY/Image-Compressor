@@ -413,17 +413,14 @@ public class MainFrame extends JFrame {
         JPanel previewCard = new CardWrapper(previewPanel);
 
         paramPanel = new ParamPanel();
-        JScrollPane paramScroll = new JScrollPane(paramPanel);
-        paramScroll.setPreferredSize(new Dimension(0, 240));
-        paramScroll.setBorder(BorderFactory.createEmptyBorder());
-        paramScroll.getVerticalScrollBar().setUnitIncrement(16);
-        JPanel paramCard = new CardWrapper(paramScroll);
+        JPanel paramCard = new CardWrapper(paramPanel);
 
         // 垂直可拖拽分割：预览(上) | 参数(下)
         JSplitPane rightSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
                 previewCard, paramCard);
         rightSplit.setDividerLocation(380);
-        rightSplit.setResizeWeight(0.65); // 65% 给预览
+        rightSplit.setResizeWeight(0.65);
+        rightSplit.setDividerSize(5);
         rightSplit.setBorder(BorderFactory.createEmptyBorder());
         rightSplit.setOpaque(false);
 
@@ -436,17 +433,14 @@ public class MainFrame extends JFrame {
         JPanel videoPreviewCard = new CardWrapper(videoPreviewPanel);
 
         videoParamPanel = new VideoParamPanel();
-        JScrollPane videoParamScroll = new JScrollPane(videoParamPanel);
-        videoParamScroll.setPreferredSize(new Dimension(0, 280));
-        videoParamScroll.setBorder(BorderFactory.createEmptyBorder());
-        videoParamScroll.getVerticalScrollBar().setUnitIncrement(16);
-        JPanel videoParamCard = new CardWrapper(videoParamScroll);
+        JPanel videoParamCard = new CardWrapper(videoParamPanel);
 
         // 垂直可拖拽分割：视频预览(上) | 参数(下)
         JSplitPane videoRightSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
                 videoPreviewCard, videoParamCard);
         videoRightSplit.setDividerLocation(400);
-        videoRightSplit.setResizeWeight(0.60); // 60% 给预览
+        videoRightSplit.setResizeWeight(0.60);
+        videoRightSplit.setDividerSize(5);
         videoRightSplit.setBorder(BorderFactory.createEmptyBorder());
         videoRightSplit.setOpaque(false);
 
