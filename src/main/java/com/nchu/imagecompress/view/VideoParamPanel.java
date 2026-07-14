@@ -3,7 +3,6 @@ package com.nchu.imagecompress.view;
 import com.nchu.imagecompress.model.VideoCompressConfig;
 import com.nchu.imagecompress.util.ThemeUtil;
 import com.nchu.imagecompress.view.widget.GradientSliderUI;
-import com.nchu.imagecompress.view.widget.RoundedComboBoxUI;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -166,14 +165,12 @@ public class VideoParamPanel extends JPanel {
         // --- 分辨率 ---
         addFormLabel(panel, gbc, "分辨率", row);
         resolutionCombo = new JComboBox<>(RESOLUTION_OPTIONS);
-        resolutionCombo.setUI(new RoundedComboBoxUI());
         addFormControl(panel, gbc, resolutionCombo, row);
         row++;
 
         // --- 帧率 ---
         addFormLabel(panel, gbc, "帧率", row);
         fpsCombo = new JComboBox<>(FPS_OPTIONS);
-        fpsCombo.setUI(new RoundedComboBoxUI());
         addFormControl(panel, gbc, fpsCombo, row);
         row++;
 
@@ -183,14 +180,12 @@ public class VideoParamPanel extends JPanel {
         // --- 音频 ---
         addFormLabel(panel, gbc, "音频", row);
         audioCombo = new JComboBox<>(AUDIO_OPTIONS);
-        audioCombo.setUI(new RoundedComboBoxUI());
         addFormControl(panel, gbc, audioCombo, row);
         row++;
 
         // --- 输出格式 ---
         addFormLabel(panel, gbc, "输出格式", row);
         outputFormatCombo = new JComboBox<>(FORMAT_OPTIONS);
-        outputFormatCombo.setUI(new RoundedComboBoxUI());
         addFormControl(panel, gbc, outputFormatCombo, row);
         row++;
 

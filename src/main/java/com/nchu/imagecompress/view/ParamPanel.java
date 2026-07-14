@@ -2,8 +2,6 @@ package com.nchu.imagecompress.view;
 
 import com.nchu.imagecompress.util.ThemeUtil;
 import com.nchu.imagecompress.view.widget.GradientSliderUI;
-import com.nchu.imagecompress.view.widget.RoundedComboBoxUI;
-import com.nchu.imagecompress.view.widget.ToggleSwitch;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -164,7 +162,6 @@ public class ParamPanel extends JPanel {
         // --- 缩放模式 ---
         addFormLabel(panel, gbc, "缩放模式", row);
         scaleModeCombo = new JComboBox<>(new String[]{"不缩放", "按百分比", "按最大尺寸"});
-        scaleModeCombo.setUI(new RoundedComboBoxUI());
         addFormControl(panel, gbc, scaleModeCombo, row);
         row++;
 
@@ -177,7 +174,6 @@ public class ParamPanel extends JPanel {
         // --- 输出格式 ---
         addFormLabel(panel, gbc, "输出格式", row);
         outputFormatCombo = new JComboBox<>(new String[]{"保持原格式", "JPEG", "PNG", "BMP"});
-        outputFormatCombo.setUI(new RoundedComboBoxUI());
         addFormControl(panel, gbc, outputFormatCombo, row);
         row++;
 
@@ -198,7 +194,6 @@ public class ParamPanel extends JPanel {
 
         addFormLabel(panel, gbc, "文件命名", row);
         namingRuleCombo = new JComboBox<>(new String[]{"添加后缀 _compressed", "添加前缀 compressed_", "保持原名"});
-        namingRuleCombo.setUI(new RoundedComboBoxUI());
         addFormControl(panel, gbc, namingRuleCombo, row);
         row++;
 
