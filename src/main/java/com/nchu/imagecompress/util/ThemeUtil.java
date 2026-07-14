@@ -88,6 +88,13 @@ public final class ThemeUtil {
     public static final int SPACE_XL = ThemePalette.SPACE_XL;
     public static final int SPACE_XXL = ThemePalette.SPACE_XXL;
 
+    /** 区块外边距 (16px) — 卡片/区域之间 */
+    public static final int SPACE_BLOCK = ThemePalette.SPACE_BLOCK;
+    /** 行内间距 (8px) — 表单行垂直间距 */
+    public static final int SPACE_ROW = ThemePalette.SPACE_ROW;
+    /** 标签-控件间距 (12px) — 标签与输入控件的横向距离 */
+    public static final int SPACE_LABEL_GAP = ThemePalette.SPACE_LABEL_GAP;
+
     // ==================== 设计令牌：字体（随主题切换更新） ====================
 
     public static Font FONT_TITLE;
@@ -214,6 +221,7 @@ public final class ThemeUtil {
         UIManager.put("Panel.background", new ColorUIResource(BG_WINDOW));
 
         // 按钮
+        UIManager.put("Button.padding", new Insets(6, 14, 6, 14));  // 32px 标准高度
         UIManager.put("Button.background", new ColorUIResource(BG_CARD));
         UIManager.put("Button.foreground", new ColorUIResource(TEXT_PRIMARY));
         UIManager.put("Button.hoverBackground", new ColorUIResource(BG_HOVER));
@@ -250,11 +258,13 @@ public final class ThemeUtil {
         UIManager.put("ProgressBar.background", new ColorUIResource(BORDER));
 
         // 标签页
+        UIManager.put("TabbedPane.tabAreaBackground", new ColorUIResource(BG_CARD));
         UIManager.put("TabbedPane.selectedBackground", new ColorUIResource(BG_CARD));
         UIManager.put("TabbedPane.hoverBackground", new ColorUIResource(BG_HOVER));
         UIManager.put("TabbedPane.hoverForeground", new ColorUIResource(TEXT_PRIMARY));
         UIManager.put("TabbedPane.selectedForeground", new ColorUIResource(PRIMARY));
         UIManager.put("TabbedPane.underlineColor", new ColorUIResource(PRIMARY));
+        UIManager.put("TabbedPane.tabInsets", new Insets(6, 14, 6, 14));
 
         // 输入框
         UIManager.put("TextComponent.borderColor", new ColorUIResource(BORDER));

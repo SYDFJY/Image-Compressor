@@ -255,18 +255,18 @@ public class ParamPanel extends JPanel {
         btn.setForeground(ThemeUtil.TEXT_SECONDARY);
     }
 
-    /** 表单标签（右对齐） */
+    /** 表单标签（右对齐，加粗，主题色） */
     private static void addFormLabel(JPanel panel, GridBagConstraints gbc, String text, int row) {
         JLabel label = new JLabel(text);
-        label.setFont(ThemeUtil.FONT_BODY);
-        label.setForeground(ThemeUtil.TEXT_SECONDARY);
+        label.setFont(ThemeUtil.FONT_TITLE);
+        label.setForeground(ThemeUtil.TEXT_PRIMARY);
         label.setHorizontalAlignment(SwingConstants.RIGHT);
         gbc.gridy = row; gbc.gridx = 0;
         gbc.weightx = 0; gbc.fill = GridBagConstraints.NONE;
         gbc.gridwidth = 1;
         gbc.anchor = GridBagConstraints.LINE_END;
-        gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM,
-                ThemeUtil.SPACE_LG);
+        gbc.insets = new Insets(ThemeUtil.SPACE_ROW, 0, ThemeUtil.SPACE_ROW,
+                ThemeUtil.SPACE_LABEL_GAP);
         panel.add(label, gbc);
     }
 
@@ -277,7 +277,7 @@ public class ParamPanel extends JPanel {
         gbc.weightx = 1.0; gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.gridwidth = 1;
         gbc.anchor = GridBagConstraints.LINE_START;
-        gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0);
+        gbc.insets = new Insets(ThemeUtil.SPACE_ROW, 0, ThemeUtil.SPACE_ROW, 0);
         panel.add(comp, gbc);
     }
 

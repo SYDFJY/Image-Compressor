@@ -94,6 +94,13 @@ public class ThemePalette {
     public static final int SPACE_XL = 20;
     public static final int SPACE_XXL = 24;
 
+    /** 区块外边距 (16px) — 卡片/区域之间 */
+    public static final int SPACE_BLOCK = 16;
+    /** 行内间距 (8px) — 表单行垂直间距 */
+    public static final int SPACE_ROW = 8;
+    /** 标签-控件间距 (12px) — 标签与输入控件的横向距离 */
+    public static final int SPACE_LABEL_GAP = 12;
+
     // ==================== 私有构造 ====================
 
     private ThemePalette(Builder b) {
