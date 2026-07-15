@@ -235,33 +235,58 @@ public class PreviewCanvas extends JPanel {
     // ==================== 对比模式 ====================
 
     private void drawComparison(Graphics2D g2d, int w, int h, int availW, int availH) {
-        int halfW = (availW - 4) / 2;
+        int gap = 4;
+        int halfW = (availW - gap) / 2;
         if (halfW <= 0) return;
 
-        // 左侧：原图
-        int leftX = PADDING;
-        double scaleL = Math.min((double) halfW / image.getWidth(),
+        // 统一缩放比：取左右两侧能容纳的最小缩放值，保证两侧同步缩放
+        double scaleLeft = Math.min((double) halfW / image.getWidth(),
                 (double) availH / image.getHeight());
-        int lw = (int) (image.getWidth() * scaleL);
-        int lh = (int) (image.getHeight() * scaleL);
+        double scaleRight = Math.min((double) halfW / effectImage.getWidth(),
+                (double) availH / effectImage.getHeight());
+        double unifiedScale = Math.min(scaleLeft, scaleRight);
+
+        // 左侧：原图（居中于左半区域）
+        int lw = (int) (image.getWidth() * unifiedScale);
+        int lh = (int) (image.getHeight() * unifiedScale);
+        int leftX = PADDING + (halfW - lw) / 2;
         int ly = paddingTop + PADDING + (availH - lh) / 2;
         drawImageBorder(g2d, leftX, ly, lw, lh);
         g2d.drawImage(image, leftX, ly, lw, lh, null);
 
-        // 右侧：效果图
-        int rightX = PADDING + halfW + 4;
-        double scaleR = Math.min((double) halfW / effectImage.getWidth(),
-                (double) availH / effectImage.getHeight());
-        int rw = (int) (effectImage.getWidth() * scaleR);
-        int rh = (int) (effectImage.getHeight() * scaleR);
+        // 标签：原图（左上角半透明）
+        drawComparisonLabel(g2d, leftX, ly, "原图");
+
+        // 右侧：效果图（居中于右半区域）
+        int rw = (int) (effectImage.getWidth() * unifiedScale);
+        int rh = (int) (effectImage.getHeight() * unifiedScale);
+        int rightX = PADDING + halfW + gap + (halfW - rw) / 2;
         int ry = paddingTop + PADDING + (availH - rh) / 2;
         drawImageBorder(g2d, rightX, ry, rw, rh);
         g2d.drawImage(effectImage, rightX, ry, rw, rh, null);
 
+        // 标签：效果（左上角半透明）
+        drawComparisonLabel(g2d, rightX, ry, "效果");
+
         // 中间分隔线
+        int dividerX = PADDING + halfW + gap / 2 - 1;
+        g2d.setColor(new Color(0, 0, 0, 80));
+        g2d.fillRoundRect(dividerX, paddingTop + PADDING + 8, 2,
+                getHeight() - paddingTop - paddingBottom - PADDING * 2 - 16, 1, 1);
+    }
+
+    /**
+     * 在对比模式图片左上角绘制半透明标签。
+     */
+    private void drawComparisonLabel(Graphics2D g2d, int imgX, int imgY, String text) {
+        g2d.setFont(new Font("Microsoft YaHei", Font.PLAIN, 11));
+        FontMetrics fm = g2d.getFontMetrics();
+        int labelW = fm.stringWidth(text) + 10;
+        int labelH = fm.getHeight() + 4;
         g2d.setColor(new Color(0, 0, 0, 100));
-        g2d.fillRect(PADDING + halfW, paddingTop + PADDING, 4,
-                getHeight() - paddingTop - paddingBottom - PADDING * 2);
+        g2d.fillRoundRect(imgX + 3, imgY + 3, labelW, labelH, 4, 4);
+        g2d.setColor(Color.WHITE);
+        g2d.drawString(text, imgX + 8, imgY + 3 + fm.getAscent() + 2);
     }
 
     // ==================== 蓝色描边 ====================
