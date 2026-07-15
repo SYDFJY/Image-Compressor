@@ -2,6 +2,7 @@ package com.nchu.imagecompress.view;
 
 import com.nchu.imagecompress.model.VideoFileInfo;
 import com.nchu.imagecompress.util.ThemeUtil;
+import com.nchu.imagecompress.util.VideoUtil;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
@@ -67,6 +68,9 @@ public class VideoPreviewPanel extends JPanel {
     private JLabel fpsLabel;
     private JLabel sizeLabel;
     private JLabel bitrateLabel;
+
+    /** FFmpeg 未安装时的警告面板（初始隐藏） */
+    private JPanel ffmpegWarningPanel;
 
     // ==================== 对比浮层 ====================
 
@@ -168,7 +172,17 @@ public class VideoPreviewPanel extends JPanel {
         fileNameLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
         headerPanel.add(fileNameLabel, BorderLayout.CENTER);
 
-        panel.add(headerPanel, BorderLayout.NORTH);
+        // --- FFmpeg 未安装警告条（默认隐藏） ---
+        ffmpegWarningPanel = createFfmpegWarningPanel();
+        ffmpegWarningPanel.setVisible(false);
+
+        // 头部 + 警告 + 元数据放入同一个容器
+        JPanel topArea = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_SM));
+        topArea.setOpaque(false);
+        topArea.add(headerPanel, BorderLayout.NORTH);
+        topArea.add(ffmpegWarningPanel, BorderLayout.CENTER);
+
+        panel.add(topArea, BorderLayout.NORTH);
 
         // --- 元数据表单 ---
         JPanel metaPanel = new JPanel(new GridBagLayout());
@@ -195,6 +209,38 @@ public class VideoPreviewPanel extends JPanel {
         panel.add(metaPanel, BorderLayout.CENTER);
 
         return panel;
+    }
+
+    /**
+     * 创建 FFmpeg 未安装时的警告提示面板。
+     */
+    private JPanel createFfmpegWarningPanel() {
+        JPanel warnPanel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
+        warnPanel.setBackground(new Color(0xFFF3E0)); // 浅橙色警告背景
+        warnPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0xFFB74D), 1),
+                BorderFactory.createEmptyBorder(ThemeUtil.SPACE_SM, ThemeUtil.SPACE_MD,
+                        ThemeUtil.SPACE_SM, ThemeUtil.SPACE_MD)));
+
+        JLabel warnIcon = new JLabel("⚠");
+        warnIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
+        warnPanel.add(warnIcon, BorderLayout.WEST);
+
+        JPanel textPanel = new JPanel(new GridLayout(2, 1));
+        textPanel.setOpaque(false);
+        JLabel titleLabel = new JLabel("FFmpeg 未安装，无法读取视频元数据");
+        titleLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 12));
+        titleLabel.setForeground(new Color(0xE65100));
+        textPanel.add(titleLabel);
+
+        JLabel guideLabel = new JLabel("运行 winget install ffmpeg 或访问 ffmpeg.org 下载");
+        guideLabel.setFont(ThemeUtil.FONT_SMALL);
+        guideLabel.setForeground(new Color(0xBF360C));
+        textPanel.add(guideLabel);
+
+        warnPanel.add(textPanel, BorderLayout.CENTER);
+
+        return warnPanel;
     }
 
     // ==================== 对比浮层 ====================
@@ -331,6 +377,12 @@ public class VideoPreviewPanel extends JPanel {
         sizeLabel.setText(info.getFormattedSize());
         bitrateLabel.setText(info.getBitrate() > 0
                 ? formatBitrate(info.getBitrate()) : "未知");
+
+        // --- FFmpeg 未安装且元数据全为空时，显示安装引导 ---
+        boolean metadataMissing = info.getWidth() <= 0 && info.getFps() <= 0
+                && info.getBitrate() <= 0 && info.getVideoCodec() == null;
+        boolean ffmpegUnavailable = !VideoUtil.checkFfmpegAvailable();
+        ffmpegWarningPanel.setVisible(metadataMissing && ffmpegUnavailable);
 
         infoCardLayout.show(infoCardPanel, INFO_DETAIL);
 

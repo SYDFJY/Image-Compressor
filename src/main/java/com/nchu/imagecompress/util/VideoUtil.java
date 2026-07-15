@@ -51,6 +51,10 @@ public final class VideoUtil {
     /** FFmpeg 二进制目录（通过系统属性 ffmpeg.bin.path 配置，用于测试） */
     private static final String FFMPEG_BIN_PATH = System.getProperty("ffmpeg.bin.path", "");
 
+    /** 自动发现的 FFmpeg 二进制目录（首次调用 resolveCommand 时扫描并缓存） */
+    private static String autoDiscoveredFfmpegPath = null;
+    private static boolean autoDiscoveryDone = false;
+
     // ==================== 环境检测 ====================
 
     /**
@@ -74,13 +78,102 @@ public final class VideoUtil {
     }
 
     /**
-     * 解析命令路径：如果设置了 ffmpeg.bin.path，则使用完整路径。
+     * 解析命令路径：按优先级查找 ffmpeg/ffprobe 可执行文件。
+     *
+     * <p>优先级：系统属性 ffmpeg.bin.path → 自动发现的目录 → 纯命令名（依赖 PATH）。</p>
      */
     private static String resolveCommand(String command) {
         if (!FFMPEG_BIN_PATH.isEmpty()) {
             return FFMPEG_BIN_PATH + File.separator + command;
         }
+        if (!autoDiscoveryDone) {
+            autoDiscoveredFfmpegPath = autoDiscoverFfmpegPath();
+            autoDiscoveryDone = true;
+        }
+        if (autoDiscoveredFfmpegPath != null) {
+            return autoDiscoveredFfmpegPath + File.separator + command;
+        }
         return command;
+    }
+
+    /**
+     * 自动扫描常见 Windows 安装目录，定位 ffprobe.exe 所在目录。
+     *
+     * <p>搜索顺序：
+     * <ol>
+     *   <li>{@code FFMPEG_HOME} 环境变量</li>
+     *   <li>{@code %USERPROFILE%\.ffmpeg\bin\}</li>
+     *   <li>{@code %LOCALAPPDATA%\ffmpeg\bin\}</li>
+     *   <li>winget 安装目录（Gyan/BtbN 等常见发行版）</li>
+     *   <li>{@code C:\ffmpeg\bin\}</li>
+     *   <li>{@code C:\Program Files\ffmpeg\bin\}</li>
+     *   <li>Chocolatey: {@code C:\ProgramData\chocolatey\bin\}</li>
+     *   <li>Scoop: {@code %USERPROFILE%\scoop\shims\}</li>
+     * </ol>
+     *
+     * @return 包含 ffprobe.exe 的目录绝对路径，未找到则返回 null
+     */
+    private static String autoDiscoverFfmpegPath() {
+        // 1. FFMPEG_HOME 环境变量
+        String ffmpegHome = System.getenv("FFMPEG_HOME");
+        if (ffmpegHome != null && !ffmpegHome.isEmpty()) {
+            String binDir = ffmpegHome.endsWith("bin") ? ffmpegHome : ffmpegHome + File.separator + "bin";
+            if (new File(binDir, "ffprobe.exe").exists() || new File(binDir, "ffprobe").exists()) {
+                LogUtil.info("[VideoUtil] 自动发现 FFmpeg (FFMPEG_HOME): " + binDir);
+                return binDir;
+            }
+        }
+
+        // 2. 常见 Windows 安装目录
+        String userHome = System.getProperty("user.home");
+        String localAppData = System.getenv("LOCALAPPDATA");
+
+        String[][] candidateDirs = {
+            {userHome, ".ffmpeg", "bin"},
+            {localAppData, "ffmpeg", "bin"},
+            {localAppData, "Microsoft", "WinGet", "Packages"},
+            {"C:", "ffmpeg", "bin"},
+            {"C:", "Program Files", "ffmpeg", "bin"},
+            {"C:", "Program Files (x86)", "ffmpeg", "bin"},
+            {"C:", "ProgramData", "chocolatey", "bin"},
+            {userHome, "scoop", "shims"},
+        };
+
+        for (String[] parts : candidateDirs) {
+            String dir = String.join(File.separator, parts);
+            if (new File(dir, "ffprobe.exe").exists() || new File(dir, "ffprobe").exists()) {
+                LogUtil.info("[VideoUtil] 自动发现 FFmpeg: " + dir);
+                return dir;
+            }
+        }
+
+        // 3. 扫描 winget 子目录（Gyan、BtbN 等发行版安装在不同子目录下）
+        String wingetRoot = localAppData + File.separator + "Microsoft"
+                + File.separator + "WinGet" + File.separator + "Packages";
+        File wingetDir = new File(wingetRoot);
+        if (wingetDir.isDirectory()) {
+            File[] children = wingetDir.listFiles(File::isDirectory);
+            if (children != null) {
+                for (File child : children) {
+                    File ffprobeExe = new File(child, "ffprobe.exe");
+                    if (ffprobeExe.exists()) {
+                        LogUtil.info("[VideoUtil] 自动发现 FFmpeg (winget): " + child.getAbsolutePath());
+                        return child.getAbsolutePath();
+                    }
+                    // 有些发行版把文件放在 bin 子目录
+                    File binSubDir = new File(child, "bin");
+                    ffprobeExe = new File(binSubDir, "ffprobe.exe");
+                    if (ffprobeExe.exists()) {
+                        LogUtil.info("[VideoUtil] 自动发现 FFmpeg (winget/bin): "
+                                + binSubDir.getAbsolutePath());
+                        return binSubDir.getAbsolutePath();
+                    }
+                }
+            }
+        }
+
+        LogUtil.warning("[VideoUtil] 未找到 FFmpeg/FFprobe。请运行: winget install ffmpeg");
+        return null;
     }
 
     /**
