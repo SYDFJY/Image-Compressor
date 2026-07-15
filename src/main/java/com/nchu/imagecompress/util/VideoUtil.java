@@ -48,6 +48,9 @@ public final class VideoUtil {
     /** 缓存的 FFmpeg 可用性检测结果 */
     private static Boolean ffmpegAvailable = null;
 
+    /** 自动发现的 FFmpeg 二进制目录（缓存，避免重复搜索） */
+    private static String autoDiscoveredFfmpegPath = null;
+
     /** FFmpeg 二进制目录（通过系统属性 ffmpeg.bin.path 配置，用于测试） */
     private static final String FFMPEG_BIN_PATH = System.getProperty("ffmpeg.bin.path", "");
 
@@ -65,6 +68,10 @@ public final class VideoUtil {
         if (ffmpegAvailable != null) {
             return ffmpegAvailable;
         }
+        // 先触发自动发现
+        if (FFMPEG_BIN_PATH.isEmpty()) {
+            autoDiscoverFfmpegPath();
+        }
         String ffmpegCmd = resolveCommand("ffmpeg");
         String ffprobeCmd = resolveCommand("ffprobe");
         ffmpegAvailable = checkCommand(ffmpegCmd + " -version")
@@ -74,13 +81,72 @@ public final class VideoUtil {
     }
 
     /**
-     * 解析命令路径：如果设置了 ffmpeg.bin.path，则使用完整路径。
+     * 解析命令路径：优先级 — ①系统属性 ②自动发现 ③裸命令(PATH)。
      */
     private static String resolveCommand(String command) {
         if (!FFMPEG_BIN_PATH.isEmpty()) {
             return FFMPEG_BIN_PATH + File.separator + command;
         }
+        if (autoDiscoveredFfmpegPath != null) {
+            return autoDiscoveredFfmpegPath + File.separator + command;
+        }
         return command;
+    }
+
+    /**
+     * 自动搜索 FFmpeg 安装目录（Windows 常见位置）。
+     *
+     * <p>搜索顺序：环境变量 → 系统 PATH → 常见安装目录。
+     * 发现后缓存到 {@link #autoDiscoveredFfmpegPath}。</p>
+     */
+    private static void autoDiscoverFfmpegPath() {
+        // 1. 尝试环境变量 FFMPEG_HOME
+        String envHome = System.getenv("FFMPEG_HOME");
+        if (envHome != null) {
+            File binDir = new File(envHome, "bin");
+            File ffprobeExe = new File(binDir, isWindows() ? "ffprobe.exe" : "ffprobe");
+            if (ffprobeExe.exists()) {
+                autoDiscoveredFfmpegPath = binDir.getAbsolutePath();
+                LogUtil.info("[VideoUtil] 从 FFMPEG_HOME 发现: " + autoDiscoveredFfmpegPath);
+                return;
+            }
+        }
+
+        // 2. 检查系统 PATH 中是否已有 ffprobe
+        if (checkCommand("ffprobe -version")) {
+            LogUtil.info("[VideoUtil] ffprobe 已在系统 PATH 中");
+            return; // autoDiscoveredFfmpegPath 保持 null，用裸命令
+        }
+
+        // 3. 搜索常见 Windows 安装目录
+        String localAppData = System.getenv("LOCALAPPDATA");
+        String appData = System.getenv("APPDATA");
+        String programFiles = System.getenv("ProgramFiles");
+
+        String[][] candidateDirs = {
+            {localAppData, "Programs\\Trae CN\\resources\\app\\bin"},
+            {appData, "TRAE SOLO CN\\ModularData\\ai-agent\\vm\\tools\\app\\ffmpeg"},
+            {"C:", "ffmpeg\\bin"},
+            {programFiles, "ffmpeg\\bin"},
+        };
+
+        for (String[] dir : candidateDirs) {
+            String base = dir[0];
+            String sub = dir[1];
+            if (base == null) continue;
+            File ffprobeExe = new File(base, sub + File.separator + "ffprobe.exe");
+            if (ffprobeExe.exists()) {
+                autoDiscoveredFfmpegPath = new File(base, sub).getAbsolutePath();
+                LogUtil.info("[VideoUtil] 自动发现 FFmpeg: " + autoDiscoveredFfmpegPath);
+                return;
+            }
+        }
+
+        LogUtil.info("[VideoUtil] 未自动发现 FFmpeg，将依赖系统 PATH");
+    }
+
+    private static boolean isWindows() {
+        return System.getProperty("os.name", "").toLowerCase().contains("win");
     }
 
     /**
