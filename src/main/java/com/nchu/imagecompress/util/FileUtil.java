@@ -25,7 +25,7 @@ public final class FileUtil {
 
     /** 支持的图片文件扩展名集合（小写） */
     private static final Set<String> SUPPORTED_EXTENSIONS = new HashSet<>(Arrays.asList(
-            "jpg", "jpeg", "png", "bmp", "gif", "tiff", "tif", "ico"
+            "jpg", "jpeg", "png", "bmp", "gif", "tiff", "tif", "ico", "webp"
     ));
 
     /** 不支持但常见的格式（会给出明确提示） */

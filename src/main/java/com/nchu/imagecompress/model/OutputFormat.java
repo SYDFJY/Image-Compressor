@@ -22,7 +22,10 @@ public enum OutputFormat {
     PNG("PNG", "png"),
 
     /** BMP 格式（无压缩，文件大） */
-    BMP("BMP", "bmp");
+    BMP("BMP", "bmp"),
+
+    /** WebP 格式（有损/无损压缩，文件小，Google 现代格式） */
+    WEBP("WebP", "webp");
 
     /** 显示名称 */
     private final String displayName;

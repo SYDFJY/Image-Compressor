@@ -76,7 +76,7 @@ public final class ImageCompressUtil {
             result.setSuccess(false);
             result.setErrorMessage("无法解析图片尺寸 — 格式可能不受支持 ("
                     + ext.toUpperCase() + ")。\n"
-                    + "常见原因：CMYK 色彩空间 JPEG、损坏的图片文件、或 HEIC/WebP 等 JDK 8 不支持的格式。\n"
+                    + "常见原因：CMYK 色彩空间 JPEG、损坏的图片文件、或 HEIC 等 JDK 8 不支持的格式。\n"
                     + "建议：用画图/Photoshop 另存为标准 RGB 格式的 JPEG/PNG 后重试。");
             result.setElapsedMs(System.currentTimeMillis() - startTime);
             return result;
@@ -211,7 +211,8 @@ public final class ImageCompressUtil {
         // 任何带透明通道的输入格式都需要填充
         String inputExt = getExtension(inputFile);
         return inputExt.equals("png") || inputExt.equals("gif")
-                || inputExt.equals("tiff") || inputExt.equals("tif");
+                || inputExt.equals("tiff") || inputExt.equals("tif")
+                || inputExt.equals("webp");
     }
 
     /**

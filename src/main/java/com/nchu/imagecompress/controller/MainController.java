@@ -746,6 +746,7 @@ public class MainController implements MainControllerCallback {
             case 1: config.setOutputFormat(OutputFormat.JPEG); break;
             case 2: config.setOutputFormat(OutputFormat.PNG); break;
             case 3: config.setOutputFormat(OutputFormat.BMP); break;
+            case 4: config.setOutputFormat(OutputFormat.WEBP); break;
             default: config.setOutputFormat(OutputFormat.ORIGINAL);
         }
 
@@ -1240,8 +1241,8 @@ public class MainController implements MainControllerCallback {
 
         // 图片文件过滤器
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
-                "图片文件 (JPG, PNG, BMP, GIF, TIFF, ICO)",
-                "jpg", "jpeg", "png", "bmp", "gif", "tiff", "tif", "ico");
+                "图片文件 (JPG, PNG, BMP, GIF, TIFF, ICO, WebP)",
+                "jpg", "jpeg", "png", "bmp", "gif", "tiff", "tif", "ico", "webp");
         chooser.setFileFilter(filter);
 
         // 恢复上次打开的目录

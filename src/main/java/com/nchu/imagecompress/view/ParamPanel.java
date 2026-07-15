@@ -171,7 +171,7 @@ public class ParamPanel extends JPanel {
 
         // --- 输出格式 ---
         addFormLabel(panel, gbc, "输出格式", row);
-        outputFormatCombo = new JComboBox<>(new String[]{"保持原格式", "JPEG", "PNG", "BMP"});
+        outputFormatCombo = new JComboBox<>(new String[]{"保持原格式", "JPEG", "PNG", "BMP", "WebP"});
         addFormControl(panel, gbc, outputFormatCombo, row);
         row++;
 
