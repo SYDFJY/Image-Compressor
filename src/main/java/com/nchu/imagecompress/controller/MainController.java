@@ -772,6 +772,9 @@ public class MainController implements MainControllerCallback {
         // 覆盖
         config.setOverwrite(paramPanel.isOverwrite());
 
+        // EXIF 元数据
+        config.setPreserveMetadata(paramPanel.isPreserveMetadata());
+
         // 输出路径
         String outputPath = appConfig.getRecentOutputDir();
         if (outputPath != null && !outputPath.isEmpty()) {

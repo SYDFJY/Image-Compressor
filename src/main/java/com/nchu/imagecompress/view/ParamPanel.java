@@ -48,6 +48,7 @@ public class ParamPanel extends JPanel {
     private JButton cancelButton;
     private JButton outputDirButton;
     private JCheckBox overwriteCheckBox;
+    private JCheckBox preserveMetadataCheckBox;
     private JButton activePresetBtn;
 
     public ParamPanel() {
@@ -210,6 +211,15 @@ public class ParamPanel extends JPanel {
         addFormControl(panel, gbc, overwriteCheckBox, row);
         row++;
 
+        // EXIF 元数据保留
+        addFormLabel(panel, gbc, "EXIF信息", row);
+        preserveMetadataCheckBox = new JCheckBox("保留照片EXIF/XMP信息（文件略大）");
+        preserveMetadataCheckBox.setFont(ThemeUtil.FONT_SMALL);
+        preserveMetadataCheckBox.setForeground(ThemeUtil.TEXT_SECONDARY);
+        preserveMetadataCheckBox.setOpaque(false);
+        addFormControl(panel, gbc, preserveMetadataCheckBox, row);
+        row++;
+
         gbc.gridy = row; gbc.gridx = 0; gbc.gridwidth = 2;
         gbc.weighty = 1.0; gbc.fill = GridBagConstraints.BOTH;
         panel.add(new JLabel(), gbc);
@@ -289,6 +299,7 @@ public class ParamPanel extends JPanel {
     public int getOutputFormatIndex() { return outputFormatCombo.getSelectedIndex(); }
     public int getNamingRuleIndex() { return namingRuleCombo.getSelectedIndex(); }
     public boolean isOverwrite() { return overwriteCheckBox.isSelected(); }
+    public boolean isPreserveMetadata() { return preserveMetadataCheckBox.isSelected(); }
 
     public JButton getCompressButton() { return compressButton; }
     public JButton getCancelButton() { return cancelButton; }

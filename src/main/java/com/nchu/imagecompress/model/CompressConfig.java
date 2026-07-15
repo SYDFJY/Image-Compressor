@@ -85,6 +85,9 @@ public class CompressConfig {
     /** 是否允许覆盖同名文件 */
     private boolean overwrite = false;
 
+    /** 是否保留 EXIF/IPTC 元数据（默认移除以减小体积） */
+    private boolean preserveMetadata = false;
+
     // ==================== 智能推荐 ====================
 
     /** 是否启用智能质量推荐 */
@@ -150,6 +153,9 @@ public class CompressConfig {
 
     public boolean isOverwrite() { return overwrite; }
     public void setOverwrite(boolean overwrite) { this.overwrite = overwrite; }
+
+    public boolean isPreserveMetadata() { return preserveMetadata; }
+    public void setPreserveMetadata(boolean preserveMetadata) { this.preserveMetadata = preserveMetadata; }
 
     public boolean isSmartRecommend() { return smartRecommend; }
     public void setSmartRecommend(boolean smartRecommend) { this.smartRecommend = smartRecommend; }

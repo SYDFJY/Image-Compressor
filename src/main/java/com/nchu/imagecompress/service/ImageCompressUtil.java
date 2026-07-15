@@ -6,9 +6,13 @@ import com.nchu.imagecompress.model.ImageFileInfo;
 import com.nchu.imagecompress.model.OutputFormat;
 import net.coobird.thumbnailator.Thumbnails;
 
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
+import javax.imageio.ImageWriter;
+import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -93,20 +97,18 @@ public final class ImageCompressUtil {
         }
 
         try {
-            // 构建 Thumbnailator 管道
-            Thumbnails.Builder<? extends File> builder = Thumbnails.of(inputFile);
-
-            // ① 尺寸缩放
-            applyScale(builder, config);
-
-            // ② 质量设置
-            double quality = config.getQuality() / 100.0;
-            builder.outputQuality(quality);
-
             // ③ 格式处理：需要填充透明背景的场景，走 BufferedImage 管线
             if (needsAlphaBackgroundFill(inputFile, config)) {
+                double quality = config.getQuality() / 100.0;
                 compressWithAlphaFill(inputFile, config, outputFile, quality);
+            } else if (config.isPreserveMetadata() && isJpegOutput(config)) {
+                // EXIF 保留模式：读原始元数据 → Thumbnailator 处理 → ImageIO 写回
+                compressWithMetadata(inputFile, config, outputFile);
             } else {
+                // 默认模式：Thumbnailator 直接写入（自动剥离 EXIF）
+                Thumbnails.Builder<? extends File> builder = Thumbnails.of(inputFile);
+                applyScale(builder, config);
+                builder.outputQuality(config.getQuality() / 100.0);
                 builder.outputFormat(resolveOutputExtension(inputFile, config));
                 builder.toFile(outputFile);
             }
@@ -193,6 +195,95 @@ public final class ImageCompressUtil {
             return ext.isEmpty() ? "jpg" : ext;
         }
         return format.getExtension();
+    }
+
+    /**
+     * 判断输出格式是否为 JPEG（EXIF 保留仅在 JPEG 上可用）。
+     */
+    private static boolean isJpegOutput(CompressConfig config) {
+        OutputFormat fmt = config.getOutputFormat();
+        if (fmt == OutputFormat.JPEG) return true;
+        if (fmt == OutputFormat.ORIGINAL) return false; // 需要检查原格式
+        return false;
+    }
+
+    /**
+     * 保留 EXIF 元数据的压缩模式（JPEG 输出专用）。
+     *
+     * <p>流程：ImageIO 读原图 + 提取 JPEG 元数据 →
+     * Thumbnailator 处理像素数据 →
+     * ImageIO JPEG writer + 原始元数据写回。</p>
+     */
+    private static void compressWithMetadata(File inputFile, CompressConfig config,
+                                             File outputFile) throws IOException {
+        // Step 1: 读取原图并提取 JPEG 元数据
+        ImageReader reader = null;
+        IIOMetadata metadata = null;
+        BufferedImage original = null;
+
+        try {
+            java.util.Iterator<ImageReader> readers =
+                    ImageIO.getImageReadersBySuffix(getExtension(inputFile));
+            if (readers.hasNext()) {
+                reader = readers.next();
+                ImageInputStream iis = ImageIO.createImageInputStream(inputFile);
+                reader.setInput(iis);
+                metadata = reader.getImageMetadata(0);
+                original = reader.read(0);
+                iis.close();
+            }
+        } catch (Exception ignored) {
+            // 元数据提取失败：回退到普通模式
+        }
+        if (original == null) {
+            original = ImageIO.read(inputFile);
+        }
+
+        if (original == null) {
+            throw new IOException("无法读取图片: " + inputFile.getName());
+        }
+
+        // Step 2: 计算输出尺寸
+        int outW = original.getWidth();
+        int outH = original.getHeight();
+        if (config.getScaleMode() == CompressConfig.ScaleMode.BY_PERCENT) {
+            double scale = config.getScalePercent() / 100.0;
+            outW = (int) (outW * scale);
+            outH = (int) (outH * scale);
+        } else if (config.getScaleMode() == CompressConfig.ScaleMode.BY_MAX_SIZE) {
+            double ratio = Math.min(
+                    (double) config.getMaxWidth() / outW,
+                    (double) config.getMaxHeight() / outH);
+            if (ratio < 1.0) {
+                outW = (int) (outW * ratio);
+                outH = (int) (outH * ratio);
+            }
+        }
+
+        // Step 3: 用 Thumbnailator 处理像素数据
+        BufferedImage processed = Thumbnails.of(original)
+                .size(outW, outH)
+                .outputQuality(config.getQuality() / 100.0)
+                .asBufferedImage();
+
+        // Step 4: 用 ImageIO 写入，携带原始元数据
+        ImageWriter writer = null;
+        try {
+            java.util.Iterator<ImageWriter> writers =
+                    ImageIO.getImageWritersByFormatName("jpeg");
+            if (writers.hasNext() && metadata != null) {
+                writer = writers.next();
+                ImageOutputStream ios = ImageIO.createImageOutputStream(outputFile);
+                writer.setOutput(ios);
+                IIOImage iioImage = new IIOImage(processed, null, metadata);
+                writer.write(iioImage);
+                ios.close();
+            } else {
+                ImageIO.write(processed, "jpeg", outputFile);
+            }
+        } finally {
+            if (writer != null) writer.dispose();
+        }
     }
 
     /**
