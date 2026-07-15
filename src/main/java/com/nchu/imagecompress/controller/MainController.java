@@ -42,6 +42,7 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.Desktop;
 import java.awt.datatransfer.DataFlavor;
+import java.awt.image.BufferedImage;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -113,6 +114,9 @@ public class MainController implements MainControllerCallback {
     /** 当前 ffplay 播放进程（用于生命周期管理，同一时间只允许一个） */
     private Process currentFfplayProcess;
 
+    /** 预览防抖定时器：质量滑块拖动停止 200ms 后刷新效果预览 */
+    private final javax.swing.Timer previewDebounceTimer = new javax.swing.Timer(200, null);
+
     /** 上次打开的目录（用于文件选择器记忆） */
     private File lastOpenDir;
 
@@ -150,6 +154,10 @@ public class MainController implements MainControllerCallback {
         this.videoPreviewPanel = mainFrame.getVideoPreviewPanel();
         this.videoParamPanel = mainFrame.getVideoParamPanel();
         this.statusBar = mainFrame.getStatusBar();
+
+        // 预览防抖定时器：滑块拖动停止 200ms 后刷新效果预览
+        previewDebounceTimer.setRepeats(false);
+        previewDebounceTimer.addActionListener(e -> refreshEffectPreview());
     }
 
     /**
@@ -245,13 +253,16 @@ public class MainController implements MainControllerCallback {
         paramPanel.getCancelButton().addActionListener(e -> onCancelCompress());
         paramPanel.getOutputDirButton().addActionListener(e -> onChooseOutputDir());
 
-        // ---- 质量滑块实时更新 ----
+        // ---- 质量滑块实时更新 + 预览刷新 ----
         paramPanel.getQualitySlider().addChangeListener(e -> {
+            int quality = paramPanel.getQuality();
+            paramPanel.setQualityDisplay(quality);
             if (!paramPanel.getQualitySlider().getValueIsAdjusting()) {
-                int quality = paramPanel.getQuality();
-                paramPanel.setQualityDisplay(quality);
+                // 松手时保存配置
                 onQualityChanged(quality);
             }
+            // 防抖刷新效果预览（拖动中每 200ms 刷新一次）
+            previewDebounceTimer.restart();
         });
 
         // ---- 文件列表选中事件 ----
@@ -836,6 +847,34 @@ public class MainController implements MainControllerCallback {
         // 保存到配置（防抖写入）
         appConfig.setLastQuality(quality);
         configService.saveConfig(appConfig);
+    }
+
+    /**
+     * 实时刷新效果预览图：使用当前质量参数生成压缩预览。
+     *
+     * <p>在后台线程中调用 {@link ImageUtil#generateEffectPreview}，
+     * 生成后通过 EDT 更新 {@link PreviewPanel#showEffect}。</p>
+     */
+    private void refreshEffectPreview() {
+        if (mainFrame.isVideoMode()) return;
+        int index = fileListPanel.getSelectedIndex();
+        if (index < 0) return;
+        FileInfo selected = fileListPanel.getFileList().get(index);
+        if (!(selected instanceof ImageFileInfo)) return;
+        final File sourceFile = ((ImageFileInfo) selected).getSourceFile();
+        if (sourceFile == null) return;
+        final double quality = paramPanel.getQuality() / 100.0;
+
+        new Thread(() -> {
+            BufferedImage effect = ImageUtil.generateEffectPreview(
+                    sourceFile, quality,
+                    ImageUtil.PREVIEW_MAX_WIDTH, ImageUtil.PREVIEW_MAX_HEIGHT);
+            SwingUtilities.invokeLater(() -> {
+                if (effect != null) {
+                    previewPanel.showEffect(ImageUtil.toImageIcon(effect));
+                }
+            });
+        }).start();
     }
 
     @Override
