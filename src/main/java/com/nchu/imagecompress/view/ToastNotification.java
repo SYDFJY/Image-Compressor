@@ -96,9 +96,6 @@ public class ToastNotification {
     /** 当前是否有 Toast 正在显示 */
     private static boolean isShowing = false;
 
-    /** 当前可见 Toast 的 Y 偏移累计 */
-    private static int currentOffsetY = 0;
-
     // ==================== 公开方法 ====================
 
     /**
@@ -202,7 +199,7 @@ public class ToastNotification {
 
         int targetX = screenWidth - TOAST_WIDTH - MARGIN_RIGHT;
         int targetY = gd.getDisplayMode().getHeight() - taskbarHeight
-                - TOAST_HEIGHT - MARGIN_BOTTOM - currentOffsetY;
+                - TOAST_HEIGHT - MARGIN_BOTTOM;
 
         // 创建无边框窗口
         final JWindow window = new JWindow();

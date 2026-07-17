@@ -180,6 +180,9 @@ public class MainController implements MainControllerCallback {
         // ③ 绑定所有事件监听器
         bindEvents();
 
+        // ③.① 全局快捷键（键盘操作增强）
+        bindGlobalShortcuts();
+
         // ④ 设置关闭窗口行为
         bindWindowClose();
 
@@ -304,6 +307,55 @@ public class MainController implements MainControllerCallback {
         // （在 addFilesToList 中触发）
 
         LogUtil.info("[MainController] 事件绑定完成（含右键菜单、Delete 快捷键）");
+    }
+
+    /**
+     * 绑定全局键盘快捷键（v2 — 增强键盘操作效率）。
+     * Ctrl+Enter 压缩、Escape 取消、Ctrl+A 全选文件。
+     */
+    private void bindGlobalShortcuts() {
+        javax.swing.JRootPane rootPane = mainFrame.getRootPane();
+
+        // Ctrl+Enter → 开始压缩
+        rootPane.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(javax.swing.KeyStroke.getKeyStroke(
+                        java.awt.event.KeyEvent.VK_ENTER,
+                        java.awt.event.InputEvent.CTRL_DOWN_MASK), "startCompress");
+        rootPane.getActionMap().put("startCompress", new javax.swing.AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                onStartCompress();
+            }
+        });
+
+        // Escape → 取消压缩
+        rootPane.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(javax.swing.KeyStroke.getKeyStroke(
+                        java.awt.event.KeyEvent.VK_ESCAPE, 0), "cancelCompress");
+        rootPane.getActionMap().put("cancelCompress", new javax.swing.AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                onCancelCompress();
+            }
+        });
+
+        // Ctrl+A → 全选文件列表
+        rootPane.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(javax.swing.KeyStroke.getKeyStroke(
+                        java.awt.event.KeyEvent.VK_A,
+                        java.awt.event.InputEvent.CTRL_DOWN_MASK), "selectAllFiles");
+        rootPane.getActionMap().put("selectAllFiles", new javax.swing.AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                javax.swing.JList<FileInfo> list = fileListPanel.getFileJList();
+                if (list.getModel().getSize() > 0) {
+                    list.setSelectionInterval(0, list.getModel().getSize() - 1);
+                    list.requestFocusInWindow();
+                }
+            }
+        });
+
+        LogUtil.info("[MainController] 全局快捷键已注册: Ctrl+Enter/Escape/Ctrl+A");
     }
 
     /**

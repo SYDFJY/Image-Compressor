@@ -11,7 +11,6 @@ import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Toolkit;
 
 /**
@@ -49,13 +48,13 @@ public class SplashScreen extends JWindow {
 
         // === 顶部：应用名称 ===
         JLabel titleLabel = new JLabel("NCHU Image Compressor", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 22));
+        titleLabel.setFont(ThemeUtil.FONT_TITLE.deriveFont(22f));
         titleLabel.setForeground(Color.WHITE);
         panel.add(titleLabel, BorderLayout.NORTH);
 
         // === 中部：版本号 ===
         JLabel versionLabel = new JLabel("v1.0.0 — 南昌航空大学软件工程实训项目", SwingConstants.CENTER);
-        versionLabel.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+        versionLabel.setFont(ThemeUtil.FONT_SMALL);
         versionLabel.setForeground(new Color(255, 255, 255, 200));
         panel.add(versionLabel, BorderLayout.CENTER);
 
@@ -71,7 +70,7 @@ public class SplashScreen extends JWindow {
         bottomPanel.add(progressBar, BorderLayout.NORTH);
 
         statusLabel = new JLabel("正在初始化...", SwingConstants.LEFT);
-        statusLabel.setFont(new Font("Microsoft YaHei", Font.PLAIN, 11));
+        statusLabel.setFont(ThemeUtil.FONT_TINY);
         statusLabel.setForeground(new Color(255, 255, 255, 180));
         bottomPanel.add(statusLabel, BorderLayout.SOUTH);
 

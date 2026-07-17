@@ -57,9 +57,8 @@ public class StatusBar extends JPanel {
 
         add(leftPanel, BorderLayout.WEST);
 
-        // === 中间：进度条 ===
+        // === 中间：进度条（自适应宽度） ===
         progressBar = new JProgressBar(0, 100);
-        progressBar.setPreferredSize(new Dimension(300, 6));
         progressBar.setStringPainted(false);
         progressBar.setVisible(false);
         progressBar.setBorder(BorderFactory.createEmptyBorder());
