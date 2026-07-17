@@ -63,6 +63,7 @@ public class VideoParamPanel extends JPanel {
     private JButton compressButton;
     private JButton cancelButton;
     private JButton outputDirButton;
+    private javax.swing.JTextField customNameField;
     private JCheckBox overwriteCheckBox;
     private JButton activePresetBtn;
 
@@ -192,6 +193,14 @@ public class VideoParamPanel extends JPanel {
 
         // ==================== 输出设置组 ====================
         addGroupHeader(panel, gbc, "📂 输出设置", row++);
+
+        // --- 自定义文件名 ---
+        addFormLabel(panel, gbc, "输出文件名", row);
+        customNameField = new javax.swing.JTextField(20);
+        customNameField.setFont(ThemeUtil.FONT_SMALL);
+        customNameField.setToolTipText("输入自定义文件名（不含扩展名），留空则自动生成");
+        addFormControl(panel, gbc, customNameField, row);
+        row++;
 
         // --- 输出目录 ---
         addFormLabel(panel, gbc, "输出目录", row);
@@ -367,6 +376,8 @@ public class VideoParamPanel extends JPanel {
 
     /** 是否允许覆盖 */
     public boolean isOverwrite() { return overwriteCheckBox.isSelected(); }
+    public String getCustomFileName() { return customNameField.getText(); }
+    public void setCustomFileName(String name) { customNameField.setText(name != null ? name : ""); }
 
     // ==================== 构建配置 ====================
 
@@ -396,6 +407,7 @@ public class VideoParamPanel extends JPanel {
         config.setOutputFormat(formats[getOutputFormatIndex()]);
 
         config.setSuffix(config.buildDynamicSuffix());
+        config.setCustomName(getCustomFileName());
         config.setOverwrite(isOverwrite());
         return config;
     }

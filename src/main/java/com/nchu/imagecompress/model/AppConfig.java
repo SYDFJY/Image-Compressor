@@ -64,6 +64,9 @@ public class AppConfig {
     /** 上次使用的后缀 */
     private String lastSuffix = "_compressed";
 
+    /** 上次使用的自定义文件名 */
+    private String lastCustomName = "";
+
     /** 是否启用智能推荐 */
     private boolean smartRecommendEnabled = false;
 
@@ -155,6 +158,9 @@ public class AppConfig {
 
     public String getLastSuffix() { return lastSuffix; }
     public void setLastSuffix(String lastSuffix) { this.lastSuffix = lastSuffix; }
+
+    public String getLastCustomName() { return lastCustomName; }
+    public void setLastCustomName(String lastCustomName) { this.lastCustomName = lastCustomName; }
 
     public boolean isSmartRecommendEnabled() { return smartRecommendEnabled; }
     public void setSmartRecommendEnabled(boolean smartRecommendEnabled) { this.smartRecommendEnabled = smartRecommendEnabled; }

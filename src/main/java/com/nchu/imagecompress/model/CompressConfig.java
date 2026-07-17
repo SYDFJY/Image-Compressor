@@ -35,7 +35,9 @@ public class CompressConfig {
         /** 原文件名 + 前缀 */
         ADD_PREFIX("添加前缀"),
         /** 保持原文件名（仅当输出与输入不同目录时安全） */
-        KEEP_ORIGINAL("保持原名");
+        KEEP_ORIGINAL("保持原名"),
+        /** 用户自定义文件名 */
+        CUSTOM("自定义文件名");
 
         private final String displayName;
         NamingRule(String displayName) { this.displayName = displayName; }
@@ -81,6 +83,9 @@ public class CompressConfig {
 
     /** 命名前缀（NamingRule 为 ADD_PREFIX 时使用） */
     private String prefix = "compressed_";
+
+    /** 自定义文件名（NamingRule 为 CUSTOM 时使用，不含扩展名） */
+    private String customName = "";
 
     /** 是否允许覆盖同名文件 */
     private boolean overwrite = false;
@@ -150,6 +155,9 @@ public class CompressConfig {
 
     public String getPrefix() { return prefix; }
     public void setPrefix(String prefix) { this.prefix = prefix; }
+
+    public String getCustomName() { return customName; }
+    public void setCustomName(String customName) { this.customName = customName; }
 
     public boolean isOverwrite() { return overwrite; }
     public void setOverwrite(boolean overwrite) { this.overwrite = overwrite; }

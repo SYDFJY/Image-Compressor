@@ -332,7 +332,16 @@ public final class VideoCompressUtil {
             outputExt = "." + config.getOutputFormat().getExtension();
         }
 
-        String outputName = nameWithoutExt + config.getSuffix() + outputExt;
+        // 自定义文件名优先
+        String customName = config.getCustomName();
+        String outputName;
+        if (customName != null && !customName.trim().isEmpty()) {
+            // 过滤非法字符
+            String safe = customName.trim().replaceAll("[\\\\/:*?\"<>|]", "");
+            outputName = (safe.isEmpty() ? nameWithoutExt + config.getSuffix() : safe) + outputExt;
+        } else {
+            outputName = nameWithoutExt + config.getSuffix() + outputExt;
+        }
         return new File(outputDir, outputName);
     }
 

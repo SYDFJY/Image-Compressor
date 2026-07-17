@@ -197,6 +197,9 @@ public class VideoCompressConfig {
     /** 文件命名后缀 */
     private String suffix = "_compressed";
 
+    /** 自定义输出文件名（不含扩展名，为空时使用 suffix 自动生成） */
+    private String customName = "";
+
     /** 是否允许覆盖同名文件（默认 true，方便重复压缩调试） */
     private boolean overwrite = true;
 
@@ -284,6 +287,9 @@ public class VideoCompressConfig {
 
     public String getSuffix() { return suffix; }
     public void setSuffix(String suffix) { this.suffix = suffix; }
+
+    public String getCustomName() { return customName; }
+    public void setCustomName(String customName) { this.customName = customName; }
 
     public boolean isOverwrite() { return overwrite; }
     public void setOverwrite(boolean overwrite) { this.overwrite = overwrite; }
