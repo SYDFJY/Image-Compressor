@@ -67,6 +67,9 @@ public class AppConfig {
     /** 上次使用的自定义文件名 */
     private String lastCustomName = "";
 
+    /** 上次使用的目标大小（KB），0=未启用 */
+    private int lastTargetSizeKB = 0;
+
     /** 是否启用智能推荐 */
     private boolean smartRecommendEnabled = false;
 
@@ -161,6 +164,9 @@ public class AppConfig {
 
     public String getLastCustomName() { return lastCustomName; }
     public void setLastCustomName(String lastCustomName) { this.lastCustomName = lastCustomName; }
+
+    public int getLastTargetSizeKB() { return lastTargetSizeKB; }
+    public void setLastTargetSizeKB(int kb) { this.lastTargetSizeKB = Math.max(0, kb); }
 
     public boolean isSmartRecommendEnabled() { return smartRecommendEnabled; }
     public void setSmartRecommendEnabled(boolean smartRecommendEnabled) { this.smartRecommendEnabled = smartRecommendEnabled; }

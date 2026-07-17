@@ -51,6 +51,8 @@ public class ParamPanel extends JPanel {
     private JButton outputDirButton;
     private JCheckBox overwriteCheckBox;
     private JCheckBox preserveMetadataCheckBox;
+    private javax.swing.JCheckBox targetSizeCheckBox;
+    private javax.swing.JSpinner targetSizeSpinner;
     private JButton activePresetBtn;
 
     public ParamPanel() {
@@ -243,6 +245,28 @@ public class ParamPanel extends JPanel {
         addFormControl(panel, gbc, preserveMetadataCheckBox, row);
         row++;
 
+        // v2: 目标大小压缩
+        addFormLabel(panel, gbc, "目标大小", row);
+        JPanel targetSizePanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 0));
+        targetSizePanel.setOpaque(false);
+        targetSizeCheckBox = new javax.swing.JCheckBox("压缩到指定大小");
+        targetSizeCheckBox.setFont(ThemeUtil.FONT_SMALL);
+        targetSizeCheckBox.setForeground(ThemeUtil.TEXT_SECONDARY);
+        targetSizeCheckBox.setOpaque(false);
+        targetSizePanel.add(targetSizeCheckBox);
+        targetSizeSpinner = new javax.swing.JSpinner(new javax.swing.SpinnerNumberModel(500, 10, 50000, 10));
+        targetSizeSpinner.setFont(ThemeUtil.FONT_SMALL);
+        targetSizeSpinner.setPreferredSize(new java.awt.Dimension(80, 24));
+        targetSizeSpinner.setEnabled(false);
+        targetSizePanel.add(targetSizeSpinner);
+        javax.swing.JLabel kbLabel = new javax.swing.JLabel("KB");
+        kbLabel.setFont(ThemeUtil.FONT_SMALL);
+        kbLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
+        targetSizePanel.add(kbLabel);
+        targetSizeCheckBox.addActionListener(e -> targetSizeSpinner.setEnabled(targetSizeCheckBox.isSelected()));
+        addFormControl(panel, gbc, targetSizePanel, row);
+        row++;
+
         gbc.gridy = row; gbc.gridx = 0; gbc.gridwidth = 2;
         gbc.weighty = 1.0; gbc.fill = GridBagConstraints.BOTH;
         panel.add(new JLabel(), gbc);
@@ -325,6 +349,14 @@ public class ParamPanel extends JPanel {
     public void setCustomFileName(String name) { customNameField.setText(name != null ? name : ""); }
     public boolean isOverwrite() { return overwriteCheckBox.isSelected(); }
     public boolean isPreserveMetadata() { return preserveMetadataCheckBox.isSelected(); }
+    public boolean isTargetSizeEnabled() { return targetSizeCheckBox != null && targetSizeCheckBox.isSelected(); }
+    public int getTargetSizeKB() { return targetSizeCheckBox != null && targetSizeCheckBox.isSelected() ? (int) targetSizeSpinner.getValue() : 0; }
+    public void setTargetSizeKB(int kb) {
+        if (targetSizeCheckBox != null && targetSizeSpinner != null) {
+            if (kb > 0) { targetSizeCheckBox.setSelected(true); targetSizeSpinner.setEnabled(true); targetSizeSpinner.setValue(kb); }
+            else { targetSizeCheckBox.setSelected(false); targetSizeSpinner.setEnabled(false); }
+        }
+    }
 
     public JButton getCompressButton() { return compressButton; }
     public JButton getCancelButton() { return cancelButton; }

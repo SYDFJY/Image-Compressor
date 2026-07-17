@@ -5,6 +5,7 @@ import com.nchu.imagecompress.model.CompressResult;
 import com.nchu.imagecompress.model.ImageFileInfo;
 import com.nchu.imagecompress.model.OutputFormat;
 import com.nchu.imagecompress.util.FileUtil;
+import com.nchu.imagecompress.util.LogUtil;
 import com.nchu.imagecompress.util.ValidateUtil;
 
 import java.io.File;
@@ -63,9 +64,14 @@ public class CompressService {
             outputFileName = FileUtil.generateUniqueFilename(outputDir, outputFileName);
         }
 
-        // ⑤ 执行压缩
+        // ⑤ 执行压缩（v2: 目标大小模式使用二分搜索）
         File outputFile = new File(outputDir, outputFileName);
-        CompressResult result = ImageCompressUtil.compress(inputFile, config, outputFile);
+        CompressResult result;
+        if (config.getTargetSizeKB() > 0) {
+            result = compressWithTargetSize(inputFile, config, outputFile);
+        } else {
+            result = ImageCompressUtil.compress(inputFile, config, outputFile);
+        }
 
         // ⑥ 检查覆盖后是否为同一文件
         if (result.isSuccess() && outputFile.getAbsolutePath()
@@ -141,5 +147,115 @@ public class CompressService {
             return FileUtil.getDefaultOutputDir();
         }
         return path.trim();
+    }
+
+    // ==================== 目标大小二分搜索（v2） ====================
+
+    /**
+     * 使用二分搜索查找最优质量值，使输出文件尽可能接近但不超出目标大小。
+     *
+     * <p>算法流程：
+     * <ol>
+     *   <li>设定搜索边界：low=1, high=100</li>
+     *   <li>取中点质量值，压缩到临时文件</li>
+     *   <li>若输出 ≤ 目标大小 → 记录此质量为最佳，向右搜索更高画质</li>
+     *   <li>若输出 > 目标大小 → 向左搜索更低画质</li>
+     *   <li>最多 8 轮迭代后取最佳质量值进行最终压缩</li>
+     * </ol>
+     *
+     * @param inputFile  输入文件
+     * @param config     压缩配置（含目标大小 KB）
+     * @param outputFile 最终输出文件
+     * @return 压缩结果
+     */
+    private CompressResult compressWithTargetSize(File inputFile, CompressConfig config, File outputFile) {
+        long targetBytes = config.getTargetSizeKB() * 1024L;
+        int bestQuality = config.getQuality(); // 默认：用户设定的质量
+        long bestSize = Long.MAX_VALUE;
+        boolean found = false;
+
+        int low = 5;
+        int high = 100;
+        int iterations = 0;
+        final int MAX_ITERATIONS = 8;
+
+        // 先试最低质量 → 如果还是太大，放弃
+        try {
+            File tmpFile = File.createTempFile("nchu_target_", ".tmp");
+            tmpFile.deleteOnExit();
+            CompressConfig trialConfig = buildTrialConfig(config, low);
+            CompressResult trial = ImageCompressUtil.compress(inputFile, trialConfig, tmpFile);
+            if (trial.isSuccess()) {
+                long size = tmpFile.length();
+                if (size > targetBytes) {
+                    // 最低质量仍然超限 → 返回最低质量的结果
+                    bestQuality = low;
+                    bestSize = size;
+                    tmpFile.delete();
+                } else {
+                    bestQuality = low;
+                    bestSize = size;
+                    found = true;
+                    tmpFile.delete();
+                }
+            }
+        } catch (Exception ignored) { /* 试压缩失败，继续 */ }
+
+        // 二分搜索
+        while (low <= high && iterations < MAX_ITERATIONS) {
+            int mid = (low + high) / 2;
+            iterations++;
+
+            try {
+                File tmpFile = File.createTempFile("nchu_target_", ".tmp");
+                tmpFile.deleteOnExit();
+                CompressConfig trialConfig = buildTrialConfig(config, mid);
+                CompressResult trial = ImageCompressUtil.compress(inputFile, trialConfig, tmpFile);
+
+                if (trial.isSuccess()) {
+                    long size = tmpFile.length();
+                    if (size <= targetBytes && size > 0) {
+                        // 满足目标 → 记录并尝试更高画质
+                        if (mid > bestQuality || (mid == bestQuality && size > bestSize)) {
+                            bestQuality = mid;
+                            bestSize = size;
+                        }
+                        found = true;
+                        low = mid + 1;
+                    } else {
+                        high = mid - 1;
+                    }
+                    tmpFile.delete();
+                } else {
+                    high = mid - 1;
+                }
+            } catch (Exception e) {
+                LogUtil.warning("[CompressService] 二分搜索迭代 " + iterations + " 失败: " + e.getMessage());
+                high = mid - 1;
+            }
+        }
+
+        // 使用最佳质量执行最终压缩
+        if (found) {
+            config.setQuality(bestQuality);
+            LogUtil.info("[CompressService] 目标大小搜索完成: 最佳质量=" + bestQuality
+                    + ", 预估大小=" + bestSize + " bytes, 迭代=" + iterations);
+        }
+        return ImageCompressUtil.compress(inputFile, config, outputFile);
+    }
+
+    /**
+     * 构建试压缩配置（仅质量差异，其他参数与主配置一致）。
+     */
+    private CompressConfig buildTrialConfig(CompressConfig base, int quality) {
+        CompressConfig cfg = new CompressConfig();
+        cfg.setQuality(quality);
+        cfg.setScaleMode(base.getScaleMode());
+        cfg.setScalePercent(base.getScalePercent());
+        cfg.setMaxWidth(base.getMaxWidth());
+        cfg.setMaxHeight(base.getMaxHeight());
+        cfg.setOutputFormat(base.getOutputFormat());
+        cfg.setPreserveMetadata(base.isPreserveMetadata());
+        return cfg;
     }
 }

@@ -203,6 +203,12 @@ public class VideoCompressConfig {
     /** 是否允许覆盖同名文件（默认 true，方便重复压缩调试） */
     private boolean overwrite = true;
 
+    /** v2: 视频裁剪起始时间（秒），0 = 从头开始 */
+    private double startTimeSeconds = 0;
+
+    /** v2: 视频裁剪时长（秒），0 = 到结尾 */
+    private double durationSeconds = 0;
+
     /** 额外 FFmpeg 参数（高级用户） */
     private String extraArgs = "";
 
@@ -292,6 +298,11 @@ public class VideoCompressConfig {
     public void setCustomName(String customName) { this.customName = customName; }
 
     public boolean isOverwrite() { return overwrite; }
+
+    public double getStartTimeSeconds() { return startTimeSeconds; }
+    public void setStartTimeSeconds(double s) { this.startTimeSeconds = Math.max(0, s); }
+    public double getDurationSeconds() { return durationSeconds; }
+    public void setDurationSeconds(double s) { this.durationSeconds = Math.max(0, s); }
     public void setOverwrite(boolean overwrite) { this.overwrite = overwrite; }
 
     public String getExtraArgs() { return extraArgs; }

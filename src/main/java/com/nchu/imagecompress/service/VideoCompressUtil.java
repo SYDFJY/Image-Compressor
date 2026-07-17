@@ -69,9 +69,21 @@ public final class VideoCompressUtil {
         List<String> cmd = new ArrayList<>();
         cmd.add(FFMPEG_PATH);
 
+        // --- v2: 裁剪起始时间（在 -i 前用于快速 seek） ---
+        if (config.getStartTimeSeconds() > 0) {
+            cmd.add("-ss");
+            cmd.add(formatTimeArg(config.getStartTimeSeconds()));
+        }
+
         // --- 输入文件 ---
         cmd.add("-i");
         cmd.add(inputFile.getAbsolutePath());
+
+        // --- v2: 裁剪时长 ---
+        if (config.getDurationSeconds() > 0) {
+            cmd.add("-t");
+            cmd.add(formatTimeArg(config.getDurationSeconds()));
+        }
 
         // --- 视频编码器 ---
         String videoCodec = resolveVideoCodec(config);
@@ -356,5 +368,13 @@ public final class VideoCompressUtil {
             return String.format("%d:%02d:%02d", hours, minutes, seconds);
         }
         return String.format("%d:%02d", minutes, seconds);
+    }
+
+    /** 格式化时间为 FFmpeg 接受的参数格式（秒或 MM:SS） */
+    private static String formatTimeArg(double seconds) {
+        if (seconds == (int) seconds && seconds < 60) {
+            return String.valueOf((int) seconds);
+        }
+        return formatTime(seconds);
     }
 }

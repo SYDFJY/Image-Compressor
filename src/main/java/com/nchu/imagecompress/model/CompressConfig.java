@@ -51,6 +51,9 @@ public class CompressConfig {
     /** 压缩质量 (0-100)，默认 80。数值越大质量越高、文件越大 */
     private int quality = 80;
 
+    /** 目标输出文件大小（KB），0 表示不使用目标大小模式（v2 — 二分逼近压缩） */
+    private int targetSizeKB = 0;
+
     // ==================== 缩放设置 ====================
 
     /** 缩放模式，默认不缩放 */
@@ -126,6 +129,10 @@ public class CompressConfig {
     public void setQuality(int quality) {
         this.quality = Math.max(0, Math.min(100, quality));
     }
+
+    /** 目标大小（KB），0 = 禁用 */
+    public int getTargetSizeKB() { return targetSizeKB; }
+    public void setTargetSizeKB(int kb) { this.targetSizeKB = Math.max(0, kb); }
 
     public ScaleMode getScaleMode() { return scaleMode; }
     public void setScaleMode(ScaleMode scaleMode) { this.scaleMode = scaleMode; }

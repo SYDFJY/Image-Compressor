@@ -915,9 +915,13 @@ public class MainController implements MainControllerCallback {
         }
         config.setCustomName(paramPanel.getCustomFileName());
 
+        // v2: 目标大小
+        config.setTargetSizeKB(paramPanel.getTargetSizeKB());
+
         // 保存命名参数到持久化配置
         appConfig.setLastNamingRule(config.getNamingRule().name());
         appConfig.setLastCustomName(config.getCustomName());
+        appConfig.setLastTargetSizeKB(config.getTargetSizeKB());
 
         // 覆盖
         config.setOverwrite(paramPanel.isOverwrite());
@@ -1198,6 +1202,11 @@ public class MainController implements MainControllerCallback {
         // 恢复自定义文件名
         if (appConfig.getLastCustomName() != null) {
             paramPanel.setCustomFileName(appConfig.getLastCustomName());
+        }
+
+        // v2: 恢复目标大小
+        if (appConfig.getLastTargetSizeKB() > 0) {
+            paramPanel.setTargetSizeKB(appConfig.getLastTargetSizeKB());
         }
 
         // 恢复窗口位置

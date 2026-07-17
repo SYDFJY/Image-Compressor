@@ -66,6 +66,8 @@ public class VideoParamPanel extends JPanel {
     private javax.swing.JTextField customNameField;
     private JCheckBox overwriteCheckBox;
     private JButton activePresetBtn;
+    private javax.swing.JTextField startTimeField;
+    private javax.swing.JTextField durationField;
 
     // ==================== 批量导出控件 ====================
 
@@ -217,6 +219,27 @@ public class VideoParamPanel extends JPanel {
         overwriteCheckBox.setOpaque(false);
         overwriteCheckBox.setSelected(true); // 默认覆盖，方便重复压缩
         addFormControl(panel, gbc, overwriteCheckBox, row);
+        row++;
+
+        // v2: 视频裁剪
+        addFormLabel(panel, gbc, "裁剪", row);
+        JPanel trimPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 6, 0));
+        trimPanel.setOpaque(false);
+        startTimeField = new javax.swing.JTextField(5);
+        startTimeField.setFont(ThemeUtil.FONT_SMALL);
+        startTimeField.setToolTipText("开始时间 (秒)");
+        trimPanel.add(new javax.swing.JLabel("起始:"));
+        trimPanel.add(startTimeField);
+        durationField = new javax.swing.JTextField(5);
+        durationField.setFont(ThemeUtil.FONT_SMALL);
+        durationField.setToolTipText("持续时长 (秒)，留空=到结尾");
+        trimPanel.add(new javax.swing.JLabel("时长:"));
+        trimPanel.add(durationField);
+        javax.swing.JLabel trimHint = new javax.swing.JLabel(" 秒（留空=不裁剪）");
+        trimHint.setFont(ThemeUtil.FONT_TINY);
+        trimHint.setForeground(ThemeUtil.TEXT_TERTIARY);
+        trimPanel.add(trimHint);
+        addFormControl(panel, gbc, trimPanel, row);
         row++;
 
         // 弹性填充
@@ -409,6 +432,17 @@ public class VideoParamPanel extends JPanel {
         config.setSuffix(config.buildDynamicSuffix());
         config.setCustomName(getCustomFileName());
         config.setOverwrite(isOverwrite());
+
+        // v2: 裁剪参数
+        try {
+            String startText = startTimeField.getText().trim();
+            if (!startText.isEmpty()) config.setStartTimeSeconds(Double.parseDouble(startText));
+        } catch (NumberFormatException ignored) {}
+        try {
+            String durText = durationField.getText().trim();
+            if (!durText.isEmpty()) config.setDurationSeconds(Double.parseDouble(durText));
+        } catch (NumberFormatException ignored) {}
+
         return config;
     }
 
