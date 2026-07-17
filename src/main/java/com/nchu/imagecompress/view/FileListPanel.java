@@ -80,14 +80,13 @@ public class FileListPanel extends JPanel {
         titleLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
         titlePanel.add(titleLabel, BorderLayout.WEST);
 
-        clearButton = new JButton("清空");
-        clearButton.setFont(ThemeUtil.FONT_SMALL);
+        clearButton = new JButton();
+        clearButton.setIcon(new com.formdev.flatlaf.extras.FlatSVGIcon("icons/delete.svg"));
         clearButton.setEnabled(false);
         clearButton.setFocusPainted(false);
         clearButton.setContentAreaFilled(false);
         clearButton.setBorderPainted(false);
-        clearButton.setForeground(ThemeUtil.TEXT_TERTIARY);
-        clearButton.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        clearButton.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         clearButton.setToolTipText("清空列表");
         titlePanel.add(clearButton, BorderLayout.EAST);
 
