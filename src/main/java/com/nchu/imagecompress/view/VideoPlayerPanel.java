@@ -141,7 +141,7 @@ public class VideoPlayerPanel extends JPanel {
         JPanel centerPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_LG));
         centerPanel.setOpaque(false);
 
-        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/film.svg"));
+        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/film.svg", 48, 48));
         centerPanel.add(iconLabel, BorderLayout.NORTH);
 
         JLabel guideLabel = new JLabel("选择视频文件播放", SwingConstants.CENTER);

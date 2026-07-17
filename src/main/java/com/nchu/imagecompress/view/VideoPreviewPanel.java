@@ -137,8 +137,7 @@ public class VideoPreviewPanel extends JPanel {
         JPanel centerPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_LG));
         centerPanel.setOpaque(false);
 
-        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/clipboard.svg"));
-        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 36));
+        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/clipboard.svg", 48, 48));
         centerPanel.add(iconLabel, BorderLayout.NORTH);
 
         JLabel guideLabel = new JLabel("请选择视频文件查看信息", SwingConstants.CENTER);
