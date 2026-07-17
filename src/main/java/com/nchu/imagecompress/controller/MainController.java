@@ -26,6 +26,7 @@ import com.nchu.imagecompress.view.MainFrame;
 import com.nchu.imagecompress.view.ParamPanel;
 import com.nchu.imagecompress.view.PreviewPanel;
 import com.nchu.imagecompress.view.ResultDialog;
+import com.nchu.imagecompress.view.SettingsDialog;
 import com.nchu.imagecompress.view.StatusBar;
 import com.nchu.imagecompress.view.ToastNotification;
 import com.nchu.imagecompress.view.VideoParamPanel;
@@ -961,16 +962,11 @@ public class MainController implements MainControllerCallback {
 
     @Override
     public void onOpenSettings() {
-        // 显示简易设置对话框
-        JOptionPane.showMessageDialog(mainFrame,
-                "设置功能将在后续版本中完善。\n"
-                        + "当前版本支持：\n"
-                        + "• 压缩参数记忆（自动保存）\n"
-                        + "• 主题切换（Ctrl+T）\n"
-                        + "• 输出目录选择\n"
-                        + "• 窗口状态记忆",
-                "设置",
-                JOptionPane.INFORMATION_MESSAGE);
+        boolean changed = SettingsDialog.show(mainFrame, appConfig);
+        if (changed) {
+            configService.saveConfigImmediately();
+            statusBar.flashSuccess("设置已保存");
+        }
     }
 
     @Override
