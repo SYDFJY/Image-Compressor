@@ -4,16 +4,19 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.nchu.imagecompress.model.FileInfo;
 import com.nchu.imagecompress.model.ImageFileInfo;
 import com.nchu.imagecompress.model.VideoFileInfo;
+import com.nchu.imagecompress.util.FileUtil;
 import com.nchu.imagecompress.util.ThemeUtil;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
@@ -22,10 +25,14 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +72,13 @@ public class FileListPanel extends JPanel {
     private final CardLayout centerLayout;  // 切换 scrollPane / emptyPanel
     private final Map<String, BufferedImage> thumbnailCache = new HashMap<>();
 
+    // v2.2: 搜索/排序
+    private final List<FileInfo> allFiles = new ArrayList<>(); // 主数据源
+    private JTextField searchField;
+    private JComboBox<String> sortCombo;
+    private String currentQuery = "";
+    private int currentSort = 0; // 0=原始, 1=名称, 2=大小
+
     public FileListPanel() {
         setLayout(new BorderLayout(0, 0));
         setBackground(ThemeUtil.BG_CARD);
@@ -91,7 +105,16 @@ public class FileListPanel extends JPanel {
         clearButton.setToolTipText("清空列表");
         titlePanel.add(clearButton, BorderLayout.EAST);
 
-        add(titlePanel, BorderLayout.NORTH);
+        // === 搜索栏（v2.2 — 实时过滤 + 排序） ===
+        JPanel searchPanel = createSearchPanel();
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, ThemeUtil.SPACE_MD, 0));
+
+        // 北区合并：标题 + 搜索
+        JPanel northPanel = new JPanel(new BorderLayout(0, 0));
+        northPanel.setOpaque(false);
+        northPanel.add(titlePanel, BorderLayout.NORTH);
+        northPanel.add(searchPanel, BorderLayout.SOUTH);
+        add(northPanel, BorderLayout.NORTH);
 
         // === 中部：文件列表（CardLayout 切换 scrollPane / emptyPanel） ===
         centerLayout = new CardLayout();
@@ -209,11 +232,9 @@ public class FileListPanel extends JPanel {
      * @param files 文件信息列表（可为 ImageFileInfo 或 VideoFileInfo）
      */
     public void setFileList(List<? extends FileInfo> files) {
-        listModel.clear();
-        for (FileInfo file : files) {
-            listModel.addElement(file);
-        }
-        updateStats();
+        allFiles.clear();
+        allFiles.addAll(files);
+        applyFilter();
     }
 
     /**
@@ -222,8 +243,8 @@ public class FileListPanel extends JPanel {
      * @param file 文件信息（可为 ImageFileInfo 或 VideoFileInfo）
      */
     public void addFile(FileInfo file) {
-        listModel.addElement(file);
-        updateStats();
+        allFiles.add(file);
+        applyFilter();
     }
 
     /**
@@ -231,7 +252,8 @@ public class FileListPanel extends JPanel {
      */
     public void removeFile(int index) {
         if (index >= 0 && index < listModel.size()) {
-            listModel.remove(index);
+            FileInfo removed = listModel.remove(index);
+            allFiles.remove(removed);
             updateStats();
         }
     }
@@ -240,9 +262,93 @@ public class FileListPanel extends JPanel {
      * 清空所有文件。
      */
     public void clearAllFiles() {
+        allFiles.clear();
         listModel.clear();
+        searchField.setText("");
+        currentQuery = "";
         thumbnailCache.clear();
         updateStats();
+    }
+
+    // ==================== 搜索/排序（v2.2） ====================
+
+    private JPanel createSearchPanel() {
+        JPanel panel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
+        panel.setOpaque(false);
+
+        // 搜索框
+        searchField = new JTextField();
+        searchField.setFont(ThemeUtil.FONT_SMALL);
+        searchField.putClientProperty("JTextField.placeholderText", "搜索文件名...");
+        searchField.putClientProperty("JTextField.showClearButton", true);
+        searchField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                currentQuery = searchField.getText().trim().toLowerCase();
+                applyFilter();
+            }
+        });
+        panel.add(searchField, BorderLayout.CENTER);
+
+        // 排序下拉
+        sortCombo = new JComboBox<>(new String[]{"原始顺序", "按名称", "按大小"});
+        sortCombo.setFont(ThemeUtil.FONT_SMALL);
+        sortCombo.addActionListener(e -> {
+            currentSort = sortCombo.getSelectedIndex();
+            applyFilter();
+        });
+        panel.add(sortCombo, BorderLayout.EAST);
+
+        return panel;
+    }
+
+    /**
+     * 根据搜索关键词和排序方式重建显示列表。
+     */
+    private void applyFilter() {
+        listModel.clear();
+
+        for (FileInfo file : allFiles) {
+            if (currentQuery.isEmpty()
+                    || file.getFileName().toLowerCase().contains(currentQuery)) {
+                listModel.addElement(file);
+            }
+        }
+
+        // 排序
+        if (currentSort == 1) {
+            sortByName();
+        } else if (currentSort == 2) {
+            sortBySize();
+        }
+
+        updateStats();
+    }
+
+    private void sortByName() {
+        List<FileInfo> sorted = new ArrayList<>();
+        for (int i = 0; i < listModel.size(); i++) sorted.add(listModel.get(i));
+        Collections.sort(sorted, new Comparator<FileInfo>() {
+            @Override
+            public int compare(FileInfo a, FileInfo b) {
+                return a.getFileName().compareToIgnoreCase(b.getFileName());
+            }
+        });
+        listModel.clear();
+        for (FileInfo f : sorted) listModel.addElement(f);
+    }
+
+    private void sortBySize() {
+        List<FileInfo> sorted = new ArrayList<>();
+        for (int i = 0; i < listModel.size(); i++) sorted.add(listModel.get(i));
+        Collections.sort(sorted, new Comparator<FileInfo>() {
+            @Override
+            public int compare(FileInfo a, FileInfo b) {
+                return Long.compare(a.getOriginalSize(), b.getOriginalSize());
+            }
+        });
+        listModel.clear();
+        for (FileInfo f : sorted) listModel.addElement(f);
     }
 
     /**
@@ -363,20 +469,12 @@ public class FileListPanel extends JPanel {
         } else if (videoCount > 0) {
             sb.append("（视频）");
         }
-        sb.append(" · 总计 ").append(formatFileSize(totalBytes));
+        sb.append(" · 总计 ").append(FileUtil.formatFileSize(totalBytes));
         statsLabel.setText(sb.toString());
         clearButton.setEnabled(count > 0);
         toggleEmptyState();
     }
 
-    static String formatFileSize(long bytes) {
-        if (bytes < 1024) return bytes + " B";
-        double kb = bytes / 1024.0;
-        if (kb < 1024) return String.format("%.1f KB", kb);
-        double mb = kb / 1024.0;
-        if (mb < 1024) return String.format("%.1f MB", mb);
-        return String.format("%.2f GB", mb / 1024.0);
-    }
 
     // ==================== 缩略图列表渲染器（双模：图片 + 视频） ====================
 
