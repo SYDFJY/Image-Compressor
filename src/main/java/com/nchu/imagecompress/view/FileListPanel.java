@@ -80,15 +80,14 @@ public class FileListPanel extends JPanel {
         titleLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
         titlePanel.add(titleLabel, BorderLayout.WEST);
 
-        clearButton = new JButton("🗑");
-        clearButton.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
+        clearButton = new JButton("清空");
+        clearButton.setFont(ThemeUtil.FONT_SMALL);
         clearButton.setEnabled(false);
         clearButton.setFocusPainted(false);
         clearButton.setContentAreaFilled(false);
         clearButton.setBorderPainted(false);
         clearButton.setForeground(ThemeUtil.TEXT_TERTIARY);
         clearButton.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
-        clearButton.setPreferredSize(new Dimension(24, 24));
         clearButton.setToolTipText("清空列表");
         titlePanel.add(clearButton, BorderLayout.EAST);
 
