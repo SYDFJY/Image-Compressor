@@ -1,6 +1,7 @@
 package com.nchu.imagecompress.view;
 
 import com.nchu.imagecompress.model.Theme;
+import com.nchu.imagecompress.util.CardWrapper;
 import com.nchu.imagecompress.util.ThemeUtil;
 
 import javax.swing.BorderFactory;
@@ -12,6 +13,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
+import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
@@ -198,19 +200,19 @@ public class MainFrame extends JFrame {
 
         toolBarPanel.add(leftPanel, BorderLayout.WEST);
 
-        // --- 中间：操作按钮组（边框样式） ---
+        // --- 中间：操作按钮组（图标+文字，主次分层） ---
         JPanel centerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
         centerPanel.setOpaque(false);
 
-        importBtn = createBorderedButton("📂  导入文件");
+        importBtn = createSecondaryButton("📥 导入文件");
         importBtn.setToolTipText("导入图片文件 (Ctrl+O)");
         centerPanel.add(importBtn);
 
-        importFolderBtn = createBorderedButton("📁  导入文件夹");
+        importFolderBtn = createSecondaryButton("📂 导入文件夹");
         importFolderBtn.setToolTipText("导入文件夹中的所有图片 (Ctrl+Shift+O)");
         centerPanel.add(importFolderBtn);
 
-        clearBtn = createBorderedButton("🗑  清空列表");
+        clearBtn = createTertiaryButton("🗑 清空列表");
         clearBtn.setToolTipText("清空文件列表 (Ctrl+Delete)");
         centerPanel.add(clearBtn);
 
@@ -220,17 +222,9 @@ public class MainFrame extends JFrame {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         rightPanel.setOpaque(false);
 
-        // 模式切换按钮
-        modeToggleBtn = new JToggleButton("🎬 视频模式");
-        modeToggleBtn.setFont(ThemeUtil.FONT_SMALL);
+        // 模式切换胶囊
+        modeToggleBtn = createToggleCapsule("🖼 图片", "🎬 视频");
         modeToggleBtn.setToolTipText("切换图片/视频压缩模式");
-        modeToggleBtn.setFocusPainted(false);
-        modeToggleBtn.setBackground(ThemeUtil.BG_CARD);
-        modeToggleBtn.setForeground(ThemeUtil.TEXT_SECONDARY);
-        modeToggleBtn.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ThemeUtil.BORDER, 1),
-                BorderFactory.createEmptyBorder(4, 12, 4, 12)));
-        modeToggleBtn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         rightPanel.add(modeToggleBtn);
 
         themeBtn = new JButton("🎨 默认蓝调");
@@ -243,14 +237,8 @@ public class MainFrame extends JFrame {
         themeBtn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         rightPanel.add(themeBtn);
 
-        compressBtn = new JButton("▶  开始压缩");
-        compressBtn.setFont(new java.awt.Font("Microsoft YaHei", java.awt.Font.BOLD, 14));
-        compressBtn.setFocusPainted(false);
-        compressBtn.setBackground(ThemeUtil.PRIMARY);
-        compressBtn.setForeground(Color.WHITE);
-        compressBtn.setBorder(BorderFactory.createEmptyBorder(10, 24, 10, 24));
-        compressBtn.setPreferredSize(new Dimension(140, 38));
-        compressBtn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        compressBtn = createGradientButton("▶ 开始压缩");
+        compressBtn.setToolTipText("开始压缩处理");
         rightPanel.add(compressBtn);
 
         toolBarPanel.add(rightPanel, BorderLayout.EAST);
@@ -258,16 +246,156 @@ public class MainFrame extends JFrame {
         add(toolBarPanel, BorderLayout.NORTH);
     }
 
-    /** 创建边框样式次要按钮（1px 边框 + 8px 圆角） */
-    private JButton createBorderedButton(String text) {
+    /** 创建次要按钮（图标+文字，32px 高，浅底色，hover 变色） */
+    private JButton createSecondaryButton(String text) {
         JButton btn = new JButton(text);
         btn.setFont(ThemeUtil.FONT_BODY);
         btn.setFocusPainted(false);
-        btn.setBackground(ThemeUtil.BG_CARD);
-        btn.setForeground(ThemeUtil.TEXT_SECONDARY);
+        btn.setBackground(ThemeUtil.BG_HOVER);
+        btn.setForeground(ThemeUtil.TEXT_PRIMARY);
         btn.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(ThemeUtil.BORDER, 1),
                 BorderFactory.createEmptyBorder(5, 14, 5, 14)));
+        btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        // hover/press 效果
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                btn.setBackground(ThemeUtil.BG_SELECTED);
+                btn.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(ThemeUtil.PRIMARY, 1),
+                        BorderFactory.createEmptyBorder(5, 14, 5, 14)));
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                btn.setBackground(ThemeUtil.BG_HOVER);
+                btn.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(ThemeUtil.BORDER, 1),
+                        BorderFactory.createEmptyBorder(5, 14, 5, 14)));
+            }
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                btn.setBackground(ThemeUtil.PRIMARY_LIGHTEST);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent e) {
+                btn.setBackground(ThemeUtil.BG_SELECTED);
+            }
+        });
+        return btn;
+    }
+
+    /** 创建三级文字按钮（无边框，弱化，hover 加深） */
+    private JButton createTertiaryButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFont(ThemeUtil.FONT_SMALL);
+        btn.setFocusPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setForeground(ThemeUtil.TEXT_TERTIARY);
+        btn.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
+        btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                btn.setForeground(ThemeUtil.TEXT_PRIMARY);
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                btn.setForeground(ThemeUtil.TEXT_TERTIARY);
+            }
+        });
+        return btn;
+    }
+
+    /** 渐变按钮 hover 状态标记 */
+    private boolean gradientBtnHovered = false;
+    private boolean gradientBtnPressed = false;
+
+    /** 创建渐变主操作按钮（40px 高，渐变填充，发光投影，hover 增强发光） */
+    private JButton createGradientButton(String text) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(java.awt.Graphics g) {
+                java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                        java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                int w = getWidth();
+                int h = getHeight();
+
+                // hover 增强发光 / press 加深
+                int glowAlpha = gradientBtnPressed ? 100 : (gradientBtnHovered ? 90 : 60);
+                java.awt.Color glow = ThemeUtil.PRIMARY_DEEP;
+                g2.setColor(new java.awt.Color(glow.getRed(), glow.getGreen(),
+                        glow.getBlue(), glowAlpha));
+                g2.fillRoundRect(2, 4, w - 4, h, ThemeUtil.ARC_BUTTON,
+                        ThemeUtil.ARC_BUTTON);
+
+                // 渐变填充（press 时加深）
+                java.awt.Color top = gradientBtnPressed
+                        ? new java.awt.Color(
+                                Math.max(0, ThemeUtil.PRIMARY_DEEP.getRed() - 30),
+                                Math.max(0, ThemeUtil.PRIMARY_DEEP.getGreen() - 30),
+                                Math.max(0, ThemeUtil.PRIMARY_DEEP.getBlue() - 30))
+                        : ThemeUtil.PRIMARY_DEEP;
+                java.awt.Color bottom = gradientBtnPressed
+                        ? new java.awt.Color(
+                                Math.max(0, ThemeUtil.PRIMARY.getRed() - 20),
+                                Math.max(0, ThemeUtil.PRIMARY.getGreen() - 20),
+                                Math.max(0, ThemeUtil.PRIMARY.getBlue() - 20))
+                        : ThemeUtil.PRIMARY;
+                java.awt.GradientPaint gp = new java.awt.GradientPaint(0, 0, top, 0, h, bottom);
+                g2.setPaint(gp);
+                g2.fillRoundRect(0, 0, w, h - 2, ThemeUtil.ARC_BUTTON,
+                        ThemeUtil.ARC_BUTTON);
+                g2.dispose();
+
+                setForeground(java.awt.Color.WHITE);
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(ThemeUtil.FONT_TITLE);
+        btn.setFocusPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setForeground(java.awt.Color.WHITE);
+        btn.setBorder(BorderFactory.createEmptyBorder(10, 24, 10, 24));
+        btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                gradientBtnHovered = true; btn.repaint();
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                gradientBtnHovered = false; btn.repaint();
+            }
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                gradientBtnPressed = true; btn.repaint();
+            }
+            public void mouseReleased(java.awt.event.MouseEvent e) {
+                gradientBtnPressed = false; btn.repaint();
+            }
+        });
+        ThemeUtil.addThemeChangeListener(btn::repaint);
+        return btn;
+    }
+
+    /** 创建模式切换胶囊控件（图片 ⇄ 视频） */
+    private JToggleButton createToggleCapsule(String leftText, String rightText) {
+        JToggleButton btn = new JToggleButton(leftText);
+        btn.setFont(ThemeUtil.FONT_SMALL);
+        btn.setFocusPainted(false);
+        btn.setBackground(ThemeUtil.BG_HOVER);
+        btn.setForeground(ThemeUtil.TEXT_SECONDARY);
+        btn.setBorder(BorderFactory.createEmptyBorder(4, 14, 4, 14));
+        btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        btn.addActionListener(e -> {
+            if (btn.isSelected()) {
+                btn.setText(rightText);
+                btn.setForeground(ThemeUtil.PRIMARY);
+                btn.setBackground(ThemeUtil.BG_SELECTED);
+            } else {
+                btn.setText(leftText);
+                btn.setForeground(ThemeUtil.TEXT_SECONDARY);
+                btn.setBackground(ThemeUtil.BG_HOVER);
+            }
+        });
+        // 圆角 → 6px (胶囊)
+        btn.putClientProperty("JButton.buttonType", "roundRect");
+        btn.putClientProperty("JComponent.outline", "none");
         return btn;
     }
 
@@ -283,26 +411,60 @@ public class MainFrame extends JFrame {
         // ========== 图片模式右侧面板 ==========
         previewPanel = new PreviewPanel();
         JPanel previewCard = new CardWrapper(previewPanel);
+        previewCard.setMinimumSize(new Dimension(0, 60));
 
         paramPanel = new ParamPanel();
         JPanel paramCard = new CardWrapper(paramPanel);
 
-        imageRightPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_LG));
+        // 参数面板包滚动条：压缩到很小时可滚动，不丢失内容
+        JScrollPane imgParamScroll = new JScrollPane(paramCard);
+        imgParamScroll.setMinimumSize(new Dimension(0, 60));
+        imgParamScroll.setBorder(BorderFactory.createEmptyBorder());
+        imgParamScroll.setOpaque(false);
+        imgParamScroll.getViewport().setOpaque(false);
+        imgParamScroll.getVerticalScrollBar().setUnitIncrement(16);
+
+        // 垂直可拖拽分割：预览(上) | 参数(下)
+        JSplitPane rightSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+                previewCard, imgParamScroll);
+        rightSplit.setDividerLocation(380);
+        rightSplit.setResizeWeight(0.65);
+        rightSplit.setDividerSize(5);
+        rightSplit.setBorder(BorderFactory.createEmptyBorder());
+        rightSplit.setOpaque(false);
+
+        imageRightPanel = new JPanel(new BorderLayout());
         imageRightPanel.setOpaque(false);
-        imageRightPanel.add(previewCard, BorderLayout.CENTER);
-        imageRightPanel.add(paramCard, BorderLayout.SOUTH);
+        imageRightPanel.add(rightSplit, BorderLayout.CENTER);
 
         // ========== 视频模式右侧面板 ==========
         videoPreviewPanel = new VideoPreviewPanel();
         JPanel videoPreviewCard = new CardWrapper(videoPreviewPanel);
+        videoPreviewCard.setMinimumSize(new Dimension(0, 60));
 
         videoParamPanel = new VideoParamPanel();
         JPanel videoParamCard = new CardWrapper(videoParamPanel);
 
-        videoRightPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_LG));
+        // 参数面板包滚动条：压缩到很小时可滚动，不丢失内容
+        JScrollPane vidParamScroll = new JScrollPane(videoParamCard);
+        vidParamScroll.setMinimumSize(new Dimension(0, 60));
+        vidParamScroll.setBorder(BorderFactory.createEmptyBorder());
+        vidParamScroll.setOpaque(false);
+        vidParamScroll.getViewport().setOpaque(false);
+        vidParamScroll.getVerticalScrollBar().setUnitIncrement(16);
+
+        // 垂直可拖拽分割：视频预览(上) | 参数(下)
+        JSplitPane videoRightSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+                videoPreviewCard, vidParamScroll);
+        videoRightSplit.setDividerLocation(400);
+        videoRightSplit.setResizeWeight(0.60);
+        videoRightSplit.setDividerSize(5);
+        videoRightSplit.setBorder(BorderFactory.createEmptyBorder());
+        videoRightSplit.setOpaque(false);
+
+        videoRightPanel = new JPanel(new BorderLayout());
         videoRightPanel.setOpaque(false);
-        videoRightPanel.add(videoPreviewCard, BorderLayout.CENTER);
-        videoRightPanel.add(videoParamCard, BorderLayout.SOUTH);
+        videoRightPanel.add(videoRightSplit, BorderLayout.CENTER);
 
         // ========== CardLayout 切换图片/视频右侧面板 ==========
         rightCardLayout = new CardLayout();
@@ -314,62 +476,16 @@ public class MainFrame extends JFrame {
         // 默认显示图片模式
         rightCardLayout.show(rightCardPanel, CARD_IMAGE);
 
-        // ========== 水平分割：左卡片 | 右面板（窗口 20px 内边距） ==========
+        // ========== 水平分割：左卡片 | 右面板（16px 窗口内边距） ==========
         mainSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftCard, rightCardPanel);
         mainSplitPane.setDividerLocation(380);
         mainSplitPane.setResizeWeight(0.36);
         mainSplitPane.setBorder(BorderFactory.createEmptyBorder(
-                ThemeUtil.SPACE_XL, ThemeUtil.SPACE_XL, ThemeUtil.SPACE_XL, ThemeUtil.SPACE_XL));
+                ThemeUtil.SPACE_BLOCK, ThemeUtil.SPACE_BLOCK,
+                ThemeUtil.SPACE_BLOCK, ThemeUtil.SPACE_BLOCK));
         mainSplitPane.setOpaque(false);
 
         add(mainSplitPane, BorderLayout.CENTER);
-    }
-
-    /**
-     * 卡片包装面板 — 3 层柔和阴影 + 白色卡片背景 + 12px 圆角。
-     *
-     * <p>阴影层次（从外到内）：
-     * <ol>
-     *   <li>4px 偏移, 6% 透明度 — 最外层扩散阴影</li>
-     *   <li>2px 偏移, 4% 透明度 — 中间层</li>
-     *   <li>0px 偏移, 白色卡片背景 — 最上层</li>
-     * </ol>
-     *
-     * <p>右侧预留 4px、底部预留 6px 给阴影。</p>
-     */
-    private static class CardWrapper extends JPanel {
-        private final int arc = ThemeUtil.ARC_CARD;
-
-        CardWrapper(JPanel content) {
-            setLayout(new BorderLayout());
-            setOpaque(false);
-            // 右侧 4px + 底部 6px 预留给阴影
-            setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 4));
-            add(content, BorderLayout.CENTER);
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
-            int w = getWidth() - 4;
-            int h = getHeight() - 6;
-
-            // 第 3 层：最远扩散阴影（4px 偏移, 6% alpha）
-            g2.setColor(new Color(0, 0, 0, 15));
-            g2.fillRoundRect(4, 4, w - 4, h - 4, arc, arc);
-
-            // 第 2 层：中间阴影（2px 偏移, 4% alpha）
-            g2.setColor(new Color(0, 0, 0, 10));
-            g2.fillRoundRect(2, 2, w - 2, h - 2, arc, arc);
-
-            // 第 1 层：卡片主体（白色背景）
-            g2.setColor(ThemeUtil.BG_CARD);
-            g2.fillRoundRect(0, 0, w, h, arc, arc);
-
-            g2.dispose();
-        }
     }
 
     private void initStatusBar() {
@@ -395,14 +511,12 @@ public class MainFrame extends JFrame {
         if ("VIDEO".equals(mode)) {
             rightCardLayout.show(rightCardPanel, CARD_VIDEO);
             modeToggleBtn.setSelected(true);
-            modeToggleBtn.setText("🎬 视频模式");
-            modeToggleBtn.setForeground(ThemeUtil.PRIMARY);
+            // ActionListener 自动更新文字和配色
             setTitle("NCHU Compressor — 视频压缩");
         } else {
             rightCardLayout.show(rightCardPanel, CARD_IMAGE);
             modeToggleBtn.setSelected(false);
-            modeToggleBtn.setText("🖼 图片模式");
-            modeToggleBtn.setForeground(ThemeUtil.TEXT_SECONDARY);
+            // ActionListener 自动更新文字和配色
             setTitle("NCHU Compressor — 图片压缩");
         }
     }

@@ -2,6 +2,7 @@ package com.nchu.imagecompress.view;
 
 import com.nchu.imagecompress.model.VideoCompressConfig;
 import com.nchu.imagecompress.util.ThemeUtil;
+import com.nchu.imagecompress.view.widget.GradientSliderUI;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -34,7 +35,23 @@ import java.util.List;
  */
 public class VideoParamPanel extends JPanel {
 
-    // ==================== 控件 ====================
+    // ==================== CRF ↔ 画质映射常量 ====================
+
+    /** 显示画质范围 (0-100, 越高越好) */
+    private static final int QUALITY_MIN = 0;
+    private static final int QUALITY_MAX = 100;
+    /** 默认显示画质值 (对应 CRF 23) */
+    private static final int DEFAULT_QUALITY = 55;
+
+    /** 滑块显示值 → 实际 CRF (0-51) */
+    private static int sliderToCrf(int quality) {
+        return (int) Math.round((QUALITY_MAX - quality) * 51.0 / QUALITY_MAX);
+    }
+
+    /** 实际 CRF → 滑块显示值 */
+    private static int crfToSlider(int crf) {
+        return QUALITY_MAX - (int) Math.round(crf * (double) QUALITY_MAX / 51.0);
+    }
 
     private JSlider crfSlider;
     private JLabel crfValueLabel;
@@ -93,7 +110,7 @@ public class VideoParamPanel extends JPanel {
     }
 
     /**
-     * 创建参数表单（GridBagLayout 对齐）。
+     * 创建参数表单（GridBagLayout 对齐，含视觉分组）。
      */
     private JPanel createParamForm() {
         JPanel panel = new JPanel(new GridBagLayout());
@@ -102,20 +119,24 @@ public class VideoParamPanel extends JPanel {
         gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0);
         int row = 0;
 
-        // --- CRF 质量 ---
-        addFormLabel(panel, gbc, "CRF 质量", row);
+        // ==================== 画质预设组 ====================
+        addGroupHeader(panel, gbc, "🎯 画质预设", row++);
+
+        // --- 视频画质 ---
+        addFormLabel(panel, gbc, "视频画质", row);
 
         JPanel crfPanel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
         crfPanel.setOpaque(false);
 
-        crfSlider = new JSlider(0, 51, 23);
-        crfSlider.setMajorTickSpacing(10);
-        crfSlider.setMinorTickSpacing(1);
+        crfSlider = new JSlider(QUALITY_MIN, QUALITY_MAX, DEFAULT_QUALITY);
+        crfSlider.setUI(new GradientSliderUI());
+        crfSlider.setMajorTickSpacing(25);
+        crfSlider.setMinorTickSpacing(5);
         crfSlider.setPaintTicks(true);
-        crfSlider.setToolTipText("CRF (Constant Rate Factor)：0=无损，23=默认，51=最低质量");
+        crfSlider.setToolTipText("视频画质：100=无损，55=标准(CRF23)，0=极限压缩(CRF51)");
         crfPanel.add(crfSlider, BorderLayout.CENTER);
 
-        crfValueLabel = new JLabel("23", SwingConstants.RIGHT);
+        crfValueLabel = new JLabel(String.valueOf(DEFAULT_QUALITY), SwingConstants.RIGHT);
         crfValueLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 14));
         crfValueLabel.setForeground(ThemeUtil.PRIMARY);
         crfValueLabel.setPreferredSize(new java.awt.Dimension(40, 24));
@@ -138,6 +159,9 @@ public class VideoParamPanel extends JPanel {
         addFormControl(panel, gbc, presetWrapper, row);
         row++;
 
+        // ==================== 画面参数组 ====================
+        addGroupHeader(panel, gbc, "🎬 画面参数", row++);
+
         // --- 分辨率 ---
         addFormLabel(panel, gbc, "分辨率", row);
         resolutionCombo = new JComboBox<>(RESOLUTION_OPTIONS);
@@ -150,6 +174,9 @@ public class VideoParamPanel extends JPanel {
         addFormControl(panel, gbc, fpsCombo, row);
         row++;
 
+        // ==================== 音视频格式组 ====================
+        addGroupHeader(panel, gbc, "🎵 音视频格式", row++);
+
         // --- 音频 ---
         addFormLabel(panel, gbc, "音频", row);
         audioCombo = new JComboBox<>(AUDIO_OPTIONS);
@@ -161,6 +188,9 @@ public class VideoParamPanel extends JPanel {
         outputFormatCombo = new JComboBox<>(FORMAT_OPTIONS);
         addFormControl(panel, gbc, outputFormatCombo, row);
         row++;
+
+        // ==================== 输出设置组 ====================
+        addGroupHeader(panel, gbc, "📂 输出设置", row++);
 
         // --- 输出目录 ---
         addFormLabel(panel, gbc, "输出目录", row);
@@ -246,8 +276,9 @@ public class VideoParamPanel extends JPanel {
                 applyPresetSelected(btn);
             }
             // 应用预设参数
-            crfSlider.setValue(preset.getCrf());
-            setCrfDisplay(preset.getCrf());
+            int displayVal = crfToSlider(preset.getCrf());
+            crfSlider.setValue(displayVal);
+            setCrfDisplay(displayVal);
             resolutionCombo.setSelectedIndex(preset.getResolution().ordinal());
             fpsCombo.setSelectedIndex(preset.getFps().ordinal());
             audioCombo.setSelectedIndex(preset.getAudio().ordinal());
@@ -267,16 +298,39 @@ public class VideoParamPanel extends JPanel {
 
     // ==================== 表单辅助方法 ====================
 
+    /** 添加分组标题行（加粗标题 + 底部 2px 主题色分隔线，跨 2 列） */
+    private static void addGroupHeader(JPanel panel, GridBagConstraints gbc, String title, int row) {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+        headerPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 2, 0, ThemeUtil.PRIMARY),
+                BorderFactory.createEmptyBorder(ThemeUtil.SPACE_BLOCK, 0, 4, 0)));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(ThemeUtil.FONT_TITLE);
+        titleLabel.setForeground(ThemeUtil.PRIMARY);
+        headerPanel.add(titleLabel, BorderLayout.WEST);
+
+        gbc.gridy = row; gbc.gridx = 0; gbc.gridwidth = 2;
+        gbc.weightx = 1.0; gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, ThemeUtil.SPACE_SM, 0);
+        gbc.anchor = GridBagConstraints.LINE_START;
+        panel.add(headerPanel, gbc);
+        gbc.insets = new Insets(ThemeUtil.SPACE_ROW, 0, ThemeUtil.SPACE_ROW,
+                ThemeUtil.SPACE_LABEL_GAP);
+    }
+
     private static void addFormLabel(JPanel panel, GridBagConstraints gbc, String text, int row) {
         JLabel label = new JLabel(text);
-        label.setFont(ThemeUtil.FONT_BODY);
-        label.setForeground(ThemeUtil.TEXT_SECONDARY);
+        label.setFont(ThemeUtil.FONT_TITLE);
+        label.setForeground(ThemeUtil.TEXT_PRIMARY);
         label.setHorizontalAlignment(SwingConstants.RIGHT);
         gbc.gridy = row; gbc.gridx = 0;
         gbc.weightx = 0; gbc.fill = GridBagConstraints.NONE;
         gbc.gridwidth = 1;
         gbc.anchor = GridBagConstraints.LINE_END;
-        gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, ThemeUtil.SPACE_LG);
+        gbc.insets = new Insets(ThemeUtil.SPACE_ROW, 0, ThemeUtil.SPACE_ROW,
+                ThemeUtil.SPACE_LABEL_GAP);
         panel.add(label, gbc);
     }
 
@@ -286,14 +340,17 @@ public class VideoParamPanel extends JPanel {
         gbc.weightx = 1.0; gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.gridwidth = 1;
         gbc.anchor = GridBagConstraints.LINE_START;
-        gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0);
+        gbc.insets = new Insets(ThemeUtil.SPACE_ROW, 0, ThemeUtil.SPACE_ROW, 0);
         panel.add(comp, gbc);
     }
 
     // ==================== 参数读取 ====================
 
-    /** 获取当前 CRF 值 */
-    public int getCrf() { return crfSlider.getValue(); }
+    /** 获取实际 CRF 值（滑块显示值 → CRF 0-51） */
+    public int getCrf() { return sliderToCrf(crfSlider.getValue()); }
+
+    /** 获取滑块显示画质值 (0-100) */
+    public int getQualityDisplay() { return crfSlider.getValue(); }
 
     /** 获取分辨率模式索引 */
     public int getResolutionIndex() { return resolutionCombo.getSelectedIndex(); }
@@ -344,10 +401,11 @@ public class VideoParamPanel extends JPanel {
 
     // ==================== 参数恢复 ====================
 
-    /** 恢复 CRF 值 */
+    /** 恢复 CRF 值（实际 CRF → 滑块显示值） */
     public void setCrf(int crf) {
-        crfSlider.setValue(Math.max(0, Math.min(51, crf)));
-        setCrfDisplay(crf);
+        int displayVal = crfToSlider(crf);
+        crfSlider.setValue(Math.max(QUALITY_MIN, Math.min(QUALITY_MAX, displayVal)));
+        setCrfDisplay(displayVal);
     }
 
     /** 恢复分辨率模式 */
@@ -499,7 +557,7 @@ public class VideoParamPanel extends JPanel {
             ToastNotification.warning("最多添加 " + MAX_VARIANTS + " 个变体");
             return;
         }
-        VariantRow row = new VariantRow(getCrf());
+        VariantRow row = new VariantRow(getQualityDisplay());
         row.setOnDelete(() -> removeVariant(row));
         variantRows.add(row);
         variantListPanel.add(row);
@@ -565,12 +623,12 @@ public class VideoParamPanel extends JPanel {
             VideoCompressConfig.VideoFormat.MKV,
         };
 
-        VariantRow(int defaultCrf) {
+        VariantRow(int defaultQuality) {
             setLayout(new FlowLayout(FlowLayout.LEFT, 4, 2));
             setOpaque(false);
             setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 
-            // --- CRF 滑块 + 标签 ---
+            // --- 画质滑块 + 标签 ---
             JPanel crfPanel = new JPanel(new BorderLayout(2, 0));
             crfPanel.setOpaque(false);
             JLabel ql = new JLabel("Q:");
@@ -578,12 +636,12 @@ public class VideoParamPanel extends JPanel {
             ql.setForeground(ThemeUtil.TEXT_SECONDARY);
             crfPanel.add(ql, BorderLayout.WEST);
 
-            crfSlider = new JSlider(0, 51, defaultCrf);
+            crfSlider = new JSlider(QUALITY_MIN, QUALITY_MAX, defaultQuality);
             crfSlider.setOpaque(false);
             crfSlider.setPreferredSize(new Dimension(70, 24));
             crfSlider.setPaintTicks(false);
 
-            crfLabel = new JLabel(String.valueOf(defaultCrf));
+            crfLabel = new JLabel(String.valueOf(defaultQuality));
             crfLabel.setFont(ThemeUtil.FONT_SMALL);
             crfLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
             crfLabel.setPreferredSize(new Dimension(22, 24));
@@ -651,7 +709,7 @@ public class VideoParamPanel extends JPanel {
         /** 从 UI 控件构建 VariantPreset */
         VideoCompressConfig.VariantPreset buildPreset() {
             VideoCompressConfig.VariantPreset preset = new VideoCompressConfig.VariantPreset();
-            preset.setCrf(crfSlider.getValue());
+            preset.setCrf(sliderToCrf(crfSlider.getValue()));
             preset.setResolutionMode(RES_MODES[resolutionCombo.getSelectedIndex()]);
             preset.setFpsMode(FPS_MODES[fpsCombo.getSelectedIndex()]);
             preset.setAudioMode(AUDIO_MODES[audioCombo.getSelectedIndex()]);

@@ -80,13 +80,16 @@ public class FileListPanel extends JPanel {
         titleLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
         titlePanel.add(titleLabel, BorderLayout.WEST);
 
-        clearButton = new JButton("清空");
-        clearButton.setFont(ThemeUtil.FONT_SMALL);
+        clearButton = new JButton("🗑");
+        clearButton.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
         clearButton.setEnabled(false);
         clearButton.setFocusPainted(false);
+        clearButton.setContentAreaFilled(false);
+        clearButton.setBorderPainted(false);
         clearButton.setForeground(ThemeUtil.TEXT_TERTIARY);
-        clearButton.setBackground(ThemeUtil.BG_CARD);
-        clearButton.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
+        clearButton.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        clearButton.setPreferredSize(new Dimension(24, 24));
+        clearButton.setToolTipText("清空列表");
         titlePanel.add(clearButton, BorderLayout.EAST);
 
         add(titlePanel, BorderLayout.NORTH);
@@ -136,31 +139,32 @@ public class FileListPanel extends JPanel {
         add(statsLabel, BorderLayout.SOUTH);
     }
 
-    /** 创建弱化表头行（12px 灰色文字，底部 1px 分割线） */
+    /** 创建强表头行（28px 高，深底色，加粗文字，底部 1px 分割线） */
     private JPanel createHeaderRow() {
         JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
+        header.setBackground(ThemeUtil.BG_HOVER);
+        header.setOpaque(true);
         header.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, ThemeUtil.BORDER),
-                BorderFactory.createEmptyBorder(2, 2, 4, 2)));
-        header.setPreferredSize(new Dimension(0, 22));
+                BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+        header.setPreferredSize(new Dimension(0, 28));
 
         JPanel cols = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         cols.setOpaque(false);
-        cols.setBorder(BorderFactory.createEmptyBorder(0, 38, 0, 0));
+        cols.setBorder(BorderFactory.createEmptyBorder(0, 30, 0, 0));
         cols.add(headerLabel("文件名", 170));
         cols.add(headerLabel("大小", 65));
         cols.add(headerLabel("信息", 70));
-        cols.add(headerLabel("状态", 45));
+        cols.add(headerLabel("状态", 50));
         header.add(cols, BorderLayout.CENTER);
         return header;
     }
 
     private static JLabel headerLabel(String text, int width) {
         JLabel label = new JLabel(text);
-        label.setFont(ThemeUtil.FONT_TINY);
-        label.setForeground(ThemeUtil.TEXT_TERTIARY);
-        label.setPreferredSize(new Dimension(width, 16));
+        label.setFont(ThemeUtil.FONT_TITLE);
+        label.setForeground(ThemeUtil.TEXT_SECONDARY);
+        label.setPreferredSize(new Dimension(width, 18));
         return label;
     }
 
@@ -398,7 +402,7 @@ public class FileListPanel extends JPanel {
 
             // 左侧强调条
             accentBar = new JPanel();
-            accentBar.setPreferredSize(new Dimension(3, 44));
+            accentBar.setPreferredSize(new Dimension(2, 44));
             accentBar.setBackground(ThemeUtil.PRIMARY);
             accentBar.setOpaque(true);
 

@@ -16,7 +16,7 @@ public class AppConfig {
     // ==================== 主题设置 ====================
 
     /** 当前主题 */
-    private Theme theme = Theme.BLUE_CLASSIC;
+    private Theme theme = Theme.DOPAMINE;
 
     // ==================== 窗口状态 ====================
 

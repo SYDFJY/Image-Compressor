@@ -12,6 +12,9 @@ package com.nchu.imagecompress.model;
  */
 public enum Theme {
 
+    /** 多巴胺暖 · 温暖活力风 */
+    DOPAMINE("多巴胺暖", "温暖活力风", "#FF8A7A", ThemePalette.dopamineWarm()),
+
     /** 默认蓝调 · 经典专业款 */
     BLUE_CLASSIC("默认蓝调", "经典专业款", "#3B82F6", ThemePalette.blueClassic()),
 

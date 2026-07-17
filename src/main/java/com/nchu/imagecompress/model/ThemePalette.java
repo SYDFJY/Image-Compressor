@@ -94,6 +94,13 @@ public class ThemePalette {
     public static final int SPACE_XL = 20;
     public static final int SPACE_XXL = 24;
 
+    /** 区块外边距 (16px) — 卡片/区域之间 */
+    public static final int SPACE_BLOCK = 16;
+    /** 行内间距 (8px) — 表单行垂直间距 */
+    public static final int SPACE_ROW = 8;
+    /** 标签-控件间距 (12px) — 标签与输入控件的横向距离 */
+    public static final int SPACE_LABEL_GAP = 12;
+
     // ==================== 私有构造 ====================
 
     private ThemePalette(Builder b) {
@@ -297,6 +304,21 @@ public class ThemePalette {
                 .cardBorder(new Color(167, 139, 250, 51))
                 .buttonGlow(new Color(167, 139, 250, 76))
                 .segmented("A")
+                .build();
+    }
+
+    /** 主题七：多巴胺暖 · 温暖活力风 */
+    public static ThemePalette dopamineWarm() {
+        return new Builder()
+                .primary(c(0xE04A60), c(0xFF7185), c(0xFF8A7A), c(0xFFA562), c(0xFFB26B))
+                .background(c(0xFFFAF7), c(0xFFFFFF), c(0xFFFBF8), c(0xFFF0EB), c(0xFFEDE4))
+                .text(c(0x2D1B1E), c(0x6B4C52), c(0xA08088))
+                .border(c(0xF5E0D3), c(0xE8CDBD))
+                .status(c(0x10B981), c(0xECFDF5), c(0xE04A60), c(0xFFF0EB), c(0xF59E0B), c(0xFFFBEB))
+                .shadow1(255, 113, 133, 20)
+                .shadow2(255, 113, 133, 25)
+                .buttonGlow(new Color(255, 141, 122, 60))
+                .segmented("B")
                 .build();
     }
 

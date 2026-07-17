@@ -238,12 +238,13 @@ public class MainController implements MainControllerCallback {
         // ---- 变体行增加/删除 → 实时刷新按钮文案 ----
         videoParamPanel.setOnVariantChanged(this::updateVideoCompressButtonState);
 
-        // ---- 视频 CRF 滑块实时更新 ----
+        // ---- 视频画质滑块实时更新 ----
         videoParamPanel.getCrfSlider().addChangeListener(e -> {
             if (!videoParamPanel.getCrfSlider().getValueIsAdjusting()) {
-                int crf = videoParamPanel.getCrf();
-                videoParamPanel.setCrfDisplay(crf);
-                appConfig.setLastVideoCrf(crf);
+                int quality = videoParamPanel.getQualityDisplay();
+                videoParamPanel.setCrfDisplay(quality);
+                // 保存实际 CRF 值（0-51）到配置
+                appConfig.setLastVideoCrf(videoParamPanel.getCrf());
                 configService.saveConfig(appConfig);
             }
         });
