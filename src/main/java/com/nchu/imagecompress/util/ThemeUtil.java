@@ -71,6 +71,9 @@ public final class ThemeUtil {
 
     private static ThemePalette currentPalette;
 
+    /** 当前激活的主题缓存（v3 — 直接赋值，O(1) 获取，避免 Color.equals 推断） */
+    private static Theme currentThemeCache = Theme.BLUE_CLASSIC;
+
     // ==================== 设计令牌：圆角（固定值） ====================
 
     public static final int ARC_CARD = ThemePalette.ARC_CARD;
@@ -125,6 +128,7 @@ public final class ThemeUtil {
             // ② 加载配色板
             ThemePalette palette = theme.getPalette();
             applyPalette(palette);
+            currentThemeCache = theme;
 
             // ③ 写入 UIManager 全局属性
             applyGlobalDefaults();
@@ -155,6 +159,7 @@ public final class ThemeUtil {
 
     // ==================== 配色板加载 ====================
 
+    /** 当前配色板引用（主题已通过 currentThemeCache 缓存） */
     private static void applyPalette(ThemePalette p) {
         currentPalette = p;
 
@@ -350,24 +355,10 @@ public final class ThemeUtil {
     }
 
     /**
-     * 获取当前激活的主题枚举。
+     * 获取当前激活的主题枚举（v3 — 缓存直接返回，O(1) 无比较）。
      */
     public static Theme getCurrentTheme() {
-        // 从当前已注册的 L&F 推断
-        if (UIManager.getLookAndFeel() == null) {
-            return Theme.BLUE_CLASSIC;
-        }
-        // 简化：从配色板的主色推断主题
-        if (currentPalette == null) {
-            return Theme.BLUE_CLASSIC;
-        }
-        Color cp = currentPalette.primary;
-        for (Theme t : Theme.values()) {
-            if (t.getPalette().primary.equals(cp)) {
-                return t;
-            }
-        }
-        return Theme.BLUE_CLASSIC;
+        return currentThemeCache != null ? currentThemeCache : Theme.BLUE_CLASSIC;
     }
 
     /** Color → hex int（用于 UIManager） */

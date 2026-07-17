@@ -4,12 +4,16 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.nchu.imagecompress.util.ThemeUtil;
 
 import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
+import com.nchu.imagecompress.util.FileUtil;
+
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -44,11 +48,11 @@ public class PreviewPanel extends JPanel {
     /** 当前预览模式：0=原图, 1=效果图, 2=对比 */
     private int currentPreviewMode = 0;
 
-    // 分段控件
+    // 分段控件（v2 — JToggleButton 替代 JLabel，支持键盘导航）
     private final JPanel segmentedControl;
-    private JLabel originalSegBtn;
-    private JLabel effectSegBtn;
-    private JLabel compareSegBtn;
+    private JToggleButton originalSegBtn;
+    private JToggleButton effectSegBtn;
+    private JToggleButton compareSegBtn;
 
     // 画布（非 final — JDK 8 限制：构造方法内匿名类引用必须先赋值）
     private PreviewCanvas canvas;
@@ -171,7 +175,7 @@ public class PreviewPanel extends JPanel {
         return btn;
     }
 
-    // ==================== 分段控件 [原图 | 效果图 | 对比] ====================
+    // ==================== 分段控件 [原图 | 效果图 | 对比] v2 ====================
 
     private JPanel createSegmentedControl() {
         JPanel container = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
@@ -190,41 +194,50 @@ public class PreviewPanel extends JPanel {
         segment.setOpaque(false);
         segment.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
 
-        originalSegBtn = createSegBtn("原图", 0);
+        ButtonGroup group = new ButtonGroup();
+
+        originalSegBtn = createSegToggle("原图", 0);
+        group.add(originalSegBtn);
         segment.add(originalSegBtn);
 
-        effectSegBtn = createSegBtn("效果图", 1);
+        effectSegBtn = createSegToggle("效果图", 1);
+        group.add(effectSegBtn);
         segment.add(effectSegBtn);
 
-        compareSegBtn = createSegBtn("对比", 2);
+        compareSegBtn = createSegToggle("对比", 2);
+        group.add(compareSegBtn);
         segment.add(compareSegBtn);
+
+        originalSegBtn.setSelected(true);
 
         container.add(segment);
         return container;
     }
 
-    private JLabel createSegBtn(String text, int mode) {
-        JLabel btn = new JLabel(text, SwingConstants.CENTER) {
+    private JToggleButton createSegToggle(String text, int mode) {
+        JToggleButton btn = new JToggleButton(text) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                if (currentPreviewMode == mode) {
+                if (isSelected()) {
                     g2.setColor(ThemeUtil.BG_CARD);
                     g2.fillRoundRect(0, 0, getWidth(), getHeight(),
                             ThemeUtil.ARC_TAG - 1, ThemeUtil.ARC_TAG - 1);
                 }
                 g2.dispose();
+                setForeground(isSelected() ? ThemeUtil.PRIMARY : ThemeUtil.TEXT_SECONDARY);
                 super.paintComponent(g);
             }
         };
         btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
         btn.setFont(ThemeUtil.FONT_SMALL);
-        btn.setForeground(currentPreviewMode == mode ? ThemeUtil.PRIMARY : ThemeUtil.TEXT_SECONDARY);
+        btn.setFocusPainted(true);
         btn.setPreferredSize(new Dimension(54, 28));
         btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-        btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
+        btn.addActionListener(e -> {
+            if (btn.isSelected()) {
                 setPreviewMode(mode);
             }
         });
@@ -234,14 +247,10 @@ public class PreviewPanel extends JPanel {
     private void setPreviewMode(int mode) {
         currentPreviewMode = mode;
         canvas.setCurrentMode(mode);
-        updateSegStyle();
-    }
-
-    private void updateSegStyle() {
-        originalSegBtn.setForeground(currentPreviewMode == 0 ? ThemeUtil.PRIMARY : ThemeUtil.TEXT_SECONDARY);
-        effectSegBtn.setForeground(currentPreviewMode == 1 ? ThemeUtil.PRIMARY : ThemeUtil.TEXT_SECONDARY);
-        compareSegBtn.setForeground(currentPreviewMode == 2 ? ThemeUtil.PRIMARY : ThemeUtil.TEXT_SECONDARY);
-        segmentedControl.repaint();
+        // 同步 ToggleButton 状态
+        if (mode == 0) originalSegBtn.setSelected(true);
+        else if (mode == 1) effectSegBtn.setSelected(true);
+        else if (mode == 2) compareSegBtn.setSelected(true);
     }
 
     // ==================== 半透明数据浮层 ====================
@@ -525,8 +534,8 @@ public class PreviewPanel extends JPanel {
 
     public void updateComparison(long originalSize, long compressedSize, double ratio) {
         overlayBar.setVisible(true);
-        origSizeLabel.setText(formatFileSize(originalSize));
-        compSizeLabel.setText(formatFileSize(compressedSize));
+        origSizeLabel.setText(FileUtil.formatFileSize(originalSize));
+        compSizeLabel.setText(FileUtil.formatFileSize(compressedSize));
         if (ratio >= 0) {
             ratioLabel.setText(String.format("−%.1f%%", ratio));
             ratioLabel.setForeground(ratio > 30 ? ThemeUtil.SUCCESS
@@ -545,7 +554,7 @@ public class PreviewPanel extends JPanel {
         ratioLabel.setText("—");
         dimsLabel.setText("—");
         currentPreviewMode = 0;
-        updateSegStyle();
+        originalSegBtn.setSelected(true);
         infoCardLayout.show(infoCardPanel, INFO_EMPTY);
     }
 
@@ -562,12 +571,4 @@ public class PreviewPanel extends JPanel {
         return bi;
     }
 
-    private static String formatFileSize(long bytes) {
-        if (bytes <= 0) return "—";
-        if (bytes < 1024) return bytes + " B";
-        double kb = bytes / 1024.0;
-        if (kb < 1024) return String.format("%.1f KB", kb);
-        double mb = kb / 1024.0;
-        return String.format("%.1f MB", mb);
-    }
 }

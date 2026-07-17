@@ -315,9 +315,9 @@ public class MainFrame extends JFrame {
         return btn;
     }
 
-    /** 渐变按钮 hover 状态标记 */
-    private boolean gradientBtnHovered = false;
-    private boolean gradientBtnPressed = false;
+    /** 渐变按钮 client property key（v2 — 每个按钮独立状态，消除实例变量竞态） */
+    private static final String PROP_HOVERED = "gradientBtnHovered";
+    private static final String PROP_PRESSED = "gradientBtnPressed";
 
     /** 创建渐变主操作按钮（40px 高，渐变填充，发光投影，hover 增强发光） */
     private JButton createGradientButton(String text) {
@@ -334,8 +334,14 @@ public class MainFrame extends JFrame {
                 int w = getWidth();
                 int h = getHeight();
 
+                // 通过 client property 读取当前按钮的独立状态
+                Boolean hovered = (Boolean) getClientProperty(PROP_HOVERED);
+                Boolean pressed = (Boolean) getClientProperty(PROP_PRESSED);
+                boolean isHovered = hovered != null && hovered;
+                boolean isPressed = pressed != null && pressed;
+
                 // hover 增强发光 / press 加深
-                int glowAlpha = gradientBtnPressed ? 100 : (gradientBtnHovered ? 90 : 60);
+                int glowAlpha = isPressed ? 100 : (isHovered ? 90 : 60);
                 java.awt.Color glow = ThemeUtil.PRIMARY_DEEP;
                 g2.setColor(new java.awt.Color(glow.getRed(), glow.getGreen(),
                         glow.getBlue(), glowAlpha));
@@ -343,13 +349,13 @@ public class MainFrame extends JFrame {
                         ThemeUtil.ARC_BUTTON);
 
                 // 渐变填充（press 时加深）
-                java.awt.Color top = gradientBtnPressed
+                java.awt.Color top = isPressed
                         ? new java.awt.Color(
                                 Math.max(0, ThemeUtil.PRIMARY_DEEP.getRed() - 30),
                                 Math.max(0, ThemeUtil.PRIMARY_DEEP.getGreen() - 30),
                                 Math.max(0, ThemeUtil.PRIMARY_DEEP.getBlue() - 30))
                         : ThemeUtil.PRIMARY_DEEP;
-                java.awt.Color bottom = gradientBtnPressed
+                java.awt.Color bottom = isPressed
                         ? new java.awt.Color(
                                 Math.max(0, ThemeUtil.PRIMARY.getRed() - 20),
                                 Math.max(0, ThemeUtil.PRIMARY.getGreen() - 20),
@@ -368,6 +374,8 @@ public class MainFrame extends JFrame {
         if (iconPath != null) {
             btn.setIcon(new FlatSVGIcon(iconPath));
         }
+        btn.putClientProperty(PROP_HOVERED, false);
+        btn.putClientProperty(PROP_PRESSED, false);
         btn.setFont(ThemeUtil.FONT_TITLE);
         btn.setFocusPainted(false);
         btn.setContentAreaFilled(false);
@@ -377,16 +385,20 @@ public class MainFrame extends JFrame {
         btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent e) {
-                gradientBtnHovered = true; btn.repaint();
+                btn.putClientProperty(PROP_HOVERED, true);
+                btn.repaint();
             }
             public void mouseExited(java.awt.event.MouseEvent e) {
-                gradientBtnHovered = false; btn.repaint();
+                btn.putClientProperty(PROP_HOVERED, false);
+                btn.repaint();
             }
             public void mousePressed(java.awt.event.MouseEvent e) {
-                gradientBtnPressed = true; btn.repaint();
+                btn.putClientProperty(PROP_PRESSED, true);
+                btn.repaint();
             }
             public void mouseReleased(java.awt.event.MouseEvent e) {
-                gradientBtnPressed = false; btn.repaint();
+                btn.putClientProperty(PROP_PRESSED, false);
+                btn.repaint();
             }
         });
         ThemeUtil.addThemeChangeListener(btn::repaint);

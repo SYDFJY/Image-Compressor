@@ -60,8 +60,6 @@ public class PreviewCanvas extends JPanel {
     private int paddingBottom = 0;
     private static final int PADDING = 12;
     private static final int GRID_SIZE = 16;
-    private static final Color LIGHT_CELL = new Color(0xF8FAFC);
-    private static final Color DARK_CELL = new Color(0xE2E8F0);
 
     /** 空状态相机图标（48×48） */
     private final FlatSVGIcon emptyIcon;
@@ -309,11 +307,14 @@ public class PreviewCanvas extends JPanel {
         g.setColor(ThemeUtil.BG_CARD);
         g.fillRect(0, 0, w, h);
 
+        // 主题感知棋盘格颜色 — 跟随主题切换自动变化
+        Color lightCell = ThemeUtil.BG_CARD;
+        Color darkCell = ThemeUtil.BG_HOVER;
         int cols = w / GRID_SIZE + 1;
         int rows = h / GRID_SIZE + 1;
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-                g.setColor((r + c) % 2 == 0 ? LIGHT_CELL : DARK_CELL);
+                g.setColor((r + c) % 2 == 0 ? lightCell : darkCell);
                 g.fillRect(c * GRID_SIZE, r * GRID_SIZE, GRID_SIZE, GRID_SIZE);
             }
         }
