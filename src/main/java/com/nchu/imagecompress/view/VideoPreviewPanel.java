@@ -1,5 +1,6 @@
 package com.nchu.imagecompress.view;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.nchu.imagecompress.model.VideoFileInfo;
 import com.nchu.imagecompress.util.ThemeUtil;
 import com.nchu.imagecompress.util.VideoUtil;
@@ -99,7 +100,7 @@ public class VideoPreviewPanel extends JPanel {
 
         // Tab 1: 视频预览（VLCJ 内嵌播放器）
         videoPlayerPanel = new VideoPlayerPanel();
-        tabbedPane.addTab("🎬 视频预览", videoPlayerPanel);
+        tabbedPane.addTab("视频预览", new FlatSVGIcon("icons/film.svg"), videoPlayerPanel);
 
         // Tab 2: 视频信息
         infoCardLayout = new CardLayout();
@@ -113,7 +114,7 @@ public class VideoPreviewPanel extends JPanel {
         infoCardPanel.add(infoDetailPanel, INFO_DETAIL);
         infoCardLayout.show(infoCardPanel, INFO_EMPTY);
 
-        tabbedPane.addTab("📋 视频信息", infoCardPanel);
+        tabbedPane.addTab("视频信息", new FlatSVGIcon("icons/clipboard.svg"), infoCardPanel);
 
         add(tabbedPane, BorderLayout.CENTER);
 
@@ -136,7 +137,7 @@ public class VideoPreviewPanel extends JPanel {
         JPanel centerPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_LG));
         centerPanel.setOpaque(false);
 
-        JLabel iconLabel = new JLabel("📋", SwingConstants.CENTER);
+        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/clipboard.svg"));
         iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 36));
         centerPanel.add(iconLabel, BorderLayout.NORTH);
 
@@ -163,8 +164,7 @@ public class VideoPreviewPanel extends JPanel {
         JPanel headerPanel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
         headerPanel.setOpaque(false);
 
-        videoIconLabel = new JLabel("🎬");
-        videoIconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
+        videoIconLabel = new JLabel(new FlatSVGIcon("icons/film.svg"));
         headerPanel.add(videoIconLabel, BorderLayout.WEST);
 
         fileNameLabel = new JLabel();

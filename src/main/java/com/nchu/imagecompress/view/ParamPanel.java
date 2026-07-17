@@ -106,7 +106,7 @@ public class ParamPanel extends JPanel {
         cancelButton.setBorderPainted(false);
         rightBtns.add(cancelButton);
 
-        compressButton = new JButton("▶  开始压缩");
+        compressButton = new JButton("开始压缩", new com.formdev.flatlaf.extras.FlatSVGIcon("icons/play.svg"));
         compressButton.setFont(new java.awt.Font("Microsoft YaHei", java.awt.Font.BOLD, 14));
         compressButton.setEnabled(false);
         compressButton.setFocusPainted(false);

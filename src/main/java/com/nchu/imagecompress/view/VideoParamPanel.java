@@ -1,5 +1,6 @@
 package com.nchu.imagecompress.view;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.nchu.imagecompress.model.VideoCompressConfig;
 import com.nchu.imagecompress.util.ThemeUtil;
 import com.nchu.imagecompress.view.widget.GradientSliderUI;
@@ -160,7 +161,7 @@ public class VideoParamPanel extends JPanel {
         row++;
 
         // ==================== 画面参数组 ====================
-        addGroupHeader(panel, gbc, "🎬 画面参数", row++);
+        addGroupHeader(panel, gbc, "画面参数", row++);
 
         // --- 分辨率 ---
         addFormLabel(panel, gbc, "分辨率", row);
@@ -175,7 +176,7 @@ public class VideoParamPanel extends JPanel {
         row++;
 
         // ==================== 音视频格式组 ====================
-        addGroupHeader(panel, gbc, "🎵 音视频格式", row++);
+        addGroupHeader(panel, gbc, "音视频格式", row++);
 
         // --- 音频 ---
         addFormLabel(panel, gbc, "音频", row);
@@ -240,7 +241,7 @@ public class VideoParamPanel extends JPanel {
         cancelButton.setBorderPainted(false);
         rightBtns.add(cancelButton);
 
-        compressButton = new JButton("▶  开始压缩");
+        compressButton = new JButton("开始压缩", new FlatSVGIcon("icons/play.svg"));
         compressButton.setFont(new Font("Microsoft YaHei", Font.BOLD, 14));
         compressButton.setEnabled(false);
         compressButton.setFocusPainted(false);
@@ -476,9 +477,9 @@ public class VideoParamPanel extends JPanel {
     public void updateCompressButtonText(int fileCount) {
         if (isBatchMode()) {
             int total = fileCount * variantRows.size();
-            compressButton.setText("▶  批量导出 " + total + " 个版本");
+            compressButton.setText("批量导出 " + total + " 个版本");
         } else {
-            compressButton.setText("▶  开始压缩");
+            compressButton.setText("开始压缩");
         }
     }
 

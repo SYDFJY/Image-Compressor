@@ -1,5 +1,6 @@
 package com.nchu.imagecompress.view;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.nchu.imagecompress.model.Theme;
 import com.nchu.imagecompress.util.CardWrapper;
 import com.nchu.imagecompress.util.ThemeUtil;
@@ -204,15 +205,15 @@ public class MainFrame extends JFrame {
         JPanel centerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
         centerPanel.setOpaque(false);
 
-        importBtn = createSecondaryButton("📥 导入文件");
+        importBtn = createSecondaryButton("导入文件", "icons/import.svg");
         importBtn.setToolTipText("导入图片文件 (Ctrl+O)");
         centerPanel.add(importBtn);
 
-        importFolderBtn = createSecondaryButton("📂 导入文件夹");
+        importFolderBtn = createSecondaryButton("导入文件夹", "icons/folder.svg");
         importFolderBtn.setToolTipText("导入文件夹中的所有图片 (Ctrl+Shift+O)");
         centerPanel.add(importFolderBtn);
 
-        clearBtn = createTertiaryButton("🗑 清空列表");
+        clearBtn = createTertiaryButton("清空列表", "icons/delete.svg");
         clearBtn.setToolTipText("清空文件列表 (Ctrl+Delete)");
         centerPanel.add(clearBtn);
 
@@ -223,11 +224,11 @@ public class MainFrame extends JFrame {
         rightPanel.setOpaque(false);
 
         // 模式切换胶囊
-        modeToggleBtn = createToggleCapsule("🖼 图片", "🎬 视频");
+        modeToggleBtn = createToggleCapsule("图片", "视频");
         modeToggleBtn.setToolTipText("切换图片/视频压缩模式");
         rightPanel.add(modeToggleBtn);
 
-        themeBtn = new JButton("🎨 默认蓝调");
+        themeBtn = new JButton("默认蓝调", new FlatSVGIcon("icons/palette.svg"));
         themeBtn.setFont(ThemeUtil.FONT_SMALL);
         themeBtn.setToolTipText("切换主题");
         themeBtn.setFocusPainted(false);
@@ -237,7 +238,7 @@ public class MainFrame extends JFrame {
         themeBtn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         rightPanel.add(themeBtn);
 
-        compressBtn = createGradientButton("▶ 开始压缩");
+        compressBtn = createGradientButton("开始压缩", "icons/play.svg");
         compressBtn.setToolTipText("开始压缩处理");
         rightPanel.add(compressBtn);
 
@@ -248,7 +249,13 @@ public class MainFrame extends JFrame {
 
     /** 创建次要按钮（图标+文字，32px 高，浅底色，hover 变色） */
     private JButton createSecondaryButton(String text) {
-        JButton btn = new JButton(text);
+        return createSecondaryButton(text, null);
+    }
+
+    private JButton createSecondaryButton(String text, String iconPath) {
+        JButton btn = (iconPath != null)
+                ? new JButton(text, new FlatSVGIcon(iconPath))
+                : new JButton(text);
         btn.setFont(ThemeUtil.FONT_BODY);
         btn.setFocusPainted(false);
         btn.setBackground(ThemeUtil.BG_HOVER);
@@ -283,7 +290,13 @@ public class MainFrame extends JFrame {
 
     /** 创建三级文字按钮（无边框，弱化，hover 加深） */
     private JButton createTertiaryButton(String text) {
-        JButton btn = new JButton(text);
+        return createTertiaryButton(text, null);
+    }
+
+    private JButton createTertiaryButton(String text, String iconPath) {
+        JButton btn = (iconPath != null)
+                ? new JButton(text, new FlatSVGIcon(iconPath))
+                : new JButton(text);
         btn.setFont(ThemeUtil.FONT_SMALL);
         btn.setFocusPainted(false);
         btn.setContentAreaFilled(false);
@@ -308,6 +321,10 @@ public class MainFrame extends JFrame {
 
     /** 创建渐变主操作按钮（40px 高，渐变填充，发光投影，hover 增强发光） */
     private JButton createGradientButton(String text) {
+        return createGradientButton(text, null);
+    }
+
+    private JButton createGradientButton(String text, String iconPath) {
         JButton btn = new JButton(text) {
             @Override
             protected void paintComponent(java.awt.Graphics g) {
@@ -348,6 +365,9 @@ public class MainFrame extends JFrame {
                 super.paintComponent(g);
             }
         };
+        if (iconPath != null) {
+            btn.setIcon(new FlatSVGIcon(iconPath));
+        }
         btn.setFont(ThemeUtil.FONT_TITLE);
         btn.setFocusPainted(false);
         btn.setContentAreaFilled(false);

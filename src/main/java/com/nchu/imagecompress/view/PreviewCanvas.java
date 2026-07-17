@@ -321,26 +321,18 @@ public class PreviewCanvas extends JPanel {
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
 
-        g2d.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 48));
-        String icon = "📷";
-        FontMetrics fmIcon = g2d.getFontMetrics();
-        int iconW = fmIcon.stringWidth(icon);
-        int iconH = fmIcon.getAscent();
-        int iconY = h / 2 - 30;
-        g2d.setColor(ThemeUtil.TEXT_TERTIARY);
-        g2d.drawString(icon, (w - iconW) / 2, iconY);
-
         g2d.setFont(ThemeUtil.FONT_BODY);
         g2d.setColor(ThemeUtil.TEXT_SECONDARY);
         String title = "选择图片以预览";
         FontMetrics fmTitle = g2d.getFontMetrics();
-        g2d.drawString(title, (w - fmTitle.stringWidth(title)) / 2, iconY + iconH + 24);
+        int titleY = h / 2 - 10;
+        g2d.drawString(title, (w - fmTitle.stringWidth(title)) / 2, titleY);
 
         g2d.setFont(ThemeUtil.FONT_SMALL);
         g2d.setColor(ThemeUtil.TEXT_TERTIARY);
         String subtitle = "从左侧文件列表选中图片查看效果";
         g2d.drawString(subtitle, (w - g2d.getFontMetrics().stringWidth(subtitle)) / 2,
-                iconY + iconH + 46);
+                titleY + 22);
 
         g2d.dispose();
     }

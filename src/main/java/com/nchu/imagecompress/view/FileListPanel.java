@@ -1,5 +1,6 @@
 package com.nchu.imagecompress.view;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.nchu.imagecompress.model.FileInfo;
 import com.nchu.imagecompress.model.ImageFileInfo;
 import com.nchu.imagecompress.model.VideoFileInfo;
@@ -468,15 +469,13 @@ public class FileListPanel extends JPanel {
                     thumbLabel.setIcon(new javax.swing.ImageIcon(cached));
                     thumbLabel.setText("");
                 } else {
-                    thumbLabel.setIcon(null);
-                    thumbLabel.setText(getFormatEmoji(getExt(value.getFileName()), false));
-                    thumbLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+                    thumbLabel.setIcon(getFormatIcon(getExt(value.getFileName()), false));
+                    thumbLabel.setText("");
                 }
             } else {
-                // 视频：始终使用 emoji 图标
-                thumbLabel.setIcon(null);
-                thumbLabel.setText(getFormatEmoji(getExt(value.getFileName()), true));
-                thumbLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+                // 视频：使用 SVG 图标
+                thumbLabel.setIcon(getFormatIcon(getExt(value.getFileName()), true));
+                thumbLabel.setText("");
             }
 
             // === 文件名 ===
@@ -566,34 +565,17 @@ public class FileListPanel extends JPanel {
         }
 
         /**
-         * 根据扩展名返回对应 emoji 图标。
+         * 根据扩展名返回对应 SVG 图标（替代 emoji，消除方框问题）。
          *
          * @param ext    文件扩展名（小写）
          * @param isVideo 是否为视频文件
          */
-        private String getFormatEmoji(String ext, boolean isVideo) {
+        private javax.swing.Icon getFormatIcon(String ext, boolean isVideo) {
             if (isVideo) {
-                switch (ext) {
-                    case "mp4":  return "🎬";  // 🎬
-                    case "avi":  return "🎬";
-                    case "mov":  return "🎬";
-                    case "mkv":  return "🎬";
-                    case "webm": return "🎬";
-                    case "flv":  return "🎬";
-                    case "wmv":  return "🎬";
-                    default:     return "🎬";  // 默认视频图标
-                }
+                return new FlatSVGIcon("icons/film.svg");
             }
-            // 图片格式
-            switch (ext) {
-                case "jpg": case "jpeg": case "png": return "🖼";   // 🖼
-                case "gif":  return "🎞";   // 🎞
-                case "bmp":  return "🖼";
-                case "webp": return "🌐";   // 🌐
-                case "tiff": case "tif": return "📷";  // 📷
-                case "ico":  return "🔲";   // 🔲
-                default:     return "📄";   // 📄
-            }
+            // 图片格式统一用图片图标
+            return new FlatSVGIcon("icons/image.svg");
         }
     }
 }

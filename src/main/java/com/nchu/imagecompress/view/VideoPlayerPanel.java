@@ -1,5 +1,6 @@
 package com.nchu.imagecompress.view;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.nchu.imagecompress.model.VideoFileInfo;
 import com.nchu.imagecompress.util.LogUtil;
 import com.nchu.imagecompress.util.ThemeUtil;
@@ -140,8 +141,7 @@ public class VideoPlayerPanel extends JPanel {
         JPanel centerPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_LG));
         centerPanel.setOpaque(false);
 
-        JLabel iconLabel = new JLabel("🎬", SwingConstants.CENTER);
-        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 48));
+        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/film.svg"));
         centerPanel.add(iconLabel, BorderLayout.NORTH);
 
         JLabel guideLabel = new JLabel("选择视频文件播放", SwingConstants.CENTER);
