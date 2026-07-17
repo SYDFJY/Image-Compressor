@@ -45,6 +45,7 @@ public class ParamPanel extends JPanel {
     private JSpinner scalePercentSpinner;
     private JComboBox<String> outputFormatCombo;
     private JComboBox<String> namingRuleCombo;
+    private javax.swing.JTextField customNameField;
     private JButton compressButton;
     private JButton cancelButton;
     private JButton outputDirButton;
@@ -194,9 +195,29 @@ public class ParamPanel extends JPanel {
         int row = 0;
 
         addFormLabel(panel, gbc, "文件命名", row);
-        namingRuleCombo = new JComboBox<>(new String[]{"添加后缀 _compressed", "添加前缀 compressed_", "保持原名"});
+        namingRuleCombo = new JComboBox<>(new String[]{"添加后缀 _compressed", "添加前缀 compressed_", "保持原名", "自定义文件名"});
+        namingRuleCombo.setFont(ThemeUtil.FONT_SMALL);
         addFormControl(panel, gbc, namingRuleCombo, row);
         row++;
+
+        // 自定义文件名输入框（仅当选择"自定义文件名"时可见）
+        addFormLabel(panel, gbc, "", row);
+        customNameField = new javax.swing.JTextField(20);
+        customNameField.setFont(ThemeUtil.FONT_SMALL);
+        customNameField.setToolTipText("输入自定义文件名（不含扩展名），留空则使用默认命名");
+        customNameField.setVisible(false);
+        addFormControl(panel, gbc, customNameField, row);
+        row++;
+
+        // 下拉框切换时显示/隐藏自定义文件名输入框
+        namingRuleCombo.addItemListener(e -> {
+            if (e.getStateChange() == java.awt.event.ItemEvent.SELECTED) {
+                boolean isCustom = namingRuleCombo.getSelectedIndex() == 3;
+                customNameField.setVisible(isCustom);
+                panel.revalidate();
+                panel.repaint();
+            }
+        });
 
         addFormLabel(panel, gbc, "输出目录", row);
         outputDirButton = new JButton("选择目录...");
@@ -300,6 +321,8 @@ public class ParamPanel extends JPanel {
     public int getScalePercent() { return (int) scalePercentSpinner.getValue(); }
     public int getOutputFormatIndex() { return outputFormatCombo.getSelectedIndex(); }
     public int getNamingRuleIndex() { return namingRuleCombo.getSelectedIndex(); }
+    public String getCustomFileName() { return customNameField.getText(); }
+    public void setCustomFileName(String name) { customNameField.setText(name != null ? name : ""); }
     public boolean isOverwrite() { return overwriteCheckBox.isSelected(); }
     public boolean isPreserveMetadata() { return preserveMetadataCheckBox.isSelected(); }
 

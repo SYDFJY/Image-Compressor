@@ -107,10 +107,28 @@ public class CompressService {
             case KEEP_ORIGINAL:
                 return nameWithoutExt + "." + outputExt;
 
+            case CUSTOM:
+                String name = config.getCustomName();
+                if (name == null || name.trim().isEmpty()) {
+                    // 自定义名称为空时回退到后缀模式
+                    return nameWithoutExt + config.getSuffix() + "." + outputExt;
+                }
+                return sanitizeFileName(name.trim()) + "." + outputExt;
+
             case ADD_SUFFIX:
             default:
                 return nameWithoutExt + config.getSuffix() + "." + outputExt;
         }
+    }
+
+    /**
+     * 清理文件名中的非法字符。
+     */
+    private static String sanitizeFileName(String name) {
+        if (name == null || name.isEmpty()) return "output";
+        // Windows 文件系统非法字符
+        String sanitized = name.replaceAll("[\\\\/:*?\"<>|]", "");
+        return sanitized.isEmpty() ? "output" : sanitized;
     }
 
     /**

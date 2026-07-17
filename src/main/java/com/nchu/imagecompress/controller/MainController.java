@@ -767,8 +767,14 @@ public class MainController implements MainControllerCallback {
             case 0: config.setNamingRule(CompressConfig.NamingRule.ADD_SUFFIX); break;
             case 1: config.setNamingRule(CompressConfig.NamingRule.ADD_PREFIX); break;
             case 2: config.setNamingRule(CompressConfig.NamingRule.KEEP_ORIGINAL); break;
+            case 3: config.setNamingRule(CompressConfig.NamingRule.CUSTOM); break;
             default: config.setNamingRule(CompressConfig.NamingRule.ADD_SUFFIX);
         }
+        config.setCustomName(paramPanel.getCustomFileName());
+
+        // 保存命名参数到持久化配置
+        appConfig.setLastNamingRule(config.getNamingRule().name());
+        appConfig.setLastCustomName(config.getCustomName());
 
         // 覆盖
         config.setOverwrite(paramPanel.isOverwrite());
@@ -1048,6 +1054,12 @@ public class MainController implements MainControllerCallback {
             paramPanel.getNamingRuleCombo().setSelectedIndex(1);
         } else if ("KEEP_ORIGINAL".equals(naming)) {
             paramPanel.getNamingRuleCombo().setSelectedIndex(2);
+        } else if ("CUSTOM".equals(naming)) {
+            paramPanel.getNamingRuleCombo().setSelectedIndex(3);
+        }
+        // 恢复自定义文件名
+        if (appConfig.getLastCustomName() != null) {
+            paramPanel.setCustomFileName(appConfig.getLastCustomName());
         }
 
         // 恢复窗口位置
