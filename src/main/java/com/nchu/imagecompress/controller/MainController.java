@@ -56,6 +56,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -115,6 +117,9 @@ public class MainController implements MainControllerCallback {
 
     /** 当前 ffplay 播放进程（用于生命周期管理，同一时间只允许一个） */
     private Process currentFfplayProcess;
+
+    /** 视频批量压缩线程池（v2 — 多线程并行，提高批量效率） */
+    private ExecutorService videoExecutor;
 
     /** 预览防抖定时器：质量滑块拖动停止 200ms 后刷新效果预览 */
     private final javax.swing.Timer previewDebounceTimer = new javax.swing.Timer(200, null);
@@ -741,6 +746,10 @@ public class MainController implements MainControllerCallback {
     @Override
     public void onCancelCompress() {
         if (mainFrame.isVideoMode()) {
+            // 关闭视频线程池（v2）
+            if (videoExecutor != null && !videoExecutor.isShutdown()) {
+                videoExecutor.shutdownNow();
+            }
             if (currentVideoThread != null && currentVideoThread.isAlive()) {
                 LogUtil.info("[MainController] 用户取消视频压缩任务");
                 currentVideoThread.interrupt();
@@ -1602,52 +1611,60 @@ public class MainController implements MainControllerCallback {
     }
 
     /**
-     * 单版本视频压缩（原逻辑）。
+     * 单版本视频压缩（v2 — 多线程并行）。
+     *
+     * <p>使用最多 2 线程的线程池并行压缩视频文件，
+     * 大幅缩短批量视频压缩耗时。</p>
      */
     private void startSingleVideoCompress() {
         currentVideoConfig = videoParamPanel.buildConfig();
         currentVideoConfig.setOutputPath(getVideoOutputPath());
 
-        // 更新 UI
-        setCompressingState(true);
-        statusBar.showProgress(0, "0/" + videoFileList.size(),
-                "准备压缩 " + videoFileList.size() + " 个视频...");
-
         final int total = videoFileList.size();
-        currentVideoThread = new Thread(() -> {
-            List<CompressResult> results = new ArrayList<>();
+        setCompressingState(true);
+        statusBar.showProgress(0, "0/" + total,
+                "并行压缩 " + total + " 个视频（2 线程）...");
 
-            for (int i = 0; i < total; i++) {
-                if (Thread.currentThread().isInterrupted()) break;
+        // 创建固定线程池（视频 CPU/IO 密集，2 线程平衡效率与资源）
+        videoExecutor = Executors.newFixedThreadPool(2);
+        final List<CompressResult> results = new ArrayList<>(total);
+        final int[] completed = {0};
 
-                final VideoFileInfo info = videoFileList.get(i);
-                final int idx = i;
+        for (int i = 0; i < total; i++) {
+            final VideoFileInfo info = videoFileList.get(i);
+            final int idx = i;
 
-                SwingUtilities.invokeLater(() -> {
-                    statusBar.showProgress(
-                            (int) ((double) idx / total * 100),
-                            (idx + 1) + "/" + total,
-                            "正在压缩 " + info.getFileName() + "...");
-                });
+            videoExecutor.submit(() -> {
+                if (Thread.currentThread().isInterrupted()) return;
 
                 final CompressResult result = videoCompressService.compress(info, currentVideoConfig);
-                results.add(result);
 
-                final int finalI = i;
-                SwingUtilities.invokeLater(() -> {
-                    statusBar.showProgress(
-                            (int) ((double) (finalI + 1) / total * 100),
-                            (finalI + 1) + "/" + total,
-                            result.isSuccess()
-                                    ? info.getFileName() + " 完成"
-                                    : info.getFileName() + " 失败");
-                });
+                synchronized (results) {
+                    results.add(result);
+                    completed[0]++;
+                    final int done = completed[0];
+                    SwingUtilities.invokeLater(() -> {
+                        statusBar.showProgress(
+                                (int) ((double) done / total * 100),
+                                done + "/" + total,
+                                (result.isSuccess() ? "✓ " : "✗ ") + info.getFileName());
+                    });
+                }
+            });
+        }
+
+        // 等待所有任务完成的看门狗线程
+        currentVideoThread = new Thread(() -> {
+            videoExecutor.shutdown();
+            try {
+                videoExecutor.awaitTermination(12, TimeUnit.HOURS);
+            } catch (InterruptedException e) {
+                videoExecutor.shutdownNow();
             }
-
             SwingUtilities.invokeLater(() -> onVideoCompressComplete(results));
-        }, "VideoCompress-Thread");
+        }, "VideoCompress-Watchdog");
         currentVideoThread.start();
-        LogUtil.info("[MainController] 视频压缩任务已启动，共 " + total + " 个文件");
+        LogUtil.info("[MainController] 视频并行压缩已启动，共 " + total + " 个文件（2 线程）");
     }
 
     /**
@@ -1669,59 +1686,52 @@ public class MainController implements MainControllerCallback {
 
         setCompressingState(true);
         statusBar.showProgress(0, "0/" + totalOps,
-                "批量导出 " + fileCount + " 文件 × " + variantCount + " 变体...");
+                "并行导出 " + fileCount + " 文件 × " + variantCount + " 变体（2 线程）...");
 
-        currentVideoThread = new Thread(() -> {
-            List<CompressResult> results = new ArrayList<>();
-            int completed = 0;
+        // v2: 多线程并行
+        videoExecutor = Executors.newFixedThreadPool(2);
+        final List<CompressResult> results = java.util.Collections.synchronizedList(new ArrayList<>());
+        final int[] completed = {0};
 
-            for (int fi = 0; fi < fileCount; fi++) {
-                if (Thread.currentThread().isInterrupted()) break;
+        for (int fi = 0; fi < fileCount; fi++) {
+            final VideoFileInfo info = videoFileList.get(fi);
+            for (int vi = 0; vi < variantCount; vi++) {
+                final VideoCompressConfig.VariantPreset variant = variants.get(vi);
+                final String variantLabel = variant.buildSuffix().replaceFirst("^_", "");
+                final VideoCompressConfig mergedConfig = variant.mergeWith(baseConfig);
 
-                final VideoFileInfo info = videoFileList.get(fi);
-                final int fileNum = fi + 1;
-
-                for (int vi = 0; vi < variantCount; vi++) {
-                    if (Thread.currentThread().isInterrupted()) break;
-
-                    VideoCompressConfig.VariantPreset variant = variants.get(vi);
-                    VideoCompressConfig mergedConfig = variant.mergeWith(baseConfig);
-                    String variantLabel = variant.buildSuffix().replaceFirst("^_", "");
-
-                    final int current = completed;
-                    final int varNum = vi + 1;
-                    SwingUtilities.invokeLater(() -> {
-                        statusBar.showProgress(
-                                (int) ((double) current / totalOps * 100),
-                                current + "/" + totalOps,
-                                "文件 " + fileNum + "/" + fileCount
-                                        + ", 变体 " + varNum + "/" + variantCount
-                                        + " — " + info.getFileName()
-                                        + " → " + variantLabel);
-                    });
-
+                videoExecutor.submit(() -> {
+                    if (Thread.currentThread().isInterrupted()) return;
                     final CompressResult result = videoCompressService.compress(info, mergedConfig);
                     result.setVariantLabel(variantLabel);
                     results.add(result);
-                    completed++;
-                    final int done = completed;
 
-                    final VideoFileInfo resultInfo = info;
-                    final String resultLabel = variantLabel;
-                    SwingUtilities.invokeLater(() -> {
-                        String status = result.isSuccess()
-                                ? resultInfo.getFileName() + " ✓ " + resultLabel
-                                : resultInfo.getFileName() + " ✗ " + resultLabel;
-                        statusBar.showProgress(
-                                (int) ((double) done / totalOps * 100),
-                                done + "/" + totalOps, status);
-                    });
-                }
+                    synchronized (completed) {
+                        completed[0]++;
+                        final int done = completed[0];
+                        SwingUtilities.invokeLater(() -> {
+                            String status = result.isSuccess()
+                                    ? "✓ " + info.getFileName() + " → " + variantLabel
+                                    : "✗ " + info.getFileName() + " → " + variantLabel;
+                            statusBar.showProgress(
+                                    (int) ((double) done / totalOps * 100),
+                                    done + "/" + totalOps, status);
+                        });
+                    }
+                });
             }
+        }
 
-            final List<CompressResult> finalResults = results;
+        videoExecutor.shutdown();
+        currentVideoThread = new Thread(() -> {
+            try {
+                videoExecutor.awaitTermination(12, TimeUnit.HOURS);
+            } catch (InterruptedException e) {
+                videoExecutor.shutdownNow();
+            }
+            final List<CompressResult> finalResults = new ArrayList<>(results);
             SwingUtilities.invokeLater(() -> onVideoCompressComplete(finalResults));
-        }, "VideoCompress-Batch-Thread");
+        }, "VideoCompress-Batch-Watchdog");
         currentVideoThread.start();
         LogUtil.info("[MainController] 批量视频压缩已启动，共 "
                 + fileCount + " 文件 × " + variantCount + " 变体 = " + totalOps + " 个任务");
