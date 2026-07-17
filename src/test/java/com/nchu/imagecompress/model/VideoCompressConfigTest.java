@@ -29,7 +29,7 @@ public class VideoCompressConfigTest {
         assertEquals("Default format should be ORIGINAL",
                 VideoCompressConfig.VideoFormat.ORIGINAL, config.getOutputFormat());
         assertEquals("Default suffix should be _compressed", "_compressed", config.getSuffix());
-        assertFalse("Default overwrite should be false", config.isOverwrite());
+        assertTrue("Default overwrite should be true (方便重复压缩调试)", config.isOverwrite());
     }
 
     // ==================== CRF 边界值测试 ====================

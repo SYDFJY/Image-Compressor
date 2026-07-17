@@ -132,8 +132,8 @@ public class VideoCompressUtilTest {
         List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config);
         int vfIndex = cmd.indexOf("-vf");
         assertTrue("Should have -vf flag for scaling", vfIndex >= 0);
-        assertTrue("Scale filter should contain 1280:720",
-                cmd.get(vfIndex + 1).contains("1280:720"));
+        assertTrue("Scale filter should contain 1280:-2 (auto even height)",
+                cmd.get(vfIndex + 1).contains("1280:-2"));
     }
 
     @Test
