@@ -16,6 +16,7 @@ import com.nchu.imagecompress.service.ConfigService;
 import com.nchu.imagecompress.service.FileManagerService;
 import com.nchu.imagecompress.service.SmartRecommendService;
 import com.nchu.imagecompress.service.VideoCompressService;
+import com.nchu.imagecompress.util.ImageExifUtil;
 import com.nchu.imagecompress.util.ImageUtil;
 import com.nchu.imagecompress.util.LogUtil;
 import com.nchu.imagecompress.util.ThemeUtil;
@@ -503,16 +504,21 @@ public class MainController implements MainControllerCallback {
             return;
         }
 
-        // 图片模式：生成预览图
+        // 图片模式：生成预览图 + 读取 EXIF
         FileInfo selected = fileListPanel.getFileList().get(index);
         if (!(selected instanceof ImageFileInfo)) return;
-        ImageFileInfo info = (ImageFileInfo) selected;
+        final ImageFileInfo info = (ImageFileInfo) selected;
         if (info.getSourceFile() == null) return;
+        final File sourceFile = info.getSourceFile();
 
         new Thread(() -> {
-            ImageIcon preview = ImageUtil.loadScaledIcon(info.getSourceFile(), 1024, 768);
+            ImageIcon preview = ImageUtil.loadScaledIcon(sourceFile, 1024, 768);
+            // 读取 EXIF 元数据
+            ImageExifUtil.ExifData exif = ImageExifUtil.readExif(sourceFile);
+            info.setExifData(exif);
             SwingUtilities.invokeLater(() -> {
                 previewPanel.showOriginal(preview);
+                previewPanel.showImageInfo(info);
             });
         }).start();
     }

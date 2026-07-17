@@ -1,5 +1,6 @@
 package com.nchu.imagecompress.view;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.nchu.imagecompress.util.ThemeUtil;
 
 import javax.swing.BorderFactory;
@@ -7,15 +8,20 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.image.BufferedImage;
 
 /**
@@ -54,6 +60,32 @@ public class PreviewPanel extends JPanel {
     private JLabel ratioLabel;
     private JLabel dimsLabel;
 
+    // ==================== 双 Tab：预览 + 信息 ====================
+
+    private JTabbedPane tabbedPane;
+    private JPanel infoCardPanel;
+    private CardLayout infoCardLayout;
+    private JPanel infoEmptyPanel;
+    private JPanel infoDetailPanel;
+
+    // 信息 Tab 表单控件
+    private JLabel infoFileNameLabel;
+    private JLabel infoFileSizeLabel;
+    private JLabel infoMakeModelLabel;
+    private JLabel infoDateTimeLabel;
+    private JLabel infoExposureLabel;
+    private JLabel infoFNumberLabel;
+    private JLabel infoISOLabel;
+    private JLabel infoFocalLengthLabel;
+    private JLabel infoFlashLabel;
+    private JLabel infoDimensionsLabel;
+    private JLabel infoGPSLabel;
+    private JLabel infoSoftwareLabel;
+    private JLabel infoCopyrightLabel;
+
+    private static final String INFO_EMPTY = "INFO_EMPTY";
+    private static final String INFO_DETAIL = "INFO_DETAIL";
+
     public PreviewPanel() {
         setLayout(new BorderLayout(0, 0));
         setBackground(ThemeUtil.BG_CARD);
@@ -90,9 +122,36 @@ public class PreviewPanel extends JPanel {
 
         add(topPanel, BorderLayout.NORTH);
 
-        // === 中部：自适应预览画布 ===
+        // === 中部：双 Tab（预览 + 信息） ===
         canvas = new PreviewCanvas();
-        add(canvas, BorderLayout.CENTER);
+
+        tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+        tabbedPane.setFont(ThemeUtil.FONT_SMALL);
+        tabbedPane.setBackground(ThemeUtil.BG_CARD);
+        tabbedPane.setForeground(ThemeUtil.TEXT_SECONDARY);
+
+        // Tab 1: 图片预览
+        JPanel previewTabContent = new JPanel(new BorderLayout());
+        previewTabContent.setOpaque(true);
+        previewTabContent.setBackground(ThemeUtil.BG_CARD);
+        previewTabContent.add(canvas, BorderLayout.CENTER);
+        tabbedPane.addTab("图片预览", new FlatSVGIcon("icons/camera.svg"), previewTabContent);
+
+        // Tab 2: 图片信息
+        infoCardLayout = new CardLayout();
+        infoCardPanel = new JPanel(infoCardLayout);
+        infoCardPanel.setOpaque(false);
+
+        infoEmptyPanel = createInfoEmptyPanel();
+        infoDetailPanel = createInfoDetailPanel();
+
+        infoCardPanel.add(infoEmptyPanel, INFO_EMPTY);
+        infoCardPanel.add(infoDetailPanel, INFO_DETAIL);
+        infoCardLayout.show(infoCardPanel, INFO_EMPTY);
+
+        tabbedPane.addTab("图片信息", new FlatSVGIcon("icons/clipboard.svg"), infoCardPanel);
+
+        add(tabbedPane, BorderLayout.CENTER);
 
         // === 底部：半透明数据浮层 ===
         overlayBar = createOverlayBar();
@@ -240,6 +299,210 @@ public class PreviewPanel extends JPanel {
         return item;
     }
 
+    // ==================== 图片信息 Tab ====================
+
+    /**
+     * 信息 Tab 空状态面板。
+     */
+    private JPanel createInfoEmptyPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createEmptyBorder(30, 20, 30, 20));
+
+        JPanel centerPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_LG));
+        centerPanel.setOpaque(false);
+
+        JLabel iconLabel = new JLabel(new FlatSVGIcon("icons/clipboard.svg", 48, 48));
+        centerPanel.add(iconLabel, BorderLayout.NORTH);
+
+        JLabel guideLabel = new JLabel("选择图片文件查看拍摄信息", SwingConstants.CENTER);
+        guideLabel.setFont(ThemeUtil.FONT_BODY);
+        guideLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
+        centerPanel.add(guideLabel, BorderLayout.CENTER);
+
+        panel.add(centerPanel, BorderLayout.CENTER);
+        return panel;
+    }
+
+    /**
+     * 信息 Tab 详情面板（EXIF 元数据表单）。
+     */
+    private JPanel createInfoDetailPanel() {
+        JPanel panel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_MD));
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createEmptyBorder(
+                ThemeUtil.SPACE_MD, ThemeUtil.SPACE_LG,
+                ThemeUtil.SPACE_MD, ThemeUtil.SPACE_LG));
+
+        // --- 头部：相机图标 + 文件名 ---
+        JPanel headerPanel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
+        headerPanel.setOpaque(false);
+
+        JLabel cameraIcon = new JLabel(new FlatSVGIcon("icons/camera.svg", 20, 20));
+        headerPanel.add(cameraIcon, BorderLayout.WEST);
+
+        infoFileNameLabel = new JLabel();
+        infoFileNameLabel.setFont(ThemeUtil.FONT_TITLE);
+        infoFileNameLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
+        headerPanel.add(infoFileNameLabel, BorderLayout.CENTER);
+
+        infoFileSizeLabel = new JLabel();
+        infoFileSizeLabel.setFont(ThemeUtil.FONT_SMALL);
+        infoFileSizeLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
+        headerPanel.add(infoFileSizeLabel, BorderLayout.EAST);
+
+        panel.add(headerPanel, BorderLayout.NORTH);
+
+        // --- 元数据表单 ---
+        JPanel metaPanel = new JPanel(new GridBagLayout());
+        metaPanel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, ThemeUtil.SPACE_LG);
+
+        int row = 0;
+        infoMakeModelLabel = createMetaRow(metaPanel, gbc, "相机", row++);
+        infoDateTimeLabel = createMetaRow(metaPanel, gbc, "拍摄时间", row++);
+        infoExposureLabel = createMetaRow(metaPanel, gbc, "曝光时间", row++);
+        infoFNumberLabel = createMetaRow(metaPanel, gbc, "光圈值", row++);
+        infoISOLabel = createMetaRow(metaPanel, gbc, "ISO", row++);
+        infoFocalLengthLabel = createMetaRow(metaPanel, gbc, "焦距", row++);
+        infoFlashLabel = createMetaRow(metaPanel, gbc, "闪光灯", row++);
+        infoDimensionsLabel = createMetaRow(metaPanel, gbc, "图像尺寸", row++);
+        infoGPSLabel = createMetaRow(metaPanel, gbc, "GPS 位置", row++);
+        infoSoftwareLabel = createMetaRow(metaPanel, gbc, "处理软件", row++);
+        infoCopyrightLabel = createMetaRow(metaPanel, gbc, "版权信息", row++);
+
+        // 弹性填充
+        gbc.gridy = row;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        metaPanel.add(new JLabel(), gbc);
+
+        panel.add(metaPanel, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    /**
+     * 创建元数据行（标签 + 值）。
+     */
+    private JLabel createMetaRow(JPanel panel, GridBagConstraints gbc, String label, int row) {
+        gbc.gridy = row;
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+
+        JLabel labelComp = new JLabel(label + ":");
+        labelComp.setFont(ThemeUtil.FONT_SMALL);
+        labelComp.setForeground(ThemeUtil.TEXT_SECONDARY);
+        panel.add(labelComp, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        JLabel valueComp = new JLabel("—");
+        valueComp.setFont(ThemeUtil.FONT_BODY);
+        valueComp.setForeground(ThemeUtil.TEXT_PRIMARY);
+        panel.add(valueComp, gbc);
+
+        return valueComp;
+    }
+
+    /**
+     * 显示图片 EXIF 信息（在"图片信息"Tab 中）。
+     * 由 Controller 在选中文件时调用。
+     */
+    public void showImageInfo(com.nchu.imagecompress.model.ImageFileInfo info) {
+        if (info == null) {
+            infoCardLayout.show(infoCardPanel, INFO_EMPTY);
+            return;
+        }
+
+        // 文件名和大小（始终可用）
+        infoFileNameLabel.setText(info.getFileName());
+        infoFileSizeLabel.setText(info.getFormattedSize());
+
+        // 图像尺寸（优先用 ImageFileInfo 已有的宽高）
+        if (info.getWidth() > 0 && info.getHeight() > 0) {
+            infoDimensionsLabel.setText(info.getWidth() + " × " + info.getHeight() + " px");
+        } else {
+            infoDimensionsLabel.setText("—");
+        }
+
+        // EXIF 数据
+        com.nchu.imagecompress.util.ImageExifUtil.ExifData exif = info.getExifData();
+        if (exif != null && exif.hasAnyData()) {
+            // 相机品牌 + 型号
+            String makeModel = joinNonEmpty(" ", exif.make, exif.model);
+            infoMakeModelLabel.setText(makeModel.isEmpty() ? "—" : makeModel);
+
+            infoDateTimeLabel.setText(nullToDash(exif.dateTaken));
+            infoExposureLabel.setText(nullToDash(formatExposureText(exif.exposureTime)));
+            infoFNumberLabel.setText(exif.fNumber != null ? "f/" + exif.fNumber : "—");
+            infoISOLabel.setText(nullToDash(exif.iso));
+            infoFocalLengthLabel.setText(nullToDash(exif.focalLength));
+            infoFlashLabel.setText(nullToDash(exif.flash));
+
+            // EXIF 中的尺寸（如果 ImageFileInfo 没有）
+            if (info.getWidth() <= 0 && exif.imageWidth > 0 && exif.imageHeight > 0) {
+                infoDimensionsLabel.setText(exif.imageWidth + " × " + exif.imageHeight + " px");
+            }
+
+            // GPS
+            String gps = joinNonEmpty(", ", exif.gpsLatitude, exif.gpsLongitude);
+            infoGPSLabel.setText(gps.isEmpty() ? "—" : gps);
+            if (!gps.isEmpty() && exif.gpsAltitude != null) {
+                infoGPSLabel.setText(gps + "  " + exif.gpsAltitude);
+            }
+
+            infoSoftwareLabel.setText(nullToDash(exif.software));
+            infoCopyrightLabel.setText(nullToDash(exif.copyright));
+        } else {
+            // 无 EXIF — 全部显示 "—"
+            infoMakeModelLabel.setText("—");
+            infoDateTimeLabel.setText("—");
+            infoExposureLabel.setText("—");
+            infoFNumberLabel.setText("—");
+            infoISOLabel.setText("—");
+            infoFocalLengthLabel.setText("—");
+            infoFlashLabel.setText("—");
+            infoGPSLabel.setText("—");
+            infoSoftwareLabel.setText("—");
+            infoCopyrightLabel.setText("—");
+        }
+
+        infoCardLayout.show(infoCardPanel, INFO_DETAIL);
+    }
+
+    /**
+     * 格式化曝光时间文本（如 "1/250 sec"）。
+     */
+    private static String formatExposureText(String raw) {
+        if (raw == null) return null;
+        // metadata-extractor 可能返回 "1/250 sec" 格式
+        return raw;
+    }
+
+    /** null → "—" */
+    private static String nullToDash(String s) {
+        return (s == null || s.isEmpty()) ? "—" : s;
+    }
+
+    /** 用分隔符拼接非空字符串 */
+    private static String joinNonEmpty(String delimiter, String... parts) {
+        StringBuilder sb = new StringBuilder();
+        for (String s : parts) {
+            if (s != null && !s.isEmpty()) {
+                if (sb.length() > 0) sb.append(delimiter);
+                sb.append(s);
+            }
+        }
+        return sb.toString();
+    }
+
     // ==================== 预览更新 ====================
 
     public void showOriginal(ImageIcon icon) {
@@ -283,6 +546,7 @@ public class PreviewPanel extends JPanel {
         dimsLabel.setText("—");
         currentPreviewMode = 0;
         updateSegStyle();
+        infoCardLayout.show(infoCardPanel, INFO_EMPTY);
     }
 
     // ==================== 工具方法 ====================
