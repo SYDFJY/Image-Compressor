@@ -1,5 +1,6 @@
 package com.nchu.imagecompress.view;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.nchu.imagecompress.util.ThemeUtil;
 
 import javax.swing.JPanel;
@@ -62,11 +63,15 @@ public class PreviewCanvas extends JPanel {
     private static final Color LIGHT_CELL = new Color(0xF8FAFC);
     private static final Color DARK_CELL = new Color(0xE2E8F0);
 
+    /** 空状态相机图标（48×48） */
+    private final FlatSVGIcon emptyIcon;
+
     // ==================== 构造 ====================
 
     public PreviewCanvas() {
         setOpaque(false);
         setDoubleBuffered(true);
+        emptyIcon = new FlatSVGIcon("icons/camera.svg", 48, 48);
 
         addComponentListener(new ComponentAdapter() {
             @Override
@@ -321,13 +326,22 @@ public class PreviewCanvas extends JPanel {
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
 
+        // 相机图标（48×48，居中）
+        int iconW = emptyIcon.getIconWidth();
+        int iconH = emptyIcon.getIconHeight();
+        int iconX = (w - iconW) / 2;
+        int iconY = h / 2 - 52;
+        emptyIcon.paintIcon(this, g2d, iconX, iconY);
+
+        // 标题文字
         g2d.setFont(ThemeUtil.FONT_BODY);
         g2d.setColor(ThemeUtil.TEXT_SECONDARY);
         String title = "选择图片以预览";
         FontMetrics fmTitle = g2d.getFontMetrics();
-        int titleY = h / 2 - 10;
+        int titleY = iconY + iconH + 12 + fmTitle.getAscent();
         g2d.drawString(title, (w - fmTitle.stringWidth(title)) / 2, titleY);
 
+        // 副标题
         g2d.setFont(ThemeUtil.FONT_SMALL);
         g2d.setColor(ThemeUtil.TEXT_TERTIARY);
         String subtitle = "从左侧文件列表选中图片查看效果";
