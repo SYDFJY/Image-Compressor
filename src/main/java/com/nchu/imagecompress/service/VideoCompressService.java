@@ -58,13 +58,23 @@ public class VideoCompressService {
             outputFile = new File(outputDir, uniqueName);
         }
 
-        // ⑤ 执行 FFmpeg 压缩
+        // ⑤ 计算有效输出时长（考虑裁剪）
+        double effectiveDuration = info.getDurationSeconds();
+        if (config.getStartTimeSeconds() > 0) {
+            effectiveDuration -= config.getStartTimeSeconds();
+        }
+        if (config.getDurationSeconds() > 0) {
+            effectiveDuration = Math.min(effectiveDuration, config.getDurationSeconds());
+        }
+        effectiveDuration = Math.max(effectiveDuration, 1.0); // 至少 1 秒避免除零
+
+        // ⑥ 执行 FFmpeg 压缩
         try {
             VideoCompressUtil.executeCompress(
                     info.getSourceFile(),
                     outputFile,
                     config,
-                    info.getDurationSeconds(),
+                    effectiveDuration,
                     null // 单文件不设进度回调
             );
 

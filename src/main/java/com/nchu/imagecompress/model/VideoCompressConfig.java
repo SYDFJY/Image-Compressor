@@ -415,6 +415,9 @@ public class VideoCompressConfig {
             merged.setOutputPath(base.getOutputPath());
             merged.setSuffix(buildSuffix());
             merged.setOverwrite(base.isOverwrite());
+            // 继承 base 的裁剪参数
+            merged.setStartTimeSeconds(base.getStartTimeSeconds());
+            merged.setDurationSeconds(base.getDurationSeconds());
             return merged;
         }
 

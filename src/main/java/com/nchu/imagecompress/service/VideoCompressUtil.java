@@ -69,15 +69,15 @@ public final class VideoCompressUtil {
         List<String> cmd = new ArrayList<>();
         cmd.add(FFMPEG_PATH);
 
-        // --- v2: 裁剪起始时间（在 -i 前用于快速 seek） ---
+        // --- 输入文件 ---
+        cmd.add("-i");
+        cmd.add(inputFile.getAbsolutePath());
+
+        // --- v2: 裁剪起始时间（放在 -i 后以确保输出精度和兼容性） ---
         if (config.getStartTimeSeconds() > 0) {
             cmd.add("-ss");
             cmd.add(formatTimeArg(config.getStartTimeSeconds()));
         }
-
-        // --- 输入文件 ---
-        cmd.add("-i");
-        cmd.add(inputFile.getAbsolutePath());
 
         // --- v2: 裁剪时长 ---
         if (config.getDurationSeconds() > 0) {
@@ -370,11 +370,19 @@ public final class VideoCompressUtil {
         return String.format("%d:%02d", minutes, seconds);
     }
 
-    /** 格式化时间为 FFmpeg 接受的参数格式（秒或 MM:SS） */
+    /** 格式化时间为 FFmpeg 接受的参数格式（秒、MM:SS 或 H:MM:SS） */
     private static String formatTimeArg(double seconds) {
-        if (seconds == (int) seconds && seconds < 60) {
-            return String.valueOf((int) seconds);
+        // 小于 60 秒且为整数 → 直接用秒数（如 "30"）
+        if (seconds < 60 && Math.abs(seconds - Math.round(seconds)) < 0.001) {
+            return String.valueOf((int) Math.round(seconds));
         }
-        return formatTime(seconds);
+        // 其他情况用 H:MM:SS[.ms] 格式
+        int hours = (int) (seconds / 3600);
+        int minutes = (int) ((seconds % 3600) / 60);
+        double secs = seconds % 60;
+        if (hours > 0) {
+            return String.format("%d:%02d:%06.3f", hours, minutes, secs);
+        }
+        return String.format("%d:%06.3f", minutes, secs);
     }
 }
