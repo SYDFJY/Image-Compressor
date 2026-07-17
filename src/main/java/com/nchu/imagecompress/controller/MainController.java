@@ -121,6 +121,12 @@ public class MainController implements MainControllerCallback {
     /** 上次打开的目录（用于文件选择器记忆） */
     private File lastOpenDir;
 
+    // v2: 撤销支持
+    private FileInfo undoRemovedFile = null;      // 最近移除的单文件
+    private int undoRemovedIndex = -1;
+    private List<FileInfo> undoClearAllFiles = null; // 清空前的全部文件
+    private final javax.swing.Timer undoTimer = new javax.swing.Timer(5000, e -> clearUndoState());
+
     /** 上次打开的视频目录 */
     private File lastVideoOpenDir;
 
@@ -355,7 +361,19 @@ public class MainController implements MainControllerCallback {
             }
         });
 
-        LogUtil.info("[MainController] 全局快捷键已注册: Ctrl+Enter/Escape/Ctrl+A");
+        // Ctrl+Z → 撤销移除/清空
+        rootPane.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(javax.swing.KeyStroke.getKeyStroke(
+                        java.awt.event.KeyEvent.VK_Z,
+                        java.awt.event.InputEvent.CTRL_DOWN_MASK), "undo");
+        rootPane.getActionMap().put("undo", new javax.swing.AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                onUndo();
+            }
+        });
+
+        LogUtil.info("[MainController] 全局快捷键已注册: Ctrl+Enter/Escape/Ctrl+A/Ctrl+Z");
     }
 
     /**
@@ -489,13 +507,25 @@ public class MainController implements MainControllerCallback {
 
     @Override
     public void onRemoveFile(int index) {
+        // 存储撤销信息
+        FileInfo removed = fileListPanel.getSelectedFile();
+        if (removed == null && index >= 0 && index < fileListPanel.getFileList().size()) {
+            removed = fileListPanel.getFileList().get(index);
+        }
         fileListPanel.removeFile(index);
+        clearUndoState(); // 清除之前的撤销状态
+        if (removed != null) {
+            undoRemovedFile = removed;
+            undoRemovedIndex = Math.min(index, fileListPanel.getFileList().size());
+            undoTimer.restart();
+            statusBar.setStatus("已移除 " + removed.getFileName() + " — 按 Ctrl+Z 撤销");
+        } else {
+            statusBar.setStatus("已移除文件");
+        }
         updateCompressButtonState();
-        // 如果移除的是当前预览的文件，清空预览
         if (fileListPanel.getFileList().isEmpty()) {
             previewPanel.clearPreview();
         }
-        statusBar.setStatus("已移除文件");
     }
 
     @Override
@@ -509,6 +539,10 @@ public class MainController implements MainControllerCallback {
             return;
         }
 
+        // 存储撤销信息
+        List<FileInfo> allFiles = new ArrayList<>(fileListPanel.getFileList());
+        if (allFiles.isEmpty()) return;
+
         if (mainFrame.isVideoMode()) {
             int count = videoFileList.size();
             if (count == 0) return;
@@ -519,8 +553,10 @@ public class MainController implements MainControllerCallback {
             fileListPanel.clearAllFiles();
             videoPreviewPanel.clearPreview();
             updateVideoCompressButtonState();
-            statusBar.setStatus("已清空 " + count + " 个视频", "ready");
-            ToastNotification.info("已清空视频列表");
+            clearUndoState();
+            undoClearAllFiles = allFiles; // 存储供 Ctrl+Z 撤销
+            undoTimer.restart();
+            statusBar.setStatus("已清空 " + count + " 个视频 — 按 Ctrl+Z 撤销");
             return;
         }
 
@@ -530,8 +566,47 @@ public class MainController implements MainControllerCallback {
         fileListPanel.clearAllFiles();
         previewPanel.clearPreview();
         updateCompressButtonState();
-        statusBar.setStatus("已清空 " + count + " 个文件", "ready");
-        ToastNotification.info("已清空文件列表");
+        clearUndoState();
+        undoClearAllFiles = allFiles; // 存储供 Ctrl+Z 撤销
+        undoTimer.restart();
+        statusBar.setStatus("已清空 " + count + " 个文件 — 按 Ctrl+Z 撤销");
+    }
+
+    /**
+     * 清除撤销状态。
+     */
+    private void clearUndoState() {
+        undoTimer.stop();
+        undoRemovedFile = null;
+        undoRemovedIndex = -1;
+        undoClearAllFiles = null;
+    }
+
+    /**
+     * Ctrl+Z 撤销最近的文件移除或清空操作。
+     */
+    private void onUndo() {
+        if (undoClearAllFiles != null) {
+            // 撤销清空
+            List<FileInfo> restored = new ArrayList<>(undoClearAllFiles);
+            clearUndoState();
+            fileListPanel.setFileList(restored);
+            updateCompressButtonState();
+            statusBar.flashSuccess("已撤销清空，恢复 " + restored.size() + " 个文件");
+            LogUtil.info("[MainController] 撤销清空列表，恢复 " + restored.size() + " 个文件");
+        } else if (undoRemovedFile != null) {
+            // 撤销单文件移除
+            FileInfo restored = undoRemovedFile;
+            int index = undoRemovedIndex;
+            clearUndoState();
+            // 重新添加到 allFiles（通过 FileListPanel）
+            List<FileInfo> current = new ArrayList<>(fileListPanel.getFileList());
+            current.add(Math.min(index, current.size()), restored);
+            fileListPanel.setFileList(current);
+            updateCompressButtonState();
+            statusBar.flashSuccess("已撤销移除: " + restored.getFileName());
+            LogUtil.info("[MainController] 撤销移除文件: " + restored.getFileName());
+        }
     }
 
     // ==================== 预览 ====================
