@@ -52,6 +52,9 @@ public class ImageFileInfo implements FileInfo {
     /** 列表中的索引位置 */
     private int index;
 
+    /** EXIF 元数据（懒加载，初始为 null） */
+    private com.nchu.imagecompress.util.ImageExifUtil.ExifData exifData;
+
     // ==================== 构造函数 ====================
 
     /** 无参构造（用于 JSON 反序列化等场景） */
@@ -152,6 +155,10 @@ public class ImageFileInfo implements FileInfo {
 
     public int getIndex() { return index; }
     public void setIndex(int index) { this.index = index; }
+
+    public com.nchu.imagecompress.util.ImageExifUtil.ExifData getExifData() { return exifData; }
+    public void setExifData(com.nchu.imagecompress.util.ImageExifUtil.ExifData exifData) { this.exifData = exifData; }
+    public boolean hasExifData() { return exifData != null && exifData.hasAnyData(); }
 
     @Override
     public String toString() {
