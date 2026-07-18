@@ -97,7 +97,7 @@ public class FileListPanel extends JPanel {
 
         JLabel titleLabel = new JLabel("文件列表");
         titleLabel.setFont(ThemeUtil.FONT_TITLE);
-        titleLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicForeground(titleLabel, () -> ThemeUtil.TEXT_PRIMARY);
         titlePanel.add(titleLabel, BorderLayout.WEST);
 
         clearButton = new JButton();
@@ -162,7 +162,7 @@ public class FileListPanel extends JPanel {
         // === 底部：统计栏 ===
         statsLabel = new JLabel("共 0 个文件");
         statsLabel.setFont(ThemeUtil.FONT_SMALL);
-        statsLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
+        ThemeUtil.setDynamicForeground(statsLabel, () -> ThemeUtil.TEXT_TERTIARY);
         statsLabel.setBorder(BorderFactory.createEmptyBorder(ThemeUtil.SPACE_SM, 0, 0, 0));
         add(statsLabel, BorderLayout.SOUTH);
 
@@ -201,7 +201,7 @@ public class FileListPanel extends JPanel {
     private static JLabel headerLabel(String text, int width) {
         JLabel label = new JLabel(text.toUpperCase());
         label.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
-        label.setForeground(ThemeUtil.TEXT_TERTIARY);
+        ThemeUtil.setDynamicForeground(label, () -> ThemeUtil.TEXT_TERTIARY);
         label.setPreferredSize(new Dimension(width, 18));
         return label;
     }
@@ -241,10 +241,10 @@ public class FileListPanel extends JPanel {
         textPanel.setOpaque(false);
         JLabel guideTitle = new JLabel("拖拽文件到此处", SwingConstants.CENTER);
         guideTitle.setFont(ThemeUtil.FONT_TITLE);
-        guideTitle.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicForeground(guideTitle, () -> ThemeUtil.TEXT_PRIMARY);
         JLabel guideSub = new JLabel("或点击「导入文件」按钮添加", SwingConstants.CENTER);
         guideSub.setFont(ThemeUtil.FONT_SMALL);
-        guideSub.setForeground(ThemeUtil.TEXT_TERTIARY);
+        ThemeUtil.setDynamicForeground(guideSub, () -> ThemeUtil.TEXT_TERTIARY);
         textPanel.add(guideTitle, BorderLayout.NORTH);
         textPanel.add(guideSub, BorderLayout.SOUTH);
 
@@ -555,7 +555,7 @@ public class FileListPanel extends JPanel {
             // 信息列（图片：尺寸 / 视频：时长）
             infoLabel = new JLabel();
             infoLabel.setFont(ThemeUtil.FONT_SMALL);
-            infoLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
+            ThemeUtil.setDynamicForeground(infoLabel, () -> ThemeUtil.TEXT_TERTIARY);
 
             // 状态
             statusLabel = new JLabel();
@@ -614,11 +614,11 @@ public class FileListPanel extends JPanel {
 
             // === 文件名 ===
             nameLabel.setText(value.getFileName());
-            nameLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
+            ThemeUtil.setDynamicForeground(nameLabel, () -> ThemeUtil.TEXT_PRIMARY);
 
             // === 大小 ===
             sizeLabel.setText(value.getFormattedSize());
-            sizeLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
+            ThemeUtil.setDynamicForeground(sizeLabel, () -> ThemeUtil.TEXT_SECONDARY);
 
             // === 信息列（图片：尺寸 / 视频：时长） ===
             if (isImage) {
@@ -646,19 +646,19 @@ public class FileListPanel extends JPanel {
             switch (value.getFileInfoStatus()) {
                 case SUCCESS:
                     statusLabel.setText("● 成功");
-                    statusLabel.setForeground(ThemeUtil.SUCCESS);
+                    ThemeUtil.setDynamicForeground(statusLabel, () -> ThemeUtil.SUCCESS);
                     break;
                 case FAILED:
                     statusLabel.setText("● 失败");
-                    statusLabel.setForeground(ThemeUtil.ERROR);
+                    ThemeUtil.setDynamicForeground(statusLabel, () -> ThemeUtil.ERROR);
                     break;
                 case PROCESSING:
                     statusLabel.setText("● 处理中");
-                    statusLabel.setForeground(ThemeUtil.PRIMARY);
+                    ThemeUtil.setDynamicForeground(statusLabel, () -> ThemeUtil.PRIMARY);
                     break;
                 default:
                     statusLabel.setText("待处理");
-                    statusLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
+                    ThemeUtil.setDynamicForeground(statusLabel, () -> ThemeUtil.TEXT_SECONDARY);
             }
 
             // === 背景与强调条 ===

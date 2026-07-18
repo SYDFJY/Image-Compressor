@@ -57,14 +57,14 @@ public class ParamPanel extends JPanel {
 
     public ParamPanel() {
         setLayout(new BorderLayout(0, 0));
-        setBackground(ThemeUtil.BG_CARD);
+        ThemeUtil.setDynamicBackground(this, () -> ThemeUtil.BG_CARD);
         setBorder(BorderFactory.createEmptyBorder(ThemeUtil.SPACE_LG, ThemeUtil.SPACE_LG,
                 ThemeUtil.SPACE_LG, ThemeUtil.SPACE_LG));
 
         // === 顶部：标题（参考蓝韵音乐 section-title 样式） ===
         JLabel titleLabel = new JLabel("压 缩 参 数");
         titleLabel.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
-        titleLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
+        ThemeUtil.setDynamicForeground(titleLabel, () -> ThemeUtil.TEXT_TERTIARY);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, ThemeUtil.SPACE_SM, 0));
         add(titleLabel, BorderLayout.NORTH);
 
@@ -102,8 +102,8 @@ public class ParamPanel extends JPanel {
         cancelButton.setFont(ThemeUtil.FONT_BODY);
         cancelButton.setEnabled(false);
         cancelButton.setFocusPainted(false);
-        cancelButton.setForeground(ThemeUtil.TEXT_SECONDARY);
-        cancelButton.setBackground(ThemeUtil.BG_CARD);
+        ThemeUtil.setDynamicForeground(cancelButton, () -> ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicBackground(cancelButton, () -> ThemeUtil.BG_CARD);
         cancelButton.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
         cancelButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         cancelButton.setBorderPainted(false);
@@ -113,7 +113,7 @@ public class ParamPanel extends JPanel {
         compressButton.setFont(new java.awt.Font("Microsoft YaHei", java.awt.Font.BOLD, 14));
         compressButton.setEnabled(false);
         compressButton.setFocusPainted(false);
-        compressButton.setBackground(ThemeUtil.PRIMARY);
+        ThemeUtil.setDynamicBackground(compressButton, () -> ThemeUtil.PRIMARY);
         compressButton.setForeground(java.awt.Color.WHITE);
         compressButton.setBorder(BorderFactory.createEmptyBorder(12, 28, 12, 28));
         compressButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -150,7 +150,7 @@ public class ParamPanel extends JPanel {
 
         qualityValueLabel = new JLabel("80%", SwingConstants.RIGHT);
         qualityValueLabel.setFont(new java.awt.Font("Microsoft YaHei", java.awt.Font.BOLD, 14));
-        qualityValueLabel.setForeground(ThemeUtil.PRIMARY);
+        ThemeUtil.setDynamicForeground(qualityValueLabel, () -> ThemeUtil.PRIMARY);
         qualityValueLabel.setPreferredSize(new java.awt.Dimension(40, 24));
         qualityPanel.add(qualityValueLabel, BorderLayout.EAST);
 
@@ -239,7 +239,7 @@ public class ParamPanel extends JPanel {
         addFormLabel(panel, gbc, "覆盖设置", row);
         overwriteCheckBox = new JCheckBox("覆盖原文件");
         overwriteCheckBox.setFont(ThemeUtil.FONT_SMALL);
-        overwriteCheckBox.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(overwriteCheckBox, () -> ThemeUtil.TEXT_SECONDARY);
         overwriteCheckBox.setOpaque(false);
         addFormControl(panel, gbc, overwriteCheckBox, row);
         row++;
@@ -248,7 +248,7 @@ public class ParamPanel extends JPanel {
         addFormLabel(panel, gbc, "EXIF信息", row);
         preserveMetadataCheckBox = new JCheckBox("保留照片EXIF/XMP信息（文件略大）");
         preserveMetadataCheckBox.setFont(ThemeUtil.FONT_SMALL);
-        preserveMetadataCheckBox.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(preserveMetadataCheckBox, () -> ThemeUtil.TEXT_SECONDARY);
         preserveMetadataCheckBox.setOpaque(false);
         addFormControl(panel, gbc, preserveMetadataCheckBox, row);
         row++;
@@ -317,14 +317,14 @@ public class ParamPanel extends JPanel {
 
     private void applyPresetUnselected(JButton btn) {
         btn.setBackground(ThemeUtil.BG_HOVER);
-        btn.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.TEXT_SECONDARY);
     }
 
     /** 表单标签（右对齐，加粗，主题色） */
     private static void addFormLabel(JPanel panel, GridBagConstraints gbc, String text, int row) {
         JLabel label = new JLabel(text);
         label.setFont(ThemeUtil.FONT_TITLE);
-        label.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicForeground(label, () -> ThemeUtil.TEXT_PRIMARY);
         label.setHorizontalAlignment(SwingConstants.RIGHT);
         gbc.gridy = row; gbc.gridx = 0;
         gbc.weightx = 0; gbc.fill = GridBagConstraints.NONE;

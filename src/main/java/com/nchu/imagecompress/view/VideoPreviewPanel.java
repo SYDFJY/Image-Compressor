@@ -96,7 +96,7 @@ public class VideoPreviewPanel extends JPanel {
         tabbedPane = new JTabbedPane(JTabbedPane.TOP);
         tabbedPane.setFont(ThemeUtil.FONT_SMALL);
         tabbedPane.setBackground(ThemeUtil.BG_CARD);
-        tabbedPane.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(tabbedPane, () -> ThemeUtil.TEXT_SECONDARY);
 
         // Tab 1: 视频预览（VLCJ 内嵌播放器）
         videoPlayerPanel = new VideoPlayerPanel();
@@ -150,7 +150,7 @@ public class VideoPreviewPanel extends JPanel {
 
         JLabel guideLabel = new JLabel("请选择视频文件查看信息", SwingConstants.CENTER);
         guideLabel.setFont(ThemeUtil.FONT_BODY);
-        guideLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(guideLabel, () -> ThemeUtil.TEXT_SECONDARY);
         centerPanel.add(guideLabel, BorderLayout.CENTER);
 
         panel.add(centerPanel, BorderLayout.CENTER);
@@ -176,7 +176,7 @@ public class VideoPreviewPanel extends JPanel {
 
         fileNameLabel = new JLabel();
         fileNameLabel.setFont(ThemeUtil.FONT_TITLE);
-        fileNameLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicForeground(fileNameLabel, () -> ThemeUtil.TEXT_PRIMARY);
         headerPanel.add(fileNameLabel, BorderLayout.CENTER);
 
         // --- FFmpeg 未安装警告条（默认隐藏） ---
@@ -277,7 +277,7 @@ public class VideoPreviewPanel extends JPanel {
         headerRow.setOpaque(false);
         JLabel title = new JLabel("压缩对比");
         title.setFont(ThemeUtil.FONT_SMALL);
-        title.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(title, () -> ThemeUtil.TEXT_SECONDARY);
         headerRow.add(title, BorderLayout.WEST);
 
         // 4 列数据行
@@ -293,11 +293,11 @@ public class VideoPreviewPanel extends JPanel {
         compCol.setOpaque(false);
         JLabel compTitle = new JLabel("压缩后");
         compTitle.setFont(ThemeUtil.FONT_SMALL);
-        compTitle.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(compTitle, () -> ThemeUtil.TEXT_SECONDARY);
         compCol.add(compTitle);
         compSizeValue = new JLabel("—");
         compSizeValue.setFont(ThemeUtil.FONT_BODY);
-        compSizeValue.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicForeground(compSizeValue, () -> ThemeUtil.TEXT_PRIMARY);
         compCol.add(compSizeValue);
         dataRow.add(compCol);
 
@@ -324,12 +324,12 @@ public class VideoPreviewPanel extends JPanel {
 
         JLabel titleLabel = new JLabel(label);
         titleLabel.setFont(ThemeUtil.FONT_SMALL);
-        titleLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(titleLabel, () -> ThemeUtil.TEXT_SECONDARY);
         item.add(titleLabel);
 
         JLabel valueLabel = new JLabel(value);
         valueLabel.setFont(ThemeUtil.FONT_BODY);
-        valueLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicForeground(valueLabel, () -> ThemeUtil.TEXT_PRIMARY);
         item.add(valueLabel);
 
         return item;
@@ -346,7 +346,7 @@ public class VideoPreviewPanel extends JPanel {
 
         JLabel labelComp = new JLabel(label + ":");
         labelComp.setFont(ThemeUtil.FONT_SMALL);
-        labelComp.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(labelComp, () -> ThemeUtil.TEXT_SECONDARY);
         panel.add(labelComp, gbc);
 
         gbc.gridx = 1;
@@ -355,7 +355,7 @@ public class VideoPreviewPanel extends JPanel {
 
         JLabel valueComp = new JLabel("—");
         valueComp.setFont(ThemeUtil.FONT_BODY);
-        valueComp.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicForeground(valueComp, () -> ThemeUtil.TEXT_PRIMARY);
         panel.add(valueComp, gbc);
 
         return valueComp;
@@ -429,7 +429,7 @@ public class VideoPreviewPanel extends JPanel {
     private void refreshOverlayBar(VideoFileInfo info) {
         origSizeValue.setText(VideoFileInfo.formatFileSize(info.getOriginalSize()));
         compSizeValue.setText(VideoFileInfo.formatFileSize(info.getCompressedSize()));
-        compSizeValue.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicForeground(compSizeValue, () -> ThemeUtil.TEXT_PRIMARY);
 
         double ratio = info.getCompressionRatio();
         if (ratio >= 0) {
@@ -437,19 +437,19 @@ public class VideoPreviewPanel extends JPanel {
             ratioValue.setForeground(getRatioColor(ratio));
         } else {
             ratioValue.setText("—");
-            ratioValue.setForeground(ThemeUtil.TEXT_TERTIARY);
+            ThemeUtil.setDynamicForeground(ratioValue, () -> ThemeUtil.TEXT_TERTIARY);
         }
 
         if (info.getBitrate() > 0 && info.getCompressedBitrate() > 0) {
             bitrateChangeValue.setText(formatBitrate(info.getBitrate())
                     + " → " + formatBitrate(info.getCompressedBitrate()));
-            bitrateChangeValue.setForeground(ThemeUtil.TEXT_PRIMARY);
+            ThemeUtil.setDynamicForeground(bitrateChangeValue, () -> ThemeUtil.TEXT_PRIMARY);
         } else if (info.getCompressedBitrate() > 0) {
             bitrateChangeValue.setText(formatBitrate(info.getCompressedBitrate()));
-            bitrateChangeValue.setForeground(ThemeUtil.TEXT_PRIMARY);
+            ThemeUtil.setDynamicForeground(bitrateChangeValue, () -> ThemeUtil.TEXT_PRIMARY);
         } else {
             bitrateChangeValue.setText("—");
-            bitrateChangeValue.setForeground(ThemeUtil.TEXT_TERTIARY);
+            ThemeUtil.setDynamicForeground(bitrateChangeValue, () -> ThemeUtil.TEXT_TERTIARY);
         }
     }
 

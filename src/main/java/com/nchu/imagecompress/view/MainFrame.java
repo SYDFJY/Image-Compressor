@@ -237,12 +237,12 @@ public class MainFrame extends JFrame {
 
         JLabel nameLabel = new JLabel("NCHU Compressor");
         nameLabel.setFont(ThemeUtil.FONT_TITLE);
-        nameLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicForeground(nameLabel, () -> ThemeUtil.TEXT_PRIMARY);
         leftPanel.add(nameLabel);
 
         JLabel subLabel = new JLabel("图片/视频压缩工具");
         subLabel.setFont(ThemeUtil.FONT_SMALL);
-        subLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
+        ThemeUtil.setDynamicForeground(subLabel, () -> ThemeUtil.TEXT_TERTIARY);
         leftPanel.add(subLabel);
 
         toolBarPanel.add(leftPanel, BorderLayout.WEST);
@@ -278,8 +278,8 @@ public class MainFrame extends JFrame {
         themeBtn.setFont(ThemeUtil.FONT_SMALL);
         themeBtn.setToolTipText("切换主题");
         themeBtn.setFocusPainted(false);
-        themeBtn.setBackground(ThemeUtil.BG_CARD);
-        themeBtn.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicBackground(themeBtn, () -> ThemeUtil.BG_CARD);
+        ThemeUtil.setDynamicForeground(themeBtn, () -> ThemeUtil.TEXT_SECONDARY);
         themeBtn.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         themeBtn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         ThemeUtil.addThemeChangeListener(() -> themeBtn.setBackground(ThemeUtil.BG_CARD));
@@ -305,8 +305,8 @@ public class MainFrame extends JFrame {
                 : new JButton(text);
         btn.setFont(ThemeUtil.FONT_BODY);
         btn.setFocusPainted(false);
-        btn.setBackground(ThemeUtil.BG_HOVER);
-        btn.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicBackground(btn, () -> ThemeUtil.BG_HOVER);
+        ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.TEXT_PRIMARY);
         btn.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(ThemeUtil.BORDER, 1),
                 BorderFactory.createEmptyBorder(5, 14, 5, 14)));
@@ -355,15 +355,15 @@ public class MainFrame extends JFrame {
         btn.setFocusPainted(false);
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
-        btn.setForeground(ThemeUtil.TEXT_TERTIARY);
+        ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.TEXT_TERTIARY);
         btn.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
         btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent e) {
-                btn.setForeground(ThemeUtil.TEXT_PRIMARY);
+                ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.TEXT_PRIMARY);
             }
             public void mouseExited(java.awt.event.MouseEvent e) {
-                btn.setForeground(ThemeUtil.TEXT_TERTIARY);
+                ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.TEXT_TERTIARY);
             }
         });
         return btn;
@@ -467,19 +467,19 @@ public class MainFrame extends JFrame {
         JToggleButton btn = new JToggleButton(leftText);
         btn.setFont(ThemeUtil.FONT_SMALL);
         btn.setFocusPainted(false);
-        btn.setBackground(ThemeUtil.BG_HOVER);
-        btn.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicBackground(btn, () -> ThemeUtil.BG_HOVER);
+        ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.TEXT_SECONDARY);
         btn.setBorder(BorderFactory.createEmptyBorder(4, 14, 4, 14));
         btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         btn.addActionListener(e -> {
             if (btn.isSelected()) {
                 btn.setText(rightText);
-                btn.setForeground(ThemeUtil.PRIMARY);
-                btn.setBackground(ThemeUtil.BG_SELECTED);
+                ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.PRIMARY);
+                ThemeUtil.setDynamicBackground(btn, () -> ThemeUtil.BG_SELECTED);
             } else {
                 btn.setText(leftText);
-                btn.setForeground(ThemeUtil.TEXT_SECONDARY);
-                btn.setBackground(ThemeUtil.BG_HOVER);
+                ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.TEXT_SECONDARY);
+                ThemeUtil.setDynamicBackground(btn, () -> ThemeUtil.BG_HOVER);
             }
         });
         // 圆角 → 6px (胶囊)

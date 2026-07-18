@@ -58,7 +58,7 @@ public class ThemePopup {
         // 面板标题
         JLabel titleLabel = new JLabel("  选择主题");
         titleLabel.setFont(ThemeUtil.FONT_SMALL);
-        titleLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
+        ThemeUtil.setDynamicForeground(titleLabel, () -> ThemeUtil.TEXT_TERTIARY);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, ThemeUtil.SPACE_SM,
                 ThemeUtil.SPACE_SM, ThemeUtil.SPACE_SM));
         titleLabel.setPreferredSize(new Dimension(200, 28));
@@ -153,7 +153,7 @@ public class ThemePopup {
 
             JLabel subLabel = new JLabel(theme.getSubtitle());
             subLabel.setFont(ThemeUtil.FONT_TINY);
-            subLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
+            ThemeUtil.setDynamicForeground(subLabel, () -> ThemeUtil.TEXT_TERTIARY);
             textPanel.add(subLabel);
 
             add(textPanel, BorderLayout.CENTER);

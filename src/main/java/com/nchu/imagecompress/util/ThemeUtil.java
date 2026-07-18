@@ -5,6 +5,7 @@ import com.formdev.flatlaf.FlatLightLaf;
 import com.nchu.imagecompress.model.Theme;
 import com.nchu.imagecompress.model.ThemePalette;
 
+import javax.swing.JComponent;
 import javax.swing.UIManager;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.Color;
@@ -12,6 +13,9 @@ import java.awt.Font;
 import java.awt.Insets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.function.Supplier;
 
 /**
  * FlatLaf 主题管理工具类（v3 — 动态多主题系统）。
@@ -110,6 +114,14 @@ public final class ThemeUtil {
     // ==================== 主题变更监听 ====================
 
     private static final List<Runnable> themeChangeListeners = new ArrayList<>();
+
+    // ==================== 动态前景/背景色注册表（Phase 9） ====================
+
+    /** 已注册动态前景色的组件 → 颜色供应商 */
+    private static final Map<JComponent, Supplier<Color>> fgRegistry = new WeakHashMap<>();
+
+    /** 已注册动态背景色的组件 → 颜色供应商 */
+    private static final Map<JComponent, Supplier<Color>> bgRegistry = new WeakHashMap<>();
 
     private ThemeUtil() {}
 
@@ -342,11 +354,60 @@ public final class ThemeUtil {
     }
 
     private static void fireThemeChange() {
+        // 1. 刷新所有已注册的动态前/背景色
+        refreshDynamicColors();
+        // 2. 通知手动监听器
         for (Runnable r : themeChangeListeners) {
             try {
                 r.run();
             } catch (Exception e) {
                 LogUtil.error("[ThemeUtil] 主题变更监听器异常: " + e.getMessage());
+            }
+        }
+    }
+
+    // ==================== 动态前景/背景色注册（Phase 9） ====================
+
+    /**
+     * 设置组件的动态前景色，主题切换时自动刷新。
+     * 替代手动 {@code setForeground(ThemeUtil.TEXT_PRIMARY)}，解决切主题后文字颜色不更新的 bug。
+     *
+     * @param c            目标组件
+     * @param colorSupplier 颜色供应商（通常为 {@code () -> ThemeUtil.TEXT_PRIMARY}）
+     */
+    public static void setDynamicForeground(JComponent c, java.util.function.Supplier<Color> colorSupplier) {
+        if (c == null || colorSupplier == null) return;
+        c.setForeground(colorSupplier.get());
+        fgRegistry.put(c, colorSupplier);
+    }
+
+    /**
+     * 设置组件的动态背景色，主题切换时自动刷新。
+     * 替代手动 {@code setBackground(ThemeUtil.BG_CARD)} + ThemeChangeListener。
+     *
+     * @param c            目标组件
+     * @param colorSupplier 颜色供应商（通常为 {@code () -> ThemeUtil.BG_CARD}）
+     */
+    public static void setDynamicBackground(JComponent c, java.util.function.Supplier<Color> colorSupplier) {
+        if (c == null || colorSupplier == null) return;
+        c.setBackground(colorSupplier.get());
+        bgRegistry.put(c, colorSupplier);
+    }
+
+    /** 遍历注册表，刷新所有已注册组件的前/背景色 */
+    private static void refreshDynamicColors() {
+        for (Map.Entry<JComponent, Supplier<Color>> e : fgRegistry.entrySet()) {
+            JComponent c = e.getKey();
+            Supplier<Color> supplier = e.getValue();
+            if (c != null && supplier != null) {
+                c.setForeground(supplier.get());
+            }
+        }
+        for (Map.Entry<JComponent, Supplier<Color>> e : bgRegistry.entrySet()) {
+            JComponent c = e.getKey();
+            Supplier<Color> supplier = e.getValue();
+            if (c != null && supplier != null) {
+                c.setBackground(supplier.get());
             }
         }
     }

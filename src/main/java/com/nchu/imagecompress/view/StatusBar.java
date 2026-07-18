@@ -41,7 +41,7 @@ public class StatusBar extends JPanel {
                 BorderFactory.createEmptyBorder(0, ThemeUtil.SPACE_LG, 0, ThemeUtil.SPACE_LG)));
         setPreferredSize(new Dimension(0, 36));
         // 使用 BG_CARD 凸起背景，区别于窗口底色
-        setBackground(ThemeUtil.BG_CARD);
+        ThemeUtil.setDynamicBackground(this, () -> ThemeUtil.BG_CARD);
 
         // === 左侧：状态指示 ===
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, ThemeUtil.SPACE_SM, 0));
@@ -49,12 +49,12 @@ public class StatusBar extends JPanel {
 
         statusIconLabel = new JLabel("●");
         statusIconLabel.setFont(ThemeUtil.FONT_TINY);
-        statusIconLabel.setForeground(ThemeUtil.SUCCESS);
+        ThemeUtil.setDynamicForeground(statusIconLabel, () -> ThemeUtil.SUCCESS);
         leftPanel.add(statusIconLabel);
 
         statusLabel = new JLabel("就绪");
         statusLabel.setFont(ThemeUtil.FONT_SMALL);
-        statusLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
+        ThemeUtil.setDynamicForeground(statusLabel, () -> ThemeUtil.TEXT_TERTIARY);
         leftPanel.add(statusLabel);
 
         add(leftPanel, BorderLayout.WEST);
@@ -69,7 +69,7 @@ public class StatusBar extends JPanel {
         // === 右侧：统计信息 ===
         statsLabel = new JLabel("", SwingConstants.RIGHT);
         statsLabel.setFont(ThemeUtil.FONT_SMALL);
-        statsLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
+        ThemeUtil.setDynamicForeground(statsLabel, () -> ThemeUtil.TEXT_TERTIARY);
         add(statsLabel, BorderLayout.EAST);
 
         // 主题切换时刷新背景色
@@ -86,23 +86,23 @@ public class StatusBar extends JPanel {
         statusLabel.setText(text);
         switch (status) {
             case "ready":
-                statusIconLabel.setForeground(ThemeUtil.SUCCESS);
+                ThemeUtil.setDynamicForeground(statusIconLabel, () -> ThemeUtil.SUCCESS);
                 statusIconLabel.setText("●");
                 break;
             case "working":
-                statusIconLabel.setForeground(ThemeUtil.PRIMARY);
+                ThemeUtil.setDynamicForeground(statusIconLabel, () -> ThemeUtil.PRIMARY);
                 statusIconLabel.setText("◉");
                 break;
             case "success":
-                statusIconLabel.setForeground(ThemeUtil.SUCCESS);
+                ThemeUtil.setDynamicForeground(statusIconLabel, () -> ThemeUtil.SUCCESS);
                 statusIconLabel.setText("★");
                 break;
             case "error":
-                statusIconLabel.setForeground(ThemeUtil.ERROR);
+                ThemeUtil.setDynamicForeground(statusIconLabel, () -> ThemeUtil.ERROR);
                 statusIconLabel.setText("✖");
                 break;
             default:
-                statusIconLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
+                ThemeUtil.setDynamicForeground(statusIconLabel, () -> ThemeUtil.TEXT_TERTIARY);
                 statusIconLabel.setText("●");
         }
     }

@@ -341,7 +341,7 @@ public class ToastNotification {
             // 消息文字
             JLabel msgLabel = new JLabel(item.message);
             msgLabel.setFont(ThemeUtil.FONT_BODY);
-            msgLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
+            ThemeUtil.setDynamicForeground(msgLabel, () -> ThemeUtil.TEXT_PRIMARY);
             add(msgLabel, BorderLayout.CENTER);
 
             // 关闭提示

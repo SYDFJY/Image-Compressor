@@ -152,7 +152,7 @@ public class VideoPlayerPanel extends JPanel {
 
         JLabel guideLabel = new JLabel("选择视频文件播放", SwingConstants.CENTER);
         guideLabel.setFont(ThemeUtil.FONT_BODY);
-        guideLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(guideLabel, () -> ThemeUtil.TEXT_SECONDARY);
         centerPanel.add(guideLabel, BorderLayout.CENTER);
 
         panel.add(centerPanel, BorderLayout.CENTER);
@@ -180,7 +180,7 @@ public class VideoPlayerPanel extends JPanel {
                         + "或使用外部播放器</span></center></html>",
                 SwingConstants.CENTER);
         msgLabel.setFont(ThemeUtil.FONT_SMALL);
-        msgLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(msgLabel, () -> ThemeUtil.TEXT_SECONDARY);
         centerPanel.add(msgLabel, BorderLayout.CENTER);
 
         panel.add(centerPanel, BorderLayout.CENTER);

@@ -98,7 +98,7 @@ public class VideoParamPanel extends JPanel {
         // === 顶部：标题 ===
         JLabel titleLabel = new JLabel("视 频 压 缩 参 数");
         titleLabel.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
-        titleLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
+        ThemeUtil.setDynamicForeground(titleLabel, () -> ThemeUtil.TEXT_TERTIARY);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, ThemeUtil.SPACE_SM, 0));
         add(titleLabel, BorderLayout.NORTH);
 
@@ -151,7 +151,7 @@ public class VideoParamPanel extends JPanel {
 
         crfValueLabel = new JLabel(String.valueOf(DEFAULT_QUALITY), SwingConstants.RIGHT);
         crfValueLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 14));
-        crfValueLabel.setForeground(ThemeUtil.PRIMARY);
+        ThemeUtil.setDynamicForeground(crfValueLabel, () -> ThemeUtil.PRIMARY);
         crfValueLabel.setPreferredSize(new java.awt.Dimension(40, 24));
         crfPanel.add(crfValueLabel, BorderLayout.EAST);
 
@@ -224,7 +224,7 @@ public class VideoParamPanel extends JPanel {
         addFormLabel(panel, gbc, "覆盖设置", row);
         overwriteCheckBox = new JCheckBox("覆盖已存在的输出文件");
         overwriteCheckBox.setFont(ThemeUtil.FONT_SMALL);
-        overwriteCheckBox.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(overwriteCheckBox, () -> ThemeUtil.TEXT_SECONDARY);
         overwriteCheckBox.setOpaque(false);
         overwriteCheckBox.setSelected(true); // 默认覆盖，方便重复压缩
         addFormControl(panel, gbc, overwriteCheckBox, row);
@@ -246,7 +246,7 @@ public class VideoParamPanel extends JPanel {
         trimPanel.add(durationField);
         javax.swing.JLabel trimHint = new javax.swing.JLabel(" 秒（留空=不裁剪）");
         trimHint.setFont(ThemeUtil.FONT_TINY);
-        trimHint.setForeground(ThemeUtil.TEXT_TERTIARY);
+        ThemeUtil.setDynamicForeground(trimHint, () -> ThemeUtil.TEXT_TERTIARY);
         trimPanel.add(trimHint);
         addFormControl(panel, gbc, trimPanel, row);
         row++;
@@ -275,7 +275,7 @@ public class VideoParamPanel extends JPanel {
         cancelButton.setFont(ThemeUtil.FONT_BODY);
         cancelButton.setEnabled(false);
         cancelButton.setFocusPainted(false);
-        cancelButton.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(cancelButton, () -> ThemeUtil.TEXT_SECONDARY);
         cancelButton.setBackground(ThemeUtil.BG_CARD);
         cancelButton.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
         cancelButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -335,7 +335,7 @@ public class VideoParamPanel extends JPanel {
 
     private void applyPresetUnselected(JButton btn) {
         btn.setBackground(ThemeUtil.BG_HOVER);
-        btn.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.TEXT_SECONDARY);
     }
 
     // ==================== 表单辅助方法 ====================
@@ -350,7 +350,7 @@ public class VideoParamPanel extends JPanel {
 
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(ThemeUtil.FONT_TITLE);
-        titleLabel.setForeground(ThemeUtil.PRIMARY);
+        ThemeUtil.setDynamicForeground(titleLabel, () -> ThemeUtil.PRIMARY);
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
         gbc.gridy = row; gbc.gridx = 0; gbc.gridwidth = 2;
@@ -365,7 +365,7 @@ public class VideoParamPanel extends JPanel {
     private static void addFormLabel(JPanel panel, GridBagConstraints gbc, String text, int row) {
         JLabel label = new JLabel(text);
         label.setFont(ThemeUtil.FONT_TITLE);
-        label.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicForeground(label, () -> ThemeUtil.TEXT_PRIMARY);
         label.setHorizontalAlignment(SwingConstants.RIGHT);
         gbc.gridy = row; gbc.gridx = 0;
         gbc.weightx = 0; gbc.fill = GridBagConstraints.NONE;
@@ -553,7 +553,7 @@ public class VideoParamPanel extends JPanel {
         // --- 复选框（始终可见） ---
         batchModeCheckBox = new JCheckBox("启用多版本批量导出");
         batchModeCheckBox.setFont(ThemeUtil.FONT_BODY);
-        batchModeCheckBox.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicForeground(batchModeCheckBox, () -> ThemeUtil.TEXT_PRIMARY);
         batchModeCheckBox.setOpaque(false);
         batchModeCheckBox.addActionListener(e -> {
             boolean on = batchModeCheckBox.isSelected();
@@ -598,7 +598,7 @@ public class VideoParamPanel extends JPanel {
                         ThemeUtil.TEXT_TERTIARY, 2.0f, 4.0f, 2.0f, true),
                 BorderFactory.createEmptyBorder(4, 12, 4, 12)));
         addVariantButton.setBackground(ThemeUtil.BG_CARD);
-        addVariantButton.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(addVariantButton, () -> ThemeUtil.TEXT_SECONDARY);
         addVariantButton.addActionListener(e -> addVariant());
         batchContentPanel.add(addVariantButton, BorderLayout.SOUTH);
 
@@ -689,7 +689,7 @@ public class VideoParamPanel extends JPanel {
             crfPanel.setOpaque(false);
             JLabel ql = new JLabel("Q:");
             ql.setFont(ThemeUtil.FONT_SMALL);
-            ql.setForeground(ThemeUtil.TEXT_SECONDARY);
+            ThemeUtil.setDynamicForeground(ql, () -> ThemeUtil.TEXT_SECONDARY);
             crfPanel.add(ql, BorderLayout.WEST);
 
             crfSlider = new JSlider(QUALITY_MIN, QUALITY_MAX, defaultQuality);
@@ -699,7 +699,7 @@ public class VideoParamPanel extends JPanel {
 
             crfLabel = new JLabel(String.valueOf(defaultQuality));
             crfLabel.setFont(ThemeUtil.FONT_SMALL);
-            crfLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
+            ThemeUtil.setDynamicForeground(crfLabel, () -> ThemeUtil.TEXT_PRIMARY);
             crfLabel.setPreferredSize(new Dimension(22, 24));
             crfLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -734,7 +734,7 @@ public class VideoParamPanel extends JPanel {
             deleteBtn.setFocusPainted(false);
             deleteBtn.setPreferredSize(new Dimension(24, 24));
             deleteBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            deleteBtn.setForeground(ThemeUtil.ERROR);
+            ThemeUtil.setDynamicForeground(deleteBtn, () -> ThemeUtil.ERROR);
             deleteBtn.setBorder(BorderFactory.createEmptyBorder());
             deleteBtn.setContentAreaFilled(false);
             deleteBtn.addActionListener(e -> {
@@ -749,7 +749,7 @@ public class VideoParamPanel extends JPanel {
             p.setOpaque(false);
             JLabel l = new JLabel(label);
             l.setFont(ThemeUtil.FONT_SMALL);
-            l.setForeground(ThemeUtil.TEXT_SECONDARY);
+            ThemeUtil.setDynamicForeground(l, () -> ThemeUtil.TEXT_SECONDARY);
             p.add(l, BorderLayout.WEST);
             JComboBox<String> c = new JComboBox<>(items);
             c.setFont(ThemeUtil.FONT_SMALL);

@@ -92,7 +92,7 @@ public class PreviewPanel extends JPanel {
 
     public PreviewPanel() {
         setLayout(new BorderLayout(0, 0));
-        setBackground(ThemeUtil.BG_CARD);
+        ThemeUtil.setDynamicBackground(this, () -> ThemeUtil.BG_CARD);
         setBorder(BorderFactory.createEmptyBorder(
                 ThemeUtil.SPACE_LG, ThemeUtil.SPACE_LG,
                 ThemeUtil.SPACE_LG, ThemeUtil.SPACE_LG));
@@ -104,7 +104,7 @@ public class PreviewPanel extends JPanel {
 
         JLabel titleLabel = new JLabel("预 览");
         titleLabel.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
-        titleLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
+        ThemeUtil.setDynamicForeground(titleLabel, () -> ThemeUtil.TEXT_TERTIARY);
         topPanel.add(titleLabel, BorderLayout.WEST);
 
         // 缩放按钮：⊡ 适合窗口 / 1:1 实际像素
@@ -131,13 +131,13 @@ public class PreviewPanel extends JPanel {
 
         tabbedPane = new JTabbedPane(JTabbedPane.TOP);
         tabbedPane.setFont(ThemeUtil.FONT_SMALL);
-        tabbedPane.setBackground(ThemeUtil.BG_CARD);
-        tabbedPane.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicBackground(tabbedPane, () -> ThemeUtil.BG_CARD);
+        ThemeUtil.setDynamicForeground(tabbedPane, () -> ThemeUtil.TEXT_SECONDARY);
 
         // Tab 1: 图片预览
         JPanel previewTabContent = new JPanel(new BorderLayout());
         previewTabContent.setOpaque(true);
-        previewTabContent.setBackground(ThemeUtil.BG_CARD);
+        ThemeUtil.setDynamicBackground(previewTabContent, () -> ThemeUtil.BG_CARD);
         previewTabContent.add(canvas, BorderLayout.CENTER);
         tabbedPane.addTab("图片预览", new FlatSVGIcon("icons/camera.svg"), previewTabContent);
 
@@ -324,12 +324,12 @@ public class PreviewPanel extends JPanel {
 
         JLabel lbl = new JLabel(label, SwingConstants.CENTER);
         lbl.setFont(ThemeUtil.FONT_SMALL);
-        lbl.setForeground(ThemeUtil.TEXT_TERTIARY);
+        ThemeUtil.setDynamicForeground(lbl, () -> ThemeUtil.TEXT_TERTIARY);
         item.add(lbl, BorderLayout.NORTH);
 
         JLabel val = new JLabel(value, SwingConstants.CENTER);
         val.setFont(new Font("Microsoft YaHei", Font.BOLD, 14));
-        val.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicForeground(val, () -> ThemeUtil.TEXT_PRIMARY);
         item.add(val, BorderLayout.SOUTH);
 
         return item;
@@ -353,7 +353,7 @@ public class PreviewPanel extends JPanel {
 
         JLabel guideLabel = new JLabel("选择图片文件查看拍摄信息", SwingConstants.CENTER);
         guideLabel.setFont(ThemeUtil.FONT_BODY);
-        guideLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(guideLabel, () -> ThemeUtil.TEXT_SECONDARY);
         centerPanel.add(guideLabel, BorderLayout.CENTER);
 
         panel.add(centerPanel, BorderLayout.CENTER);
@@ -379,12 +379,12 @@ public class PreviewPanel extends JPanel {
 
         infoFileNameLabel = new JLabel();
         infoFileNameLabel.setFont(ThemeUtil.FONT_TITLE);
-        infoFileNameLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicForeground(infoFileNameLabel, () -> ThemeUtil.TEXT_PRIMARY);
         headerPanel.add(infoFileNameLabel, BorderLayout.CENTER);
 
         infoFileSizeLabel = new JLabel();
         infoFileSizeLabel.setFont(ThemeUtil.FONT_SMALL);
-        infoFileSizeLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(infoFileSizeLabel, () -> ThemeUtil.TEXT_SECONDARY);
         headerPanel.add(infoFileSizeLabel, BorderLayout.EAST);
 
         panel.add(headerPanel, BorderLayout.NORTH);
@@ -432,7 +432,7 @@ public class PreviewPanel extends JPanel {
 
         JLabel labelComp = new JLabel(label + ":");
         labelComp.setFont(ThemeUtil.FONT_SMALL);
-        labelComp.setForeground(ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicForeground(labelComp, () -> ThemeUtil.TEXT_SECONDARY);
         panel.add(labelComp, gbc);
 
         gbc.gridx = 1;
@@ -441,7 +441,7 @@ public class PreviewPanel extends JPanel {
 
         JLabel valueComp = new JLabel("—");
         valueComp.setFont(ThemeUtil.FONT_BODY);
-        valueComp.setForeground(ThemeUtil.TEXT_PRIMARY);
+        ThemeUtil.setDynamicForeground(valueComp, () -> ThemeUtil.TEXT_PRIMARY);
         panel.add(valueComp, gbc);
 
         return valueComp;
@@ -565,11 +565,11 @@ public class PreviewPanel extends JPanel {
         compSizeLabel.setText(FileUtil.formatFileSize(compressedSize));
         if (ratio >= 0) {
             ratioLabel.setText(String.format("−%.1f%%", ratio));
-            ratioLabel.setForeground(ratio > 30 ? ThemeUtil.SUCCESS
+            ThemeUtil.setDynamicForeground(ratioLabel, () -> ratio > 30 ? ThemeUtil.SUCCESS
                     : ratio > 10 ? ThemeUtil.PRIMARY : ThemeUtil.TEXT_TERTIARY);
         } else {
             ratioLabel.setText("—");
-            ratioLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
+            ThemeUtil.setDynamicForeground(ratioLabel, () -> ThemeUtil.TEXT_TERTIARY);
         }
     }
 
