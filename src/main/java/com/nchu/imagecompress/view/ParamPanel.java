@@ -61,10 +61,10 @@ public class ParamPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(ThemeUtil.SPACE_LG, ThemeUtil.SPACE_LG,
                 ThemeUtil.SPACE_LG, ThemeUtil.SPACE_LG));
 
-        // === 顶部：标题 ===
-        JLabel titleLabel = new JLabel("压缩参数");
-        titleLabel.setFont(ThemeUtil.FONT_TITLE);
-        titleLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
+        // === 顶部：标题（参考蓝韵音乐 section-title 样式） ===
+        JLabel titleLabel = new JLabel("压 缩 参 数");
+        titleLabel.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
+        titleLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, ThemeUtil.SPACE_SM, 0));
         add(titleLabel, BorderLayout.NORTH);
 
@@ -121,6 +121,14 @@ public class ParamPanel extends JPanel {
 
         buttonPanel.add(rightBtns, BorderLayout.EAST);
         add(buttonPanel, BorderLayout.SOUTH);
+
+        // 主题切换时刷新显式背景色
+        ThemeUtil.addThemeChangeListener(() -> {
+            setBackground(ThemeUtil.BG_CARD);
+            cancelButton.setBackground(ThemeUtil.BG_CARD);
+            compressButton.setBackground(ThemeUtil.PRIMARY);
+            repaint();
+        });
     }
 
     private JPanel createBasicTab() {

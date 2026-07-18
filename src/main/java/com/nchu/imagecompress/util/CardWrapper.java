@@ -12,13 +12,12 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 
 /**
- * 卡片包装器 — 为任意 Swing 组件提供 12px 圆角 + 主题感知柔阴影的容器。
+ * 卡片包装器 — 为任意 Swing 组件提供 12px 圆角 + 主题感知单层柔阴影的容器。
  *
- * <p>阴影层次（从外到内）：
+ * <p>阴影层次（简洁风格，参考蓝韵音乐设计体系）：
  * <ol>
- *   <li>4px 偏移、shadow1 — 最外层扩散阴影</li>
- *   <li>2px 偏移、shadow2 — 中间过渡阴影</li>
- *   <li>白色卡片主体背景</li>
+ *   <li>4px 偏移、shadow1 — 单层扩散阴影</li>
+ *   <li>卡片主体背景</li>
  * </ol>
  *
  * <h3>使用方式</h3>
@@ -33,7 +32,7 @@ import java.awt.RenderingHints;
  * 阴影色自动跟随 {@link ThemeUtil#getCurrentPalette()}。</p>
  *
  * @author NCHU-Student
- * @version 1.0.0
+ * @version 1.1.0
  * @since 2026-07-14
  */
 public class CardWrapper extends JPanel {
@@ -79,18 +78,12 @@ public class CardWrapper extends JPanel {
         ThemePalette palette = ThemeUtil.getCurrentPalette();
         Color shadow1 = palette != null ? palette.getShadow1()
                 : new Color(0, 0, 0, 15);
-        Color shadow2 = palette != null ? palette.getShadow2()
-                : new Color(0, 0, 0, 10);
 
-        // 第 3 层：最远扩散阴影（4px 偏移）
+        // 单层阴影（4px 偏移）— 参考蓝韵音乐 0 4px 12px rgba(0,0,0,0.08)
         g2.setColor(shadow1);
         g2.fillRoundRect(4, 4, w - 4, h - 4, ARC, ARC);
 
-        // 第 2 层：中间阴影（2px 偏移）
-        g2.setColor(shadow2);
-        g2.fillRoundRect(2, 2, w - 2, h - 2, ARC, ARC);
-
-        // 第 1 层：卡片主体
+        // 卡片主体
         g2.setColor(ThemeUtil.BG_CARD);
         g2.fillRoundRect(0, 0, w, h, ARC, ARC);
 

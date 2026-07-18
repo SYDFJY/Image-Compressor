@@ -12,6 +12,28 @@ package com.nchu.imagecompress.model;
  */
 public enum Theme {
 
+    // ========== v4 蓝韵系列 6 套新主题 ==========
+
+    /** 蓝韵 · 清爽现代风 */
+    BLUE_RHYME("蓝韵", "清爽现代风", "#1A6FFF", ThemePalette.blueRhyme()),
+
+    /** 海洋青 · 深邃海洋 */
+    OCEAN("海洋青", "深邃海洋", "#0891B2", ThemePalette.ocean()),
+
+    /** 深邃黑蓝 · 暗夜经典 */
+    DARK("深邃黑蓝", "暗夜经典", "#4D94FF", ThemePalette.dark()),
+
+    /** 落日橙 · 温暖暮色 */
+    SUNSET("落日橙", "温暖暮色", "#F59E0B", ThemePalette.sunset()),
+
+    /** 森林绿 · 自然暗绿 */
+    FOREST("森林绿", "自然暗绿", "#22C55E", ThemePalette.forest()),
+
+    /** 薰衣草紫 · 梦幻紫调 */
+    LAVENDER("薰衣草紫", "梦幻紫调", "#8B5CF6", ThemePalette.lavender()),
+
+    // ========== 原有 7 套经典主题 ==========
+
     /** 多巴胺暖 · 温暖活力风 */
     DOPAMINE("多巴胺暖", "温暖活力风", "#FF8A7A", ThemePalette.dopamineWarm()),
 

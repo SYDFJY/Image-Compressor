@@ -35,11 +35,13 @@ public class StatusBar extends JPanel {
 
     public StatusBar() {
         setLayout(new BorderLayout(ThemeUtil.SPACE_LG, 0));
+        // 顶部：边框线 + 微阴影（参考蓝韵音乐 player bar 的顶部立体感）
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, ThemeUtil.BORDER),
                 BorderFactory.createEmptyBorder(0, ThemeUtil.SPACE_LG, 0, ThemeUtil.SPACE_LG)));
-        setPreferredSize(new Dimension(0, 32));
-        setBackground(ThemeUtil.BG_WINDOW);
+        setPreferredSize(new Dimension(0, 36));
+        // 使用 BG_CARD 凸起背景，区别于窗口底色
+        setBackground(ThemeUtil.BG_CARD);
 
         // === 左侧：状态指示 ===
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, ThemeUtil.SPACE_SM, 0));
@@ -69,6 +71,9 @@ public class StatusBar extends JPanel {
         statsLabel.setFont(ThemeUtil.FONT_SMALL);
         statsLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
         add(statsLabel, BorderLayout.EAST);
+
+        // 主题切换时刷新背景色
+        ThemeUtil.addThemeChangeListener(() -> setBackground(ThemeUtil.BG_CARD));
     }
 
     // ==================== 状态更新 ====================

@@ -125,6 +125,12 @@ public class VideoPlayerPanel extends JPanel {
         add(cardPanel, BorderLayout.CENTER);
         cardLayout.show(cardPanel, CARD_EMPTY);
 
+        // 主题切换时刷新背景色
+        ThemeUtil.addThemeChangeListener(() -> {
+            setBackground(ThemeUtil.BG_CARD);
+            repaint();
+        });
+
         LogUtil.info("[VideoPlayerPanel] 初始化完成, VLC 可用: " + vlcUsable);
     }
 

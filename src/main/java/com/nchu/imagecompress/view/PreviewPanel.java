@@ -102,9 +102,9 @@ public class PreviewPanel extends JPanel {
         topPanel.setOpaque(false);
         topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, ThemeUtil.SPACE_SM, 0));
 
-        JLabel titleLabel = new JLabel("预览");
-        titleLabel.setFont(ThemeUtil.FONT_TITLE);
-        titleLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
+        JLabel titleLabel = new JLabel("预 览");
+        titleLabel.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
+        titleLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
         topPanel.add(titleLabel, BorderLayout.WEST);
 
         // 缩放按钮：⊡ 适合窗口 / 1:1 实际像素
@@ -161,6 +161,15 @@ public class PreviewPanel extends JPanel {
         overlayBar = createOverlayBar();
         overlayBar.setVisible(false);
         add(overlayBar, BorderLayout.SOUTH);
+
+        // 主题切换时刷新显式背景色
+        ThemeUtil.addThemeChangeListener(() -> {
+            setBackground(ThemeUtil.BG_CARD);
+            tabbedPane.setBackground(ThemeUtil.BG_CARD);
+            previewTabContent.setBackground(ThemeUtil.BG_CARD);
+            overlayBar.repaint();
+            repaint();
+        });
     }
 
     // ==================== 缩放按钮 ====================
@@ -219,21 +228,38 @@ public class PreviewPanel extends JPanel {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                        java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+                        java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+                // 背景：选中时 BG_CARD（凸起卡片），否则透明（由父面板 BG_HOVER 提供）
                 if (isSelected()) {
                     g2.setColor(ThemeUtil.BG_CARD);
                     g2.fillRoundRect(0, 0, getWidth(), getHeight(),
                             ThemeUtil.ARC_TAG - 1, ThemeUtil.ARC_TAG - 1);
                 }
+
+                // 文字：始终手动绘制，绕过 FlatLaf ButtonUI 在 opaque=false + contentAreaFilled=false 时不渲染文字的问题
+                Color fg = isSelected() ? ThemeUtil.PRIMARY : ThemeUtil.TEXT_SECONDARY;
+                g2.setColor(fg);
+                g2.setFont(getFont());
+                java.awt.FontMetrics fm = g2.getFontMetrics();
+                String t = getText();
+                if (t != null && fm != null) {
+                    int tw = fm.stringWidth(t);
+                    int th = fm.getAscent();
+                    g2.drawString(t, (getWidth() - tw) / 2, (getHeight() + th) / 2 - 1);
+                }
+
                 g2.dispose();
-                setForeground(isSelected() ? ThemeUtil.PRIMARY : ThemeUtil.TEXT_SECONDARY);
-                super.paintComponent(g);
             }
         };
         btn.setOpaque(false);
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
         btn.setFont(ThemeUtil.FONT_SMALL);
-        btn.setFocusPainted(true);
+        btn.setFocusPainted(false);
         btn.setPreferredSize(new Dimension(54, 28));
         btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         btn.addActionListener(e -> {
@@ -260,7 +286,8 @@ public class PreviewPanel extends JPanel {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                g2.setColor(new Color(255, 255, 255, 220));
+                Color bg = ThemeUtil.BG_CARD;
+                g2.setColor(new Color(bg.getRed(), bg.getGreen(), bg.getBlue(), 220));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(),
                         ThemeUtil.ARC_BUTTON, ThemeUtil.ARC_BUTTON);
                 g2.dispose();

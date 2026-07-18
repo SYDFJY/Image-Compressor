@@ -96,9 +96,9 @@ public class VideoParamPanel extends JPanel {
                 ThemeUtil.SPACE_LG, ThemeUtil.SPACE_LG));
 
         // === 顶部：标题 ===
-        JLabel titleLabel = new JLabel("视频压缩参数");
-        titleLabel.setFont(ThemeUtil.FONT_TITLE);
-        titleLabel.setForeground(ThemeUtil.TEXT_PRIMARY);
+        JLabel titleLabel = new JLabel("视 频 压 缩 参 数");
+        titleLabel.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
+        titleLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, ThemeUtil.SPACE_SM, 0));
         add(titleLabel, BorderLayout.NORTH);
 
@@ -111,6 +111,15 @@ public class VideoParamPanel extends JPanel {
 
         // === 底部：操作按钮 ===
         add(createButtonPanel(), BorderLayout.SOUTH);
+
+        // 主题切换时刷新显式背景色
+        ThemeUtil.addThemeChangeListener(() -> {
+            setBackground(ThemeUtil.BG_CARD);
+            cancelButton.setBackground(ThemeUtil.BG_CARD);
+            compressButton.setBackground(ThemeUtil.PRIMARY);
+            addVariantButton.setBackground(ThemeUtil.BG_CARD);
+            repaint();
+        });
     }
 
     /**

@@ -122,6 +122,14 @@ public class VideoPreviewPanel extends JPanel {
         overlayBar = createOverlayBar();
         overlayBar.setVisible(false);
         add(overlayBar, BorderLayout.SOUTH);
+
+        // 主题切换时刷新显式背景色
+        ThemeUtil.addThemeChangeListener(() -> {
+            setBackground(ThemeUtil.BG_CARD);
+            tabbedPane.setBackground(ThemeUtil.BG_CARD);
+            overlayBar.repaint();
+            repaint();
+        });
     }
 
     // ==================== 信息面板构建 ====================
@@ -252,7 +260,8 @@ public class VideoPreviewPanel extends JPanel {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                g2.setColor(new Color(255, 255, 255, 220));
+                Color bg = ThemeUtil.BG_CARD;
+                g2.setColor(new Color(bg.getRed(), bg.getGreen(), bg.getBlue(), 220));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(),
                         ThemeUtil.ARC_BUTTON, ThemeUtil.ARC_BUTTON);
                 g2.dispose();

@@ -61,6 +61,12 @@ public class ThemePalette {
     /** 二级中阴影 */
     public final int shadow2R, shadow2G, shadow2B, shadow2Alpha;
 
+    // ==================== 窗口渐变背景（v4 新增） ====================
+    /** 窗口背景渐变终点色（null = 纯色背景，向后兼容） */
+    public final Color bgWindowEnd;
+    /** 渐变角度（度），默认 135（对角线左上→右下） */
+    public final int bgGradientAngle;
+
     // ==================== 专属质感 ====================
     /** 卡片是否有 1px 描边（暗色主题需要） */
     public final boolean cardHasBorder;
@@ -135,6 +141,9 @@ public class ThemePalette {
         this.shadow2R = b.shadow2R; this.shadow2G = b.shadow2G;
         this.shadow2B = b.shadow2B; this.shadow2Alpha = b.shadow2Alpha;
 
+        this.bgWindowEnd = b.bgWindowEnd;
+        this.bgGradientAngle = b.bgGradientAngle;
+
         this.cardHasBorder = b.cardHasBorder;
         this.cardBorderColor = b.cardBorderColor;
         this.buttonHasGlow = b.buttonHasGlow;
@@ -168,6 +177,8 @@ public class ThemePalette {
         private Color success, successLight, error, errorLight, warning, warningLight;
         private int shadow1R, shadow1G, shadow1B, shadow1Alpha;
         private int shadow2R, shadow2G, shadow2B, shadow2Alpha;
+        private Color bgWindowEnd;
+        private int bgGradientAngle = 135;
         private boolean cardHasBorder;
         private Color cardBorderColor;
         private boolean buttonHasGlow;
@@ -214,6 +225,11 @@ public class ThemePalette {
         }
         public Builder shadow2(int r, int g, int b, int a) {
             this.shadow2R = r; this.shadow2G = g; this.shadow2B = b; this.shadow2Alpha = a;
+            return this;
+        }
+        /** 设置窗口背景渐变（null = 纯色，向后兼容） */
+        public Builder bgGradient(Color end, int angle) {
+            this.bgWindowEnd = end; this.bgGradientAngle = angle;
             return this;
         }
         public Builder cardBorder(Color c) {
@@ -333,6 +349,108 @@ public class ThemePalette {
                 .shadow1(0, 0, 0, 40)
                 .shadow2(0, 0, 0, 60)
                 .cardBorder(new Color(96, 165, 250, 38))
+                .segmented("A")
+                .build();
+    }
+
+    // ==================== v4 蓝韵系列 6 套新主题 ====================
+
+    /** 蓝韵 · 清爽现代风（浅色默认款） */
+    public static ThemePalette blueRhyme() {
+        return new Builder()
+                .primary(c(0x1558CC), c(0x1A6FFF), c(0x1A6FFF), c(0x5B9AFF), c(0xDBEAFE))
+                .background(c(0xF5F7FA), c(0xFFFFFF), c(0xF8FAFC), c(0xE8F0FE), c(0xF0F4FF))
+                .text(c(0x1A1A2E), c(0x6B7280), c(0x9CA3AF))
+                .border(c(0xE8ECF1), c(0x1A6FFF))
+                .status(c(0x22C55E), c(0xF0FDF4), c(0xEF4444), c(0xFEF2F2), c(0xF59E0B), c(0xFFFBEB))
+                .shadow1(0, 0, 0, 10)
+                .shadow2(0, 0, 0, 5)
+                .buttonGlow(new Color(26, 111, 255, 60))
+                .segmented("A")
+                .build();
+    }
+
+    /** 海洋青 · 深邃海洋（暗色） */
+    public static ThemePalette ocean() {
+        return new Builder()
+                .primary(c(0x0E7490), c(0x0891B2), c(0x0891B2), c(0x22D3EE), c(0xA5F3FC))
+                .background(c(0x0F172A), c(0x1E293B), c(0x263449), c(0x30445C), c(0x263449))
+                .text(c(0xE2E8F0), c(0x94A3B8), c(0x64748B))
+                .border(c(0x334155), c(0x0891B2))
+                .status(c(0x34D399), c(0x0F172A), c(0xF87171), c(0x0F172A), c(0xFBBF24), c(0x0F172A))
+                .shadow1(0, 0, 0, 80)
+                .shadow2(0, 0, 0, 45)
+                .bgGradient(c(0x0C1929), 135)
+                .cardBorder(new Color(255, 255, 255, 15))
+                .buttonGlow(new Color(8, 145, 178, 50))
+                .segmented("A")
+                .build();
+    }
+
+    /** 深邃黑蓝 · 暗夜经典（暗色） */
+    public static ThemePalette dark() {
+        return new Builder()
+                .primary(c(0x3B82F6), c(0x4D94FF), c(0x4D94FF), c(0x60A5FA), c(0x93C5FD))
+                .background(c(0x1A1A2E), c(0x222240), c(0x2A2A4A), c(0x333358), c(0x2A2A4A))
+                .text(c(0xE8E8F0), c(0x9898B8), c(0x68688A))
+                .border(c(0x333358), c(0x4D94FF))
+                .status(c(0x4ADE80), c(0x1A1A2E), c(0xF87171), c(0x1A1A2E), c(0xFBBF24), c(0x1A1A2E))
+                .shadow1(0, 0, 0, 90)
+                .shadow2(0, 0, 0, 50)
+                .bgGradient(c(0x12122A), 135)
+                .cardBorder(new Color(255, 255, 255, 15))
+                .buttonGlow(new Color(77, 148, 255, 60))
+                .segmented("A")
+                .build();
+    }
+
+    /** 落日橙 · 温暖暮色（暗色） */
+    public static ThemePalette sunset() {
+        return new Builder()
+                .primary(c(0xD97706), c(0xF59E0B), c(0xF59E0B), c(0xFBBF24), c(0xFDE68A))
+                .background(c(0x1C1917), c(0x292524), c(0x36312E), c(0x44403C), c(0x36312E))
+                .text(c(0xFAFAF9), c(0xD6D3D1), c(0xA8A29E))
+                .border(c(0x44403C), c(0xF59E0B))
+                .status(c(0x84CC16), c(0x1C1917), c(0xF87171), c(0x1C1917), c(0xFB923C), c(0x1C1917))
+                .shadow1(0, 0, 0, 90)
+                .shadow2(0, 0, 0, 50)
+                .bgGradient(c(0x1A1410), 135)
+                .cardBorder(new Color(255, 255, 255, 15))
+                .buttonGlow(new Color(245, 158, 11, 50))
+                .segmented("B")
+                .build();
+    }
+
+    /** 森林绿 · 自然暗绿（暗色） */
+    public static ThemePalette forest() {
+        return new Builder()
+                .primary(c(0x16A34A), c(0x22C55E), c(0x22C55E), c(0x4ADE80), c(0xBBF7D0))
+                .background(c(0x0A1A10), c(0x0F2A1A), c(0x153A24), c(0x1D4A30), c(0x153A24))
+                .text(c(0xE8F5E9), c(0xA5D6A7), c(0x66BB6A))
+                .border(c(0x1D4A30), c(0x22C55E))
+                .status(c(0x4ADE80), c(0x0A1A10), c(0xF87171), c(0x0A1A10), c(0xFBBF24), c(0x0A1A10))
+                .shadow1(0, 0, 0, 90)
+                .shadow2(0, 0, 0, 50)
+                .bgGradient(c(0x071A0E), 135)
+                .cardBorder(new Color(255, 255, 255, 15))
+                .buttonGlow(new Color(34, 197, 94, 50))
+                .segmented("B")
+                .build();
+    }
+
+    /** 薰衣草紫 · 梦幻紫调（暗色） */
+    public static ThemePalette lavender() {
+        return new Builder()
+                .primary(c(0x7C3AED), c(0x8B5CF6), c(0x8B5CF6), c(0xA78BFA), c(0xDDD6FE))
+                .background(c(0x1A1A2E), c(0x252540), c(0x303058), c(0x3D3D6E), c(0x303058))
+                .text(c(0xEDE9FE), c(0xC4B5FD), c(0x8B7EC8))
+                .border(c(0x3D3D6E), c(0x8B5CF6))
+                .status(c(0x34D399), c(0x1A1A2E), c(0xF87171), c(0x1A1A2E), c(0xFBBF24), c(0x1A1A2E))
+                .shadow1(0, 0, 0, 90)
+                .shadow2(0, 0, 0, 50)
+                .bgGradient(c(0x151530), 135)
+                .cardBorder(new Color(255, 255, 255, 15))
+                .buttonGlow(new Color(139, 92, 246, 50))
                 .segmented("A")
                 .build();
     }

@@ -278,9 +278,11 @@ public final class VideoCompressUtil {
             throw new IOException("FFmpeg 返回非零退出码: " + exitCode + detail);
         }
 
-        // 验证输出文件存在且非空
-        if (!outputFile.exists() || outputFile.length() == 0) {
-            throw new IOException("输出文件为空或不存在: " + outputFile.getName());
+        // 验证输出文件存在且非空（< 1KB 视为无效，通常是因为裁剪参数超出视频范围导致无帧编码）
+        if (!outputFile.exists() || outputFile.length() < 1024) {
+            String hint = (config.getStartTimeSeconds() > 0 || config.getDurationSeconds() > 0)
+                    ? "（裁剪参数可能超出视频时长范围，请检查起始时间和时长设置）" : "";
+            throw new IOException("输出文件无效（无编码内容）: " + outputFile.getName() + " " + hint);
         }
 
         if (callback != null) {
@@ -370,19 +372,16 @@ public final class VideoCompressUtil {
         return String.format("%d:%02d", minutes, seconds);
     }
 
-    /** 格式化时间为 FFmpeg 接受的参数格式（秒、MM:SS 或 H:MM:SS） */
+    /**
+     * 格式化时间为 FFmpeg 接受的参数格式。
+     *
+     * <p>整数秒 → 裸数字（如 "30"），小数秒 → 保留三位小数（如 "3.500"）。
+     * 全部使用秒数格式，兼容所有 FFmpeg 版本，避免 MM:SS.ms 格式的解析歧义。</p>
+     */
     private static String formatTimeArg(double seconds) {
-        // 小于 60 秒且为整数 → 直接用秒数（如 "30"）
-        if (seconds < 60 && Math.abs(seconds - Math.round(seconds)) < 0.001) {
+        if (Math.abs(seconds - Math.round(seconds)) < 0.001) {
             return String.valueOf((int) Math.round(seconds));
         }
-        // 其他情况用 H:MM:SS[.ms] 格式
-        int hours = (int) (seconds / 3600);
-        int minutes = (int) ((seconds % 3600) / 60);
-        double secs = seconds % 60;
-        if (hours > 0) {
-            return String.format("%d:%02d:%06.3f", hours, minutes, secs);
-        }
-        return String.format("%d:%06.3f", minutes, secs);
+        return String.format("%.3f", seconds);
     }
 }

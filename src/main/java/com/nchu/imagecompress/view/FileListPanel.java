@@ -19,12 +19,16 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
 import javax.swing.SwingConstants;
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
@@ -70,6 +74,7 @@ public class FileListPanel extends JPanel {
     private final JScrollPane scrollPane;
     private final JPanel centerPanel;       // CardLayout 容器
     private final CardLayout centerLayout;  // 切换 scrollPane / emptyPanel
+    private final JPanel headerRow;         // 表头行（主题切换时刷新背景）
     private final Map<String, BufferedImage> thumbnailCache = new HashMap<>();
 
     // v2.2: 搜索/排序
@@ -140,7 +145,8 @@ public class FileListPanel extends JPanel {
         // 将滚动列表包裹在带表头的容器中
         JPanel listWithHeader = new JPanel(new BorderLayout());
         listWithHeader.setOpaque(false);
-        listWithHeader.add(createHeaderRow(), BorderLayout.NORTH);
+        headerRow = createHeaderRow();
+        listWithHeader.add(headerRow, BorderLayout.NORTH);
         listWithHeader.add(scrollPane, BorderLayout.CENTER);
         centerPanel.add(listWithHeader, "list");
 
@@ -159,6 +165,15 @@ public class FileListPanel extends JPanel {
         statsLabel.setForeground(ThemeUtil.TEXT_TERTIARY);
         statsLabel.setBorder(BorderFactory.createEmptyBorder(ThemeUtil.SPACE_SM, 0, 0, 0));
         add(statsLabel, BorderLayout.SOUTH);
+
+        // 主题切换时刷新所有显式设置的背景色（防止背景停留在旧主题颜色）
+        ThemeUtil.addThemeChangeListener(() -> {
+            setBackground(ThemeUtil.BG_CARD);
+            fileList.setBackground(ThemeUtil.BG_CARD);
+            scrollPane.getViewport().setBackground(ThemeUtil.BG_CARD);
+            headerRow.setBackground(ThemeUtil.BG_HOVER);
+            repaint();
+        });
     }
 
     /** 创建强表头行（28px 高，深底色，加粗文字，底部 1px 分割线） */
@@ -182,40 +197,61 @@ public class FileListPanel extends JPanel {
         return header;
     }
 
+    /** 表头标签 — 参考蓝韵音乐 section-title 样式（小号加粗 + 三级文字色） */
     private static JLabel headerLabel(String text, int width) {
-        JLabel label = new JLabel(text);
-        label.setFont(ThemeUtil.FONT_TITLE);
-        label.setForeground(ThemeUtil.TEXT_SECONDARY);
+        JLabel label = new JLabel(text.toUpperCase());
+        label.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
+        label.setForeground(ThemeUtil.TEXT_TERTIARY);
         label.setPreferredSize(new Dimension(width, 18));
         return label;
     }
 
-    /** 创建空状态面板 */
+    /** 创建空状态面板（虚线边框拖拽区，参考蓝韵音乐 upload zone 设计） */
     private JPanel createEmptyPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createEmptyBorder(40, 20, 40, 20));
+        // 外层虚线边框拖拽区
+        JPanel dropZone = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                float[] dash = {6f, 4f};
+                g2.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND,
+                        BasicStroke.JOIN_ROUND, 0, dash, 0));
+                g2.setColor(ThemeUtil.BORDER);
+                int arc = ThemeUtil.ARC_CARD;
+                g2.drawRoundRect(2, 2, getWidth() - 4, getHeight() - 4, arc, arc);
+                g2.dispose();
+            }
+        };
+        dropZone.setOpaque(false);
+        dropZone.setBorder(BorderFactory.createEmptyBorder(32, 32, 32, 32));
 
-        JPanel innerPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_LG));
+        JPanel innerPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_MD));
         innerPanel.setOpaque(false);
 
         // Emoji 图标
-        JLabel iconLabel = new JLabel("📂", SwingConstants.CENTER);
+        JLabel iconLabel = new JLabel("📁", SwingConstants.CENTER);
         iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
         innerPanel.add(iconLabel, BorderLayout.NORTH);
 
-        // 引导文字
+        // 两行引导文字（参考蓝韵空状态样式）
         JPanel textPanel = new JPanel(new BorderLayout(0, 4));
         textPanel.setOpaque(false);
-        JLabel guideLabel = new JLabel("拖拽文件到此处，或点击导入按钮", SwingConstants.CENTER);
-        guideLabel.setFont(ThemeUtil.FONT_BODY);
-        guideLabel.setForeground(ThemeUtil.TEXT_SECONDARY);
-        textPanel.add(guideLabel, BorderLayout.CENTER);
+        JLabel guideTitle = new JLabel("拖拽文件到此处", SwingConstants.CENTER);
+        guideTitle.setFont(ThemeUtil.FONT_TITLE);
+        guideTitle.setForeground(ThemeUtil.TEXT_PRIMARY);
+        JLabel guideSub = new JLabel("或点击「导入文件」按钮添加", SwingConstants.CENTER);
+        guideSub.setFont(ThemeUtil.FONT_SMALL);
+        guideSub.setForeground(ThemeUtil.TEXT_TERTIARY);
+        textPanel.add(guideTitle, BorderLayout.NORTH);
+        textPanel.add(guideSub, BorderLayout.SOUTH);
 
         innerPanel.add(textPanel, BorderLayout.CENTER);
+        dropZone.add(innerPanel, BorderLayout.CENTER);
 
-        panel.add(innerPanel, BorderLayout.CENTER);
-        return panel;
+        return dropZone;
     }
 
     /** 切换空状态/列表显示 */

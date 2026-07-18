@@ -1,7 +1,9 @@
 package com.nchu.imagecompress;
 
 import com.nchu.imagecompress.controller.MainController;
+import com.nchu.imagecompress.model.AppConfig;
 import com.nchu.imagecompress.model.Theme;
+import com.nchu.imagecompress.service.ConfigService;
 import com.nchu.imagecompress.util.LogUtil;
 import com.nchu.imagecompress.util.ThemeUtil;
 import com.nchu.imagecompress.view.MainFrame;
@@ -50,11 +52,19 @@ public class App {
                 splash.setVisible(true);
                 splash.updateProgress(10, "正在初始化...");
 
-                // ② 加载主题
+                // ② 加载主题（优先使用已保存的配置主题，否则用默认的蓝韵主题）
                 splash.updateProgress(20, "正在加载主题...");
-                Theme defaultTheme = Theme.BLUE_CLASSIC;
-                ThemeUtil.applyTheme(defaultTheme);
-                LogUtil.info("[App] 主题已加载: " + defaultTheme.getDisplayName());
+                Theme savedTheme = Theme.BLUE_RHYME;
+                try {
+                    AppConfig savedCfg = new ConfigService().loadConfig();
+                    if (savedCfg != null && savedCfg.getTheme() != null) {
+                        savedTheme = savedCfg.getTheme();
+                    }
+                } catch (Exception ignored) {
+                    // 配置文件不存在或损坏，使用默认主题
+                }
+                ThemeUtil.applyTheme(savedTheme);
+                LogUtil.info("[App] 主题已加载: " + savedTheme.getDisplayName());
 
                 // ③ 创建主窗口
                 splash.updateProgress(50, "正在构建界面...");

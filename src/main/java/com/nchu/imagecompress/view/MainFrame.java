@@ -2,6 +2,7 @@ package com.nchu.imagecompress.view;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.nchu.imagecompress.model.Theme;
+import com.nchu.imagecompress.model.ThemePalette;
 import com.nchu.imagecompress.util.CardWrapper;
 import com.nchu.imagecompress.util.ThemeUtil;
 
@@ -25,6 +26,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -109,10 +111,48 @@ public class MainFrame extends JFrame {
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
         setMinimumSize(new Dimension(MIN_WIDTH, MIN_HEIGHT));
-        // 窗口背景：极浅冷灰
-        getContentPane().setBackground(ThemeUtil.BG_WINDOW);
-        setLayout(new BorderLayout(0, 0));
+        // 窗口背景：支持渐变（暗色主题）或纯色（浅色主题）
+        backgroundPanel = new BackgroundPanel();
+        setContentPane(backgroundPanel);
+        backgroundPanel.setLayout(new BorderLayout(0, 0));
         centerOnScreen();
+        // 主题切换时重绘背景
+        ThemeUtil.addThemeChangeListener(() -> {
+            backgroundPanel.repaint();
+        });
+    }
+
+    /** 窗口背景面板 — 支持渐变（暗色主题）或纯色（浅色主题） */
+    private BackgroundPanel backgroundPanel;
+
+    private class BackgroundPanel extends JPanel {
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            ThemePalette palette = ThemeUtil.getCurrentPalette();
+            if (palette != null && palette.bgWindowEnd != null) {
+                // 渐变背景（暗色主题）
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                double angleRad = Math.toRadians(palette.bgGradientAngle);
+                int w = getWidth();
+                int h = getHeight();
+                // 计算渐变起终点（135° 对角线：左上→右下）
+                int dx = (int)(Math.cos(angleRad) * Math.max(w, h));
+                int dy = (int)(Math.sin(angleRad) * Math.max(w, h));
+                GradientPaint gp = new GradientPaint(
+                        0, 0, palette.bgWindowEnd,
+                        dx > 0 ? dx : w, dy > 0 ? dy : h, palette.bgWindow,
+                        false);
+                g2.setPaint(gp);
+                g2.fillRect(0, 0, w, h);
+            } else {
+                // 纯色背景（浅色主题，向后兼容）
+                g2.setColor(ThemeUtil.BG_WINDOW);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+            }
+            g2.dispose();
+        }
     }
 
     private void initMenuBar() {
@@ -177,6 +217,12 @@ public class MainFrame extends JFrame {
     private void initToolBar() {
         JPanel toolBarPanel = new JPanel(new BorderLayout());
         toolBarPanel.setBackground(ThemeUtil.BG_CARD);
+        toolBarPanel.setOpaque(true);
+        // 主题切换时刷新工具栏背景
+        ThemeUtil.addThemeChangeListener(() -> {
+            toolBarPanel.setBackground(ThemeUtil.BG_CARD);
+            toolBarPanel.repaint();
+        });
         toolBarPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, ThemeUtil.BORDER),
                 BorderFactory.createEmptyBorder(12, 20, 12, 20)));
@@ -236,6 +282,7 @@ public class MainFrame extends JFrame {
         themeBtn.setForeground(ThemeUtil.TEXT_SECONDARY);
         themeBtn.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         themeBtn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        ThemeUtil.addThemeChangeListener(() -> themeBtn.setBackground(ThemeUtil.BG_CARD));
         rightPanel.add(themeBtn);
 
         compressBtn = createGradientButton("开始压缩", "icons/play.svg");
@@ -284,6 +331,13 @@ public class MainFrame extends JFrame {
             public void mouseReleased(java.awt.event.MouseEvent e) {
                 btn.setBackground(ThemeUtil.BG_SELECTED);
             }
+        });
+        // 主题切换时重置为默认态背景
+        ThemeUtil.addThemeChangeListener(() -> {
+            btn.setBackground(ThemeUtil.BG_HOVER);
+            btn.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(ThemeUtil.BORDER, 1),
+                    BorderFactory.createEmptyBorder(5, 14, 5, 14)));
         });
         return btn;
     }
@@ -340,9 +394,12 @@ public class MainFrame extends JFrame {
                 boolean isHovered = hovered != null && hovered;
                 boolean isPressed = pressed != null && pressed;
 
-                // hover 增强发光 / press 加深
+                // hover 增强发光 / press 加深（使用主题按钮发光色）
                 int glowAlpha = isPressed ? 100 : (isHovered ? 90 : 60);
-                java.awt.Color glow = ThemeUtil.PRIMARY_DEEP;
+                ThemePalette palette = ThemeUtil.getCurrentPalette();
+                java.awt.Color glow = (palette != null && palette.buttonHasGlow && palette.buttonGlowColor != null)
+                        ? palette.buttonGlowColor
+                        : ThemeUtil.PRIMARY_DEEP;
                 g2.setColor(new java.awt.Color(glow.getRed(), glow.getGreen(),
                         glow.getBlue(), glowAlpha));
                 g2.fillRoundRect(2, 4, w - 4, h, ThemeUtil.ARC_BUTTON,
@@ -428,6 +485,13 @@ public class MainFrame extends JFrame {
         // 圆角 → 6px (胶囊)
         btn.putClientProperty("JButton.buttonType", "roundRect");
         btn.putClientProperty("JComponent.outline", "none");
+        ThemeUtil.addThemeChangeListener(() -> {
+            if (btn.isSelected()) {
+                btn.setBackground(ThemeUtil.BG_SELECTED);
+            } else {
+                btn.setBackground(ThemeUtil.BG_HOVER);
+            }
+        });
         return btn;
     }
 
