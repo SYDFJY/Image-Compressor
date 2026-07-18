@@ -1,6 +1,7 @@
 package com.nchu.imagecompress.util;
 
 import com.formdev.flatlaf.FlatLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 import com.nchu.imagecompress.model.Theme;
 import com.nchu.imagecompress.model.ThemePalette;
 
@@ -124,6 +125,9 @@ public final class ThemeUtil {
     public static boolean applyTheme(Theme theme) {
         try {
             // ① 确保 FlatLaf 已初始化（首次调用时 setup）
+            if (!(UIManager.getLookAndFeel() instanceof FlatLaf)) {
+                FlatLightLaf.setup();
+            }
 
             // ② 加载配色板
             ThemePalette palette = theme.getPalette();

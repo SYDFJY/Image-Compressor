@@ -191,7 +191,7 @@ public class PreviewPanel extends JPanel {
                 g2.dispose();
             }
         };
-        segment.setOpaque(false);
+        segment.setOpaque(true);  // 绘制了完整不透明背景，告知 Swing 可优化
         segment.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
 
         ButtonGroup group = new ButtonGroup();
