@@ -35,6 +35,15 @@ public class VideoCompressService {
             return CompressResult.failure(info, "源文件不存在");
         }
 
+        // ①b 裁剪时间合法性校验（防止 -ss 超过视频总时长导致空输出）
+        if (config.getStartTimeSeconds() > 0 && info.getDurationSeconds() > 0
+                && config.getStartTimeSeconds() >= info.getDurationSeconds()) {
+            return CompressResult.failure(info, "裁剪起始时间（"
+                    + String.format("%.1f", config.getStartTimeSeconds())
+                    + " 秒）超过视频总时长（"
+                    + String.format("%.1f", info.getDurationSeconds()) + " 秒）");
+        }
+
         // ② 生成输出路径
         File outputFile;
         try {

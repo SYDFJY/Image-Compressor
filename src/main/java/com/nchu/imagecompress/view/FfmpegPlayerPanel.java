@@ -271,7 +271,7 @@ public class FfmpegPlayerPanel extends JPanel {
                                         renderTimer.stop();
                                     }
                                     setState(State.STOPPED);
-                                    playPauseBtn.setText("↺");
+                                    playPauseBtn.setText("重试");
                                     statusLabel.setText("播放完毕");
                                 }
                             });

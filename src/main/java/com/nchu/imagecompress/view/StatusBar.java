@@ -91,15 +91,15 @@ public class StatusBar extends JPanel {
                 break;
             case "working":
                 ThemeUtil.setDynamicForeground(statusIconLabel, () -> ThemeUtil.PRIMARY);
-                statusIconLabel.setText("◉");
+                statusIconLabel.setText("●");
                 break;
             case "success":
                 ThemeUtil.setDynamicForeground(statusIconLabel, () -> ThemeUtil.SUCCESS);
-                statusIconLabel.setText("★");
+                statusIconLabel.setText("●");
                 break;
             case "error":
                 ThemeUtil.setDynamicForeground(statusIconLabel, () -> ThemeUtil.ERROR);
-                statusIconLabel.setText("✖");
+                statusIconLabel.setText("●");
                 break;
             default:
                 ThemeUtil.setDynamicForeground(statusIconLabel, () -> ThemeUtil.TEXT_TERTIARY);

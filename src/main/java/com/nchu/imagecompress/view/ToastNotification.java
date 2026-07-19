@@ -345,7 +345,7 @@ public class ToastNotification {
             add(msgLabel, BorderLayout.CENTER);
 
             // 关闭提示
-            JLabel closeHint = new JLabel("✕");
+            JLabel closeHint = new JLabel("×");
             closeHint.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
             closeHint.setForeground(new Color(0xC0C4CC));
             add(closeHint, BorderLayout.EAST);

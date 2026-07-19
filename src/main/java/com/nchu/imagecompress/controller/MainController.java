@@ -1,5 +1,6 @@
 package com.nchu.imagecompress.controller;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.nchu.imagecompress.model.AppConfig;
 import com.nchu.imagecompress.model.FileInfo;
 import com.nchu.imagecompress.model.ImageFileInfo;
@@ -687,14 +688,14 @@ public class MainController implements MainControllerCallback,
     private void bindFileListPopupMenu() {
         JPopupMenu popupMenu = new JPopupMenu();
 
-        JMenuItem previewItem = new JMenuItem("🔍 预览");
+        JMenuItem previewItem = new JMenuItem("预览", new FlatSVGIcon("icons/clipboard.svg"));
         previewItem.addActionListener(e -> {
             int index = fileListPanel.getSelectedIndex();
             if (index >= 0) onFileSelected(index);
         });
         popupMenu.add(previewItem);
 
-        JMenuItem openOriginalItem = new JMenuItem("🖼 打开原图");
+        JMenuItem openOriginalItem = new JMenuItem("打开原图", new FlatSVGIcon("icons/image.svg"));
         openOriginalItem.addActionListener(e -> {
             FileInfo selected = fileListPanel.getSelectedFile();
             if (selected instanceof ImageFileInfo) {
@@ -710,7 +711,7 @@ public class MainController implements MainControllerCallback,
         });
         popupMenu.add(openOriginalItem);
 
-        JMenuItem openFolderItem = new JMenuItem("📁 打开所在文件夹");
+        JMenuItem openFolderItem = new JMenuItem("打开所在文件夹", new FlatSVGIcon("icons/folder.svg"));
         openFolderItem.addActionListener(e -> {
             FileInfo selected = fileListPanel.getSelectedFile();
             if (selected != null) {
@@ -726,7 +727,7 @@ public class MainController implements MainControllerCallback,
         });
         popupMenu.add(openFolderItem);
 
-        JMenuItem playVideoItem = new JMenuItem("▶ 播放视频");
+        JMenuItem playVideoItem = new JMenuItem("播放视频", new FlatSVGIcon("icons/play.svg"));
         playVideoItem.addActionListener(e -> {
             FileInfo selected = fileListPanel.getSelectedFile();
             if (selected instanceof VideoFileInfo) {
@@ -739,7 +740,7 @@ public class MainController implements MainControllerCallback,
 
         popupMenu.addSeparator();
 
-        JMenuItem compressSingleItem = new JMenuItem("⚡ 单独压缩此文件");
+        JMenuItem compressSingleItem = new JMenuItem("单独压缩此文件", new FlatSVGIcon("icons/play.svg"));
         compressSingleItem.addActionListener(e -> {
             FileInfo selected = fileListPanel.getSelectedFile();
             if (selected instanceof ImageFileInfo) {
@@ -750,7 +751,7 @@ public class MainController implements MainControllerCallback,
 
         popupMenu.addSeparator();
 
-        JMenuItem removeItem = new JMenuItem("🗑 从列表移除");
+        JMenuItem removeItem = new JMenuItem("从列表移除", new FlatSVGIcon("icons/delete.svg"));
         removeItem.addActionListener(e -> {
             int index = fileListPanel.getSelectedIndex();
             if (index >= 0) onRemoveFile(index);

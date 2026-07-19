@@ -339,8 +339,8 @@ public class VideoController {
      */
     private void startSingleVideoCompress() {
         currentVideoConfig = videoParamPanel.buildConfig();
+        if (currentVideoConfig == null) return; // 参数收集失败（Toast 已在 buildConfig 中弹出）
         currentVideoConfig.setOutputPath(getVideoOutputPath());
-
         final int total = videoFileList.size();
         callback.setCompressingState(true);
         statusBar.showProgress(0, "0/" + total,

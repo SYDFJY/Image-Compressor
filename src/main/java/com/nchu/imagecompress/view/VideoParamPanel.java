@@ -3,6 +3,7 @@ package com.nchu.imagecompress.view;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.nchu.imagecompress.model.VideoCompressConfig;
 import com.nchu.imagecompress.util.ThemeUtil;
+import com.nchu.imagecompress.view.ToastNotification;
 import com.nchu.imagecompress.view.widget.GradientSliderUI;
 
 import javax.swing.BorderFactory;
@@ -445,12 +446,32 @@ public class VideoParamPanel extends JPanel {
         // v2: 裁剪参数
         try {
             String startText = startTimeField.getText().trim();
-            if (!startText.isEmpty()) config.setStartTimeSeconds(Double.parseDouble(startText));
-        } catch (NumberFormatException ignored) {}
+            if (!startText.isEmpty()) {
+                double val = Double.parseDouble(startText);
+                if (val < 0) {
+                    ToastNotification.warning("裁剪起始时间不能为负数");
+                    return null;
+                }
+                config.setStartTimeSeconds(val);
+            }
+        } catch (NumberFormatException e) {
+            ToastNotification.warning("裁剪起始时间格式无效，请输入数字秒数（如 10.5）");
+            return null;
+        }
         try {
             String durText = durationField.getText().trim();
-            if (!durText.isEmpty()) config.setDurationSeconds(Double.parseDouble(durText));
-        } catch (NumberFormatException ignored) {}
+            if (!durText.isEmpty()) {
+                double val = Double.parseDouble(durText);
+                if (val <= 0) {
+                    ToastNotification.warning("裁剪时长必须大于 0");
+                    return null;
+                }
+                config.setDurationSeconds(val);
+            }
+        } catch (NumberFormatException e) {
+            ToastNotification.warning("裁剪时长格式无效，请输入数字秒数（如 30）");
+            return null;
+        }
 
         return config;
     }
@@ -729,7 +750,7 @@ public class VideoParamPanel extends JPanel {
             add(fmtPanel);
 
             // --- 删除按钮 ---
-            deleteBtn = new JButton("✕");
+            deleteBtn = new JButton("×");
             deleteBtn.setFont(new Font("Dialog", Font.PLAIN, 10));
             deleteBtn.setFocusPainted(false);
             deleteBtn.setPreferredSize(new Dimension(24, 24));

@@ -58,6 +58,27 @@ public final class VideoUtil {
     // ==================== 环境检测 ====================
 
     /**
+     * 获取 FFmpeg 可执行文件路径（含完整目录），供压缩/渲染服务使用。
+     *
+     * <p>查找优先级与 {@link #resolveCommand(String)} 一致：
+     * 系统属性 → 自动发现 → 裸命令名。</p>
+     *
+     * @return ffmpeg 可执行文件路径，未找到则返回 {@code "ffmpeg"}
+     */
+    public static String getFfmpegPath() {
+        return resolveCommand("ffmpeg");
+    }
+
+    /**
+     * 获取 ffprobe 可执行文件路径（含完整目录），供元数据解析使用。
+     *
+     * @return ffprobe 可执行文件路径，未找到则返回 {@code "ffprobe"}
+     */
+    public static String getFfprobePath() {
+        return resolveCommand("ffprobe");
+    }
+
+    /**
      * 检测 FFmpeg 是否在系统 PATH 中可用。
      *
      * <p>结果会被缓存，首次调用后不再重复检测。

@@ -39,9 +39,6 @@ public final class FfmpegRenderUtil {
     /** 预览目标宽度（像素），高度按比例缩放保持宽高比 */
     private static final int PREVIEW_WIDTH = 640;
 
-    /** FFmpeg 二进制目录（通过系统属性 ffmpeg.bin.path 配置） */
-    private static final String FFMPEG_BIN_PATH = System.getProperty("ffmpeg.bin.path", "");
-
     // ==================== 帧流启动 ====================
 
     /**
@@ -337,12 +334,9 @@ public final class FfmpegRenderUtil {
     // ==================== 内部工具 ====================
 
     /**
-     * 解析 ffmpeg 命令路径。
+     * 解析 ffmpeg 命令路径（委托 VideoUtil 统一自动发现）。
      */
     private static String resolveFfmpeg() {
-        if (!FFMPEG_BIN_PATH.isEmpty()) {
-            return FFMPEG_BIN_PATH + File.separator + "ffmpeg";
-        }
-        return "ffmpeg";
+        return VideoUtil.getFfmpegPath();
     }
 }

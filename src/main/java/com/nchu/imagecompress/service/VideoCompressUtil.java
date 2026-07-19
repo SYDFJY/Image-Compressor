@@ -3,6 +3,7 @@ package com.nchu.imagecompress.service;
 import com.nchu.imagecompress.model.VideoCompressConfig;
 import com.nchu.imagecompress.model.VideoFileInfo;
 import com.nchu.imagecompress.util.LogUtil;
+import com.nchu.imagecompress.util.VideoUtil;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -39,20 +40,8 @@ public final class VideoCompressUtil {
     /** 解析 ffmpeg stderr 中 time= 的正则 */
     private static final Pattern TIME_PATTERN = Pattern.compile("time=(\\d{2}):(\\d{2}):(\\d{2})\\.(\\d{2})");
 
-    /** FFmpeg 可执行文件路径（可通过系统属性 ffmpeg.bin.path 自定义） */
-    private static final String FFMPEG_PATH = resolveFfmpegPath();
-
     /** 默认 FFmpeg preset（编码速度与压缩率的平衡） */
     private static final String DEFAULT_PRESET = "medium";
-
-    /** 解析 ffmpeg/ffprobe 可执行文件路径 */
-    private static String resolveFfmpegPath() {
-        String binPath = System.getProperty("ffmpeg.bin.path", "");
-        if (!binPath.isEmpty()) {
-            return binPath + File.separator + "ffmpeg";
-        }
-        return "ffmpeg";
-    }
 
     // ==================== 命令构建 ====================
 
@@ -67,23 +56,21 @@ public final class VideoCompressUtil {
     public static List<String> buildFfmpegCommand(File inputFile, File outputFile,
                                                    VideoCompressConfig config) {
         List<String> cmd = new ArrayList<>();
-        cmd.add(FFMPEG_PATH);
+        cmd.add(VideoUtil.getFfmpegPath());
 
-        // --- 输入文件 ---
-        cmd.add("-i");
-        cmd.add(inputFile.getAbsolutePath());
-
-        // --- v2: 裁剪起始时间（放在 -i 后以确保输出精度和兼容性） ---
+        // --- v2: 裁剪参数（输入 seek，放在 -i 之前，更健壮且更快） ---
         if (config.getStartTimeSeconds() > 0) {
             cmd.add("-ss");
             cmd.add(formatTimeArg(config.getStartTimeSeconds()));
         }
-
-        // --- v2: 裁剪时长 ---
         if (config.getDurationSeconds() > 0) {
             cmd.add("-t");
             cmd.add(formatTimeArg(config.getDurationSeconds()));
         }
+
+        // --- 输入文件 ---
+        cmd.add("-i");
+        cmd.add(inputFile.getAbsolutePath());
 
         // --- 视频编码器 ---
         String videoCodec = resolveVideoCodec(config);
