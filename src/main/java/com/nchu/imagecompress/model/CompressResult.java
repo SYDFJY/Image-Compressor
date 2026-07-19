@@ -51,6 +51,9 @@ public class CompressResult {
     /** 变体标签（批量导出模式，如 "720p_30fps_crf23"；单版本模式为 null） */
     private String variantLabel;
 
+    /** 警告信息（成功但存在非致命问题，如"输出比输入大"） */
+    private String warning;
+
     // ==================== 构造 ====================
 
     public CompressResult() {
@@ -196,6 +199,21 @@ public class CompressResult {
 
     public String getVariantLabel() { return variantLabel; }
     public void setVariantLabel(String variantLabel) { this.variantLabel = variantLabel; }
+
+    public String getWarning() { return warning; }
+    public void setWarning(String warning) { this.warning = warning; }
+    public boolean hasWarning() { return warning != null && !warning.isEmpty(); }
+
+    /**
+     * 追加警告信息（多条警告用分号分隔）。
+     */
+    public void addWarning(String msg) {
+        if (warning == null || warning.isEmpty()) {
+            warning = msg;
+        } else {
+            warning = warning + "; " + msg;
+        }
+    }
 
     @Override
     public String toString() {

@@ -73,6 +73,30 @@ public class CompressService {
             result = ImageCompressUtil.compress(inputFile, config, outputFile);
         }
 
+        // ⑤b 压缩后大小守卫：如果输出比输入大且非覆盖模式，保留原文件并警告
+        if (result.isSuccess() && outputFile.exists()
+                && outputFile.length() > inputFile.length()) {
+            long inputSize = inputFile.length();
+            long outputSizeBefore = outputFile.length();
+            double increasePct = (outputSizeBefore - inputSize) * 100.0 / inputSize;
+            // 删除更大的输出文件，复制原文件
+            outputFile.delete();
+            try {
+                java.nio.file.Files.copy(inputFile.toPath(), outputFile.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                result.setOutputSize(inputFile.length());
+                result.addWarning("输出比原文件大 " + String.format("%.1f%%", increasePct)
+                        + "（原 " + ImageFileInfo.formatFileSize(inputSize)
+                        + " → 压缩后 " + ImageFileInfo.formatFileSize(outputSizeBefore)
+                        + "），已保留原文件。建议降低压缩质量后重试。");
+                LogUtil.info("[CompressService] 大小守卫触发: " + inputFile.getName()
+                        + " 输出(" + ImageFileInfo.formatFileSize(outputSizeBefore)
+                        + ") > 输入(" + ImageFileInfo.formatFileSize(inputSize) + ")，已保留原文件");
+            } catch (java.io.IOException e) {
+                LogUtil.warning("[CompressService] 大小守卫复制原文件失败: " + e.getMessage());
+            }
+        }
+
         // ⑥ 检查覆盖后是否为同一文件
         if (result.isSuccess() && outputFile.getAbsolutePath()
                 .equals(inputFile.getAbsolutePath())) {

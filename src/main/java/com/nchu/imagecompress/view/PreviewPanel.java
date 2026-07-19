@@ -111,7 +111,7 @@ public class PreviewPanel extends JPanel {
         JPanel zoomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0));
         zoomPanel.setOpaque(false);
 
-        JButton fitBtn = createZoomBtn("⊡", "适合窗口");
+        JButton fitBtn = createZoomBtn("[ ]", "适合窗口");
         fitBtn.addActionListener(e -> canvas.setZoomMode(PreviewCanvas.ZoomMode.FIT_INSIDE));
         zoomPanel.add(fitBtn);
 

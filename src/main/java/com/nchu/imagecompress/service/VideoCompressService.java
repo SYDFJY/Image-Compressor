@@ -95,8 +95,21 @@ public class VideoCompressService {
                     + " (" + VideoFileInfo.formatFileSize(outputSize) + ")"
                     + " 耗时 " + elapsed + "ms");
 
-            return CompressResult.success(info, outputFile.getAbsolutePath(),
+            CompressResult result = CompressResult.success(info, outputFile.getAbsolutePath(),
                     outputSize, elapsed);
+
+            // 压缩后大小守卫：输出不小于原文件时警告
+            long inputSize = info.getSourceFile().length();
+            if (outputSize >= inputSize) {
+                result.addWarning("输出文件 (" + VideoFileInfo.formatFileSize(outputSize)
+                        + ") 不小于原文件 (" + VideoFileInfo.formatFileSize(inputSize)
+                        + ")，建议降低 CRF 值（下滑画质滑块）后重试。");
+                LogUtil.info("[VideoCompressService] 大小守卫触发: " + info.getFileName()
+                        + " 输出(" + VideoFileInfo.formatFileSize(outputSize)
+                        + ") >= 输入(" + VideoFileInfo.formatFileSize(inputSize) + ")");
+            }
+
+            return result;
 
         } catch (InterruptedException e) {
             LogUtil.info("[VideoCompressService] 压缩被取消: " + info.getFileName());

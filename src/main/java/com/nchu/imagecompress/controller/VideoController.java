@@ -340,6 +340,13 @@ public class VideoController {
     private void startSingleVideoCompress() {
         currentVideoConfig = videoParamPanel.buildConfig();
         if (currentVideoConfig == null) return; // 参数收集失败（Toast 已在 buildConfig 中弹出）
+
+        // 检查是否为无效压缩（保持原格式 + 无画质/分辨率变化）
+        if (currentVideoConfig.isEffectivelyNoOp()) {
+            ToastNotification.warning("当前参数不会产生有效压缩（保持原格式、无画质变化、无分辨率变化），请调整参数后重试。");
+            return;
+        }
+
         currentVideoConfig.setOutputPath(getVideoOutputPath());
         final int total = videoFileList.size();
         callback.setCompressingState(true);
@@ -364,7 +371,7 @@ public class VideoController {
                         statusBar.showProgress(
                                 (int) ((double) done / total * 100),
                                 done + "/" + total,
-                                (result.isSuccess() ? "✓ " : "✗ ") + info.getFileName());
+                                (result.isSuccess() ? "[OK] " : "[FAIL] ") + info.getFileName());
                     });
                 }
             });
@@ -423,8 +430,8 @@ public class VideoController {
                         final int done = completed[0];
                         SwingUtilities.invokeLater(() -> {
                             String status = result.isSuccess()
-                                    ? "✓ " + info.getFileName() + " → " + variantLabel
-                                    : "✗ " + info.getFileName() + " → " + variantLabel;
+                                    ? "[OK] " + info.getFileName() + " → " + variantLabel
+                                    : "[FAIL] " + info.getFileName() + " → " + variantLabel;
                             statusBar.showProgress(
                                     (int) ((double) done / totalOps * 100),
                                     done + "/" + totalOps, status);

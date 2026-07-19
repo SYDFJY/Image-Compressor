@@ -200,8 +200,8 @@ public class VideoCompressConfig {
     /** 自定义输出文件名（不含扩展名，为空时使用 suffix 自动生成） */
     private String customName = "";
 
-    /** 是否允许覆盖同名文件（默认 true，方便重复压缩调试） */
-    private boolean overwrite = true;
+    /** 是否允许覆盖同名文件（默认 false，避免意外覆盖） */
+    private boolean overwrite = false;
 
     /** v2: 视频裁剪起始时间（秒），0 = 从头开始 */
     private double startTimeSeconds = 0;

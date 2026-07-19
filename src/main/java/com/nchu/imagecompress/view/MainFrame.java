@@ -630,7 +630,7 @@ public class MainFrame extends JFrame {
      * @param theme 新主题（用于获取显示名称）
      */
     public void updateThemeButtonText(Theme theme) {
-        themeBtn.setText("🎨 " + theme.getDisplayName());
+        themeBtn.setText(theme.getDisplayName());
     }
 
     // ==================== Getter（API 兼容） ====================

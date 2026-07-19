@@ -134,7 +134,7 @@ public class VideoParamPanel extends JPanel {
         int row = 0;
 
         // ==================== 画质预设组 ====================
-        addGroupHeader(panel, gbc, "🎯 画质预设", row++);
+        addGroupHeader(panel, gbc, "画质预设", row++);
 
         // --- 视频画质 ---
         addFormLabel(panel, gbc, "视频画质", row);
@@ -204,15 +204,31 @@ public class VideoParamPanel extends JPanel {
         row++;
 
         // ==================== 输出设置组 ====================
-        addGroupHeader(panel, gbc, "📂 输出设置", row++);
+        addGroupHeader(panel, gbc, "输出设置", row++);
 
-        // --- 自定义文件名 ---
+        // --- 自定义文件名开关 ---
         addFormLabel(panel, gbc, "输出文件名", row);
+        javax.swing.JCheckBox customNameCheckBox = new javax.swing.JCheckBox("自定义输出文件名");
+        customNameCheckBox.setFont(ThemeUtil.FONT_SMALL);
+        ThemeUtil.setDynamicForeground(customNameCheckBox, () -> ThemeUtil.TEXT_SECONDARY);
+        customNameCheckBox.setOpaque(false);
+        addFormControl(panel, gbc, customNameCheckBox, row);
+        row++;
+
+        // --- 自定义文件名输入框（默认隐藏） ---
+        addFormLabel(panel, gbc, "", row);
         customNameField = new javax.swing.JTextField(20);
         customNameField.setFont(ThemeUtil.FONT_SMALL);
         customNameField.setToolTipText("输入自定义文件名（不含扩展名），留空则自动生成");
+        customNameField.setVisible(false);
         addFormControl(panel, gbc, customNameField, row);
         row++;
+
+        customNameCheckBox.addActionListener(e -> {
+            customNameField.setVisible(customNameCheckBox.isSelected());
+            panel.revalidate();
+            panel.repaint();
+        });
 
         // --- 输出目录 ---
         addFormLabel(panel, gbc, "输出目录", row);
@@ -227,12 +243,19 @@ public class VideoParamPanel extends JPanel {
         overwriteCheckBox.setFont(ThemeUtil.FONT_SMALL);
         ThemeUtil.setDynamicForeground(overwriteCheckBox, () -> ThemeUtil.TEXT_SECONDARY);
         overwriteCheckBox.setOpaque(false);
-        overwriteCheckBox.setSelected(true); // 默认覆盖，方便重复压缩
         addFormControl(panel, gbc, overwriteCheckBox, row);
         row++;
 
-        // v2: 视频裁剪
+        // v2: 视频裁剪（默认隐藏，勾选后显示）
         addFormLabel(panel, gbc, "裁剪", row);
+        javax.swing.JCheckBox cropCheckBox = new javax.swing.JCheckBox("启用视频裁剪");
+        cropCheckBox.setFont(ThemeUtil.FONT_SMALL);
+        ThemeUtil.setDynamicForeground(cropCheckBox, () -> ThemeUtil.TEXT_SECONDARY);
+        cropCheckBox.setOpaque(false);
+        addFormControl(panel, gbc, cropCheckBox, row);
+        row++;
+
+        addFormLabel(panel, gbc, "", row);
         JPanel trimPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 6, 0));
         trimPanel.setOpaque(false);
         startTimeField = new javax.swing.JTextField(5);
@@ -245,12 +268,19 @@ public class VideoParamPanel extends JPanel {
         durationField.setToolTipText("持续时长 (秒)，留空=到结尾");
         trimPanel.add(new javax.swing.JLabel("时长:"));
         trimPanel.add(durationField);
-        javax.swing.JLabel trimHint = new javax.swing.JLabel(" 秒（留空=不裁剪）");
+        javax.swing.JLabel trimHint = new javax.swing.JLabel(" 秒");
         trimHint.setFont(ThemeUtil.FONT_TINY);
         ThemeUtil.setDynamicForeground(trimHint, () -> ThemeUtil.TEXT_TERTIARY);
         trimPanel.add(trimHint);
+        trimPanel.setVisible(false);
         addFormControl(panel, gbc, trimPanel, row);
         row++;
+
+        cropCheckBox.addActionListener(e -> {
+            trimPanel.setVisible(cropCheckBox.isSelected());
+            panel.revalidate();
+            panel.repaint();
+        });
 
         // 弹性填充
         gbc.gridy = row; gbc.gridx = 0; gbc.gridwidth = 2;
@@ -750,8 +780,7 @@ public class VideoParamPanel extends JPanel {
             add(fmtPanel);
 
             // --- 删除按钮 ---
-            deleteBtn = new JButton("×");
-            deleteBtn.setFont(new Font("Dialog", Font.PLAIN, 10));
+            deleteBtn = new JButton(new FlatSVGIcon("icons/delete.svg"));
             deleteBtn.setFocusPainted(false);
             deleteBtn.setPreferredSize(new Dimension(24, 24));
             deleteBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
