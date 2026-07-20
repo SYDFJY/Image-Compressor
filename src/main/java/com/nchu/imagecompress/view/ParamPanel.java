@@ -55,6 +55,13 @@ public class ParamPanel extends JPanel {
     private javax.swing.JSpinner targetSizeSpinner;
     private JButton activePresetBtn;
 
+    // ==================== GIF 压缩控件（默认隐藏，选中 GIF 时显示） ====================
+    private JLabel gifSectionLabel;
+    private JLabel gifColorsLabel;
+    private JSlider gifColorsSlider;
+    /** 高级设置面板引用（供 showGifControls() 刷新布局） */
+    private JPanel advancedPanel;
+
     public ParamPanel() {
         setLayout(new BorderLayout(0, 0));
         ThemeUtil.setDynamicBackground(this, () -> ThemeUtil.BG_CARD);
@@ -199,6 +206,7 @@ public class ParamPanel extends JPanel {
 
     private JPanel createAdvancedTab() {
         JPanel panel = new JPanel(new GridBagLayout());
+        this.advancedPanel = panel;
         panel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0);
@@ -275,6 +283,47 @@ public class ParamPanel extends JPanel {
         addFormControl(panel, gbc, targetSizePanel, row);
         row++;
 
+        // ==================== GIF 颜色优化（默认隐藏，选中 GIF 时显示） ====================
+        addFormLabel(panel, gbc, "", row);
+        gifSectionLabel = new JLabel("GIF 颜色优化");
+        gifSectionLabel.setFont(ThemeUtil.FONT_TITLE);
+        ThemeUtil.setDynamicForeground(gifSectionLabel, () -> ThemeUtil.PRIMARY);
+        gifSectionLabel.setVisible(false);
+        addFormControl(panel, gbc, gifSectionLabel, row);
+        row++;
+
+        addFormLabel(panel, gbc, "最大颜色数", row);
+
+        JPanel gifPanel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
+        gifPanel.setOpaque(false);
+        gifPanel.setVisible(false);
+        // 在 gifPanel 上设置 visible 时不生效，需要分别控制子控件
+        // 改用 showGifControls() 统一管理 visibility
+
+        gifColorsSlider = new JSlider(2, 256, 256);
+        gifColorsSlider.setUI(new GradientSliderUI());
+        gifColorsSlider.setMajorTickSpacing(64);
+        gifColorsSlider.setMinorTickSpacing(16);
+        gifColorsSlider.setPaintTicks(true);
+        gifColorsSlider.setToolTipText("GIF 最大颜色数：256=原始画质，64=推荐，2=极限压缩");
+        gifColorsSlider.setVisible(false);
+        gifPanel.add(gifColorsSlider, BorderLayout.CENTER);
+
+        gifColorsLabel = new JLabel("256", SwingConstants.RIGHT);
+        gifColorsLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 14));
+        ThemeUtil.setDynamicForeground(gifColorsLabel, () -> ThemeUtil.PRIMARY);
+        gifColorsLabel.setPreferredSize(new java.awt.Dimension(40, 24));
+        gifColorsLabel.setVisible(false);
+        gifPanel.add(gifColorsLabel, BorderLayout.EAST);
+
+        gifColorsSlider.addChangeListener(e -> {
+            int val = gifColorsSlider.getValue();
+            gifColorsLabel.setText(String.valueOf(val));
+        });
+
+        addFormControl(panel, gbc, gifPanel, row);
+        row++;
+
         gbc.gridy = row; gbc.gridx = 0; gbc.gridwidth = 2;
         gbc.weighty = 1.0; gbc.fill = GridBagConstraints.BOTH;
         panel.add(new JLabel(), gbc);
@@ -344,6 +393,27 @@ public class ParamPanel extends JPanel {
         gbc.anchor = GridBagConstraints.LINE_START;
         gbc.insets = new Insets(ThemeUtil.SPACE_ROW, 0, ThemeUtil.SPACE_ROW, 0);
         panel.add(comp, gbc);
+    }
+
+    // ==================== GIF 控件 API ====================
+
+    /**
+     * 显示或隐藏 GIF 颜色优化控件。
+     * 选中 GIF 文件时调用 showGifControls(true)，选中其他格式或取消选中时调用 false。
+     */
+    public void showGifControls(boolean visible) {
+        if (gifSectionLabel != null) gifSectionLabel.setVisible(visible);
+        if (gifColorsLabel != null) gifColorsLabel.setVisible(visible);
+        if (gifColorsSlider != null) gifColorsSlider.setVisible(visible);
+        if (advancedPanel != null) {
+            advancedPanel.revalidate();
+            advancedPanel.repaint();
+        }
+    }
+
+    /** 获取 GIF 最大颜色数 (2-256) */
+    public int getGifMaxColors() {
+        return gifColorsSlider != null ? gifColorsSlider.getValue() : 256;
     }
 
     // ==================== API 兼容 ====================

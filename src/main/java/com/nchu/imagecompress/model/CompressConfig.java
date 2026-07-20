@@ -96,6 +96,11 @@ public class CompressConfig {
     /** 是否保留 EXIF/IPTC 元数据（默认移除以减小体积） */
     private boolean preserveMetadata = false;
 
+    // ==================== GIF 专属 ====================
+
+    /** GIF 最大颜色数 (2-256)，默认 256（不限制），0 表示不限制 */
+    private int gifMaxColors = 256;
+
     // ==================== 智能推荐 ====================
 
     /** 是否启用智能质量推荐 */
@@ -171,6 +176,10 @@ public class CompressConfig {
 
     public boolean isPreserveMetadata() { return preserveMetadata; }
     public void setPreserveMetadata(boolean preserveMetadata) { this.preserveMetadata = preserveMetadata; }
+
+    /** GIF 最大颜色数 (2-256)，0 表示不限制 */
+    public int getGifMaxColors() { return gifMaxColors; }
+    public void setGifMaxColors(int n) { this.gifMaxColors = Math.max(0, Math.min(256, n)); }
 
     public boolean isSmartRecommend() { return smartRecommend; }
     public void setSmartRecommend(boolean smartRecommend) { this.smartRecommend = smartRecommend; }

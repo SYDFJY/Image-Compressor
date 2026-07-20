@@ -104,6 +104,10 @@ public final class ImageCompressUtil {
             } else if (config.isPreserveMetadata() && isJpegOutput(config)) {
                 // EXIF 保留模式：读原始元数据 → Thumbnailator 处理 → ImageIO 写回
                 compressWithMetadata(inputFile, config, outputFile);
+            } else if (config.getGifMaxColors() > 0 && config.getGifMaxColors() < 256
+                    && "gif".equalsIgnoreCase(resolveOutputExtension(inputFile, config))) {
+                // GIF 颜色缩减模式：色阶量化 → 索引色 → ImageIO GIF 写入
+                compressGifWithColorLimit(inputFile, config, outputFile);
             } else {
                 // 默认模式：Thumbnailator 直接写入（自动剥离 EXIF）
                 Thumbnails.Builder<? extends File> builder = Thumbnails.of(inputFile);
@@ -356,6 +360,90 @@ public final class ImageCompressUtil {
                 .toFile(outputFile);
 
         rgbImage.flush();
+    }
+
+    /**
+     * GIF 颜色缩减压缩：先通过 Thumbnailator 缩放，再色阶量化减少颜色数，
+     * 最后转为索引色 BufferedImage 通过 ImageIO GIF writer 写出。
+     *
+     * <p>JDK 8 无内置颜色量化器，使用通道级色阶量化近似实现：
+     * 将 RGB 每个通道划分为 N 个色阶，达到约 N³ 种颜色的效果。</p>
+     *
+     * @param inputFile  输入图片文件
+     * @param config     压缩配置（含 gifMaxColors）
+     * @param outputFile 输出 GIF 文件
+     */
+    private static void compressGifWithColorLimit(File inputFile, CompressConfig config,
+                                                  File outputFile) throws IOException {
+        BufferedImage source = ImageIO.read(inputFile);
+        if (source == null) {
+            throw new IOException("无法读取图片: " + inputFile.getName());
+        }
+
+        int maxColors = config.getGifMaxColors();
+        // 对每个 RGB 通道：levels³ ≈ maxColors
+        int levels = (int) Math.round(Math.cbrt(maxColors));
+        if (levels < 2) levels = 2;
+        int step = 256 / levels;
+
+        // 计算输出尺寸
+        int outW = source.getWidth();
+        int outH = source.getHeight();
+        if (config.getScaleMode() == CompressConfig.ScaleMode.BY_PERCENT) {
+            double scale = config.getScalePercent() / 100.0;
+            outW = (int) (outW * scale);
+            outH = (int) (outH * scale);
+        } else if (config.getScaleMode() == CompressConfig.ScaleMode.BY_MAX_SIZE) {
+            double ratio = Math.min(
+                    (double) config.getMaxWidth() / outW,
+                    (double) config.getMaxHeight() / outH);
+            if (ratio < 1.0) {
+                outW = (int) (outW * ratio);
+                outH = (int) (outH * ratio);
+            }
+        }
+
+        // 缩放（如果需要）
+        if (outW != source.getWidth() || outH != source.getHeight()) {
+            BufferedImage scaled = Thumbnails.of(source)
+                    .size(outW, outH)
+                    .asBufferedImage();
+            source.flush();
+            source = scaled;
+        }
+
+        // 色阶量化 + 写入索引色 GIF
+        BufferedImage indexed = new BufferedImage(outW, outH, BufferedImage.TYPE_BYTE_INDEXED);
+        Graphics2D g2d = indexed.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
+        // 逐像素量化写入
+        for (int y = 0; y < outH; y++) {
+            for (int x = 0; x < outW; x++) {
+                int rgb = source.getRGB(x, y);
+                int r = quantizeChannel((rgb >> 16) & 0xFF, step);
+                int g = quantizeChannel((rgb >> 8) & 0xFF, step);
+                int b = quantizeChannel(rgb & 0xFF, step);
+                indexed.setRGB(x, y, (r << 16) | (g << 8) | b);
+            }
+        }
+
+        g2d.dispose();
+        source.flush();
+
+        // 使用 ImageIO GIF writer 写出
+        ImageIO.write(indexed, "gif", outputFile);
+        indexed.flush();
+    }
+
+    /**
+     * 通道值色阶量化：value → 最接近的色阶值。
+     */
+    private static int quantizeChannel(int value, int step) {
+        if (step <= 1) return value;
+        int q = ((value + step / 2) / step) * step;
+        return Math.min(255, q);
     }
 
     /**

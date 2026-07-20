@@ -287,6 +287,7 @@ public class ImageController {
     public void onFileSelected(int index) {
         if (index < 0) {
             previewPanel.clearPreview();
+            paramPanel.showGifControls(false);
             return;
         }
 
@@ -303,6 +304,9 @@ public class ImageController {
             SwingUtilities.invokeLater(() -> {
                 previewPanel.showOriginal(preview);
                 previewPanel.showImageInfo(info);
+                // 检测文件格式，显示/隐藏 GIF 控件
+                String ext = getFileExtension(sourceFile);
+                paramPanel.showGifControls("gif".equalsIgnoreCase(ext));
             });
         }).start();
     }
@@ -526,6 +530,7 @@ public class ImageController {
 
         config.setOverwrite(paramPanel.isOverwrite());
         config.setPreserveMetadata(paramPanel.isPreserveMetadata());
+        config.setGifMaxColors(paramPanel.getGifMaxColors());
 
         String outputPath = appConfig.getRecentOutputDir();
         if (outputPath != null && !outputPath.isEmpty()) {
@@ -698,6 +703,15 @@ public class ImageController {
         }
 
         return chooser;
+    }
+
+    /**
+     * 从文件名提取小写扩展名（不含点）。
+     */
+    private static String getFileExtension(File file) {
+        String name = file.getName();
+        int dot = name.lastIndexOf('.');
+        return (dot < 0 || dot == name.length() - 1) ? "" : name.substring(dot + 1).toLowerCase();
     }
 
     /**
