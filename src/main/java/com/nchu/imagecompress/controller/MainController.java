@@ -192,10 +192,12 @@ public class MainController implements MainControllerCallback,
         mainFrame.getCompressBtn().addActionListener(e -> onStartCompress());
         mainFrame.getThemeBtn().addActionListener(e -> onToggleTheme());
 
-        // ---- 模式切换 ----
-        mainFrame.getModeToggleBtn().addActionListener(e -> {
-            boolean videoMode = mainFrame.getModeToggleBtn().isSelected();
-            onModeToggle(videoMode);
+        // ---- 模式切换分段控件 ----
+        mainFrame.getImageModeBtn().addActionListener(e -> {
+            if (mainFrame.getImageModeBtn().isSelected()) onModeToggle(false);
+        });
+        mainFrame.getVideoModeBtn().addActionListener(e -> {
+            if (mainFrame.getVideoModeBtn().isSelected()) onModeToggle(true);
         });
 
         // ---- 子控制器事件绑定 ----

@@ -7,6 +7,7 @@ import com.nchu.imagecompress.util.CardWrapper;
 import com.nchu.imagecompress.util.ThemeUtil;
 
 import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -29,6 +30,7 @@ import java.awt.Font;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GridLayout;
 import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
@@ -77,7 +79,10 @@ public class MainFrame extends JFrame {
     private JButton clearBtn;
     private JButton compressBtn;
     private JButton themeBtn;
-    private JToggleButton modeToggleBtn;
+    // 模式切换分段控件（图片 / 视频）
+    private JToggleButton imageModeBtn;
+    private JToggleButton videoModeBtn;
+    private JPanel modeSegmentPanel;
 
     // ==================== 面板引用 ====================
     private FileListPanel fileListPanel;
@@ -269,10 +274,9 @@ public class MainFrame extends JFrame {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         rightPanel.setOpaque(false);
 
-        // 模式切换胶囊
-        modeToggleBtn = createToggleCapsule("图片", "视频");
-        modeToggleBtn.setToolTipText("切换图片/视频压缩模式");
-        rightPanel.add(modeToggleBtn);
+        // 模式切换分段控件（图片 | 视频）
+        modeSegmentPanel = createModeSegmentedControl();
+        rightPanel.add(modeSegmentPanel);
 
         themeBtn = new JButton("默认蓝调", new FlatSVGIcon("icons/palette.svg"));
         themeBtn.setFont(ThemeUtil.FONT_SMALL);
@@ -462,36 +466,113 @@ public class MainFrame extends JFrame {
         return btn;
     }
 
-    /** 创建模式切换胶囊控件（图片 ⇄ 视频） */
-    private JToggleButton createToggleCapsule(String leftText, String rightText) {
-        JToggleButton btn = new JToggleButton(leftText);
+    /**
+     * 创建图片/视频模式切换分段控件。
+     *
+     * <p>两个按钮始终可见，选中段高亮，未选中段灰色 —
+     * 新用户一眼就能看到存在两种压缩模式。</p>
+     */
+    private JPanel createModeSegmentedControl() {
+        // 外层容器
+        JPanel container = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        container.setOpaque(false);
+
+        // 分段底板：BG_HOVER 底色 + 6px 圆角
+        JPanel segment = new JPanel(new GridLayout(1, 2, 0, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setColor(ThemeUtil.BG_HOVER);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+                        ThemeUtil.ARC_TAG, ThemeUtil.ARC_TAG);
+                g2.dispose();
+            }
+        };
+        segment.setOpaque(true);
+        segment.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+
+        ButtonGroup group = new ButtonGroup();
+
+        // 图片段
+        imageModeBtn = createModeSegToggle("图片", "icons/image.svg");
+        imageModeBtn.setToolTipText("切换到图片压缩模式");
+        group.add(imageModeBtn);
+        segment.add(imageModeBtn);
+
+        // 视频段
+        videoModeBtn = createModeSegToggle("视频", "icons/film.svg");
+        videoModeBtn.setToolTipText("切换到视频压缩模式");
+        group.add(videoModeBtn);
+        segment.add(videoModeBtn);
+
+        // 默认选中图片模式
+        imageModeBtn.setSelected(true);
+
+        container.add(segment);
+        return container;
+    }
+
+    /**
+     * 创建分段控件中的单个段按钮（图标 + 文字，自绘背景和文字）。
+     *
+     * <p>FlatLaf ButtonUI 在 opaque=false + contentAreaFilled=false 时
+     * 可能不渲染文字，因此这里手动绘制背景和文字，确保主题切换时颜色正确。</p>
+     */
+    private JToggleButton createModeSegToggle(String text, String iconPath) {
+        JToggleButton btn = new JToggleButton(text, new FlatSVGIcon(iconPath)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                        RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+                // 背景：选中时 BG_CARD（凸起卡片），否则透明
+                if (isSelected()) {
+                    g2.setColor(ThemeUtil.BG_CARD);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+                            ThemeUtil.ARC_TAG - 1, ThemeUtil.ARC_TAG - 1);
+                }
+
+                // 文字颜色
+                Color fg = isSelected() ? ThemeUtil.PRIMARY : ThemeUtil.TEXT_SECONDARY;
+                g2.setColor(fg);
+                g2.setFont(getFont());
+
+                // 图标 + 文字水平居中
+                java.awt.FontMetrics fm = g2.getFontMetrics();
+                String t = getText();
+                javax.swing.Icon icon = getIcon();
+                int iconW = (icon != null) ? icon.getIconWidth() : 0;
+                int gap = (icon != null && t != null && !t.isEmpty()) ? 4 : 0;
+                int totalW = iconW + gap + ((t != null && fm != null) ? fm.stringWidth(t) : 0);
+                int startX = (getWidth() - totalW) / 2;
+
+                // 绘制图标
+                if (icon != null) {
+                    int iconY = (getHeight() - icon.getIconHeight()) / 2;
+                    icon.paintIcon(this, g2, startX, iconY);
+                    startX += iconW + gap;
+                }
+
+                // 绘制文字
+                if (t != null && fm != null) {
+                    int textY = (getHeight() + fm.getAscent()) / 2 - 1;
+                    g2.drawString(t, startX, textY);
+                }
+
+                g2.dispose();
+            }
+        };
+        btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
         btn.setFont(ThemeUtil.FONT_SMALL);
         btn.setFocusPainted(false);
-        ThemeUtil.setDynamicBackground(btn, () -> ThemeUtil.BG_HOVER);
-        ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.TEXT_SECONDARY);
-        btn.setBorder(BorderFactory.createEmptyBorder(4, 14, 4, 14));
+        // 固定宽度：图标 16 + 间距 6 + 文字约 28 + 内边距 24 ≈ 74px
+        btn.setPreferredSize(new Dimension(76, 30));
         btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-        btn.addActionListener(e -> {
-            if (btn.isSelected()) {
-                btn.setText(rightText);
-                ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.PRIMARY);
-                ThemeUtil.setDynamicBackground(btn, () -> ThemeUtil.BG_SELECTED);
-            } else {
-                btn.setText(leftText);
-                ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.TEXT_SECONDARY);
-                ThemeUtil.setDynamicBackground(btn, () -> ThemeUtil.BG_HOVER);
-            }
-        });
-        // 圆角 → 6px (胶囊)
-        btn.putClientProperty("JButton.buttonType", "roundRect");
-        btn.putClientProperty("JComponent.outline", "none");
-        ThemeUtil.addThemeChangeListener(() -> {
-            if (btn.isSelected()) {
-                btn.setBackground(ThemeUtil.BG_SELECTED);
-            } else {
-                btn.setBackground(ThemeUtil.BG_HOVER);
-            }
-        });
         return btn;
     }
 
@@ -606,13 +687,11 @@ public class MainFrame extends JFrame {
     public void switchCompressMode(String mode) {
         if ("VIDEO".equals(mode)) {
             rightCardLayout.show(rightCardPanel, CARD_VIDEO);
-            modeToggleBtn.setSelected(true);
-            // ActionListener 自动更新文字和配色
+            videoModeBtn.setSelected(true);
             setTitle("NCHU Compressor — 视频压缩");
         } else {
             rightCardLayout.show(rightCardPanel, CARD_IMAGE);
-            modeToggleBtn.setSelected(false);
-            // ActionListener 自动更新文字和配色
+            imageModeBtn.setSelected(true);
             setTitle("NCHU Compressor — 图片压缩");
         }
     }
@@ -621,7 +700,7 @@ public class MainFrame extends JFrame {
      * 获取当前是否为视频模式。
      */
     public boolean isVideoMode() {
-        return modeToggleBtn.isSelected();
+        return videoModeBtn != null && videoModeBtn.isSelected();
     }
 
     /**
@@ -648,7 +727,8 @@ public class MainFrame extends JFrame {
     public JButton getClearBtn() { return clearBtn; }
     public JButton getCompressBtn() { return compressBtn; }
     public JButton getThemeBtn() { return themeBtn; }
-    public JToggleButton getModeToggleBtn() { return modeToggleBtn; }
+    public JToggleButton getImageModeBtn() { return imageModeBtn; }
+    public JToggleButton getVideoModeBtn() { return videoModeBtn; }
 
     public FileListPanel getFileListPanel() { return fileListPanel; }
     public PreviewPanel getPreviewPanel() { return previewPanel; }
