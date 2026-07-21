@@ -77,6 +77,15 @@ public class VideoCompressService {
         }
         effectiveDuration = Math.max(effectiveDuration, 1.0); // 至少 1 秒避免除零
 
+        // ⑤b 若使用大小优先模式，计算目标码率
+        if (config.getRateControlMode() == VideoCompressConfig.RateControlMode.TARGET_SIZE
+                && config.getTargetSizeMB() > 0) {
+            double targetKBitsTotal = config.getTargetSizeMB() * 8.0 * 1024.0; // 总目标 kb
+            double audioBitrateKbps = config.getAudioMode() == VideoCompressConfig.AudioMode.REMOVE ? 0 : 128;
+            int videoBitrateKbps = (int) ((targetKBitsTotal / effectiveDuration) - audioBitrateKbps);
+            config.setTargetBitrate(Math.max(100, videoBitrateKbps)); // 最低 100 kbps
+        }
+
         // ⑥ 执行 FFmpeg 压缩
         try {
             VideoCompressUtil.executeCompress(

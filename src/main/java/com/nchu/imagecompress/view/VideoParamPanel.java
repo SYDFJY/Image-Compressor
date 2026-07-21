@@ -69,6 +69,8 @@ public class VideoParamPanel extends JPanel {
     private JCheckBox overwriteCheckBox;
     private JButton activePresetBtn;
     private JLabel estimatedSizeLabel;
+    private JComboBox<String> rateControlModeCombo;
+    private javax.swing.JSpinner targetSizeMBSpinner;
     private javax.swing.JTextField startTimeField;
     private javax.swing.JTextField durationField;
 
@@ -238,6 +240,33 @@ public class VideoParamPanel extends JPanel {
 
         // ==================== 输出设置组 ====================
         addGroupHeader(panel, gbc, "输出设置", row++);
+
+        // --- 编码模式 ---
+        addFormLabel(panel, gbc, "编码模式", row);
+        JPanel ratePanel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
+        ratePanel.setOpaque(false);
+        rateControlModeCombo = new JComboBox<>(
+                new String[]{VideoCompressConfig.RateControlMode.CRF.getDisplayName(),
+                             VideoCompressConfig.RateControlMode.TARGET_SIZE.getDisplayName()});
+        rateControlModeCombo.setFont(ThemeUtil.FONT_SMALL);
+        ratePanel.add(rateControlModeCombo, BorderLayout.WEST);
+        targetSizeMBSpinner = new javax.swing.JSpinner(
+                new javax.swing.SpinnerNumberModel(50, 1, 10000, 10));
+        targetSizeMBSpinner.setFont(ThemeUtil.FONT_SMALL);
+        targetSizeMBSpinner.setPreferredSize(new Dimension(70, 24));
+        targetSizeMBSpinner.setEnabled(false);
+        ratePanel.add(targetSizeMBSpinner, BorderLayout.CENTER);
+        JLabel mbLabel = new JLabel(" MB");
+        mbLabel.setFont(ThemeUtil.FONT_SMALL);
+        ThemeUtil.setDynamicForeground(mbLabel, () -> ThemeUtil.TEXT_SECONDARY);
+        ratePanel.add(mbLabel, BorderLayout.EAST);
+        rateControlModeCombo.addActionListener(e -> {
+            boolean targetMode = rateControlModeCombo.getSelectedIndex() == 1;
+            targetSizeMBSpinner.setEnabled(targetMode);
+            crfSlider.setEnabled(!targetMode);
+        });
+        addFormControl(panel, gbc, ratePanel, row);
+        row++;
 
         // --- 自定义文件名开关 ---
         addFormLabel(panel, gbc, "输出文件名", row);
@@ -534,6 +563,15 @@ public class VideoParamPanel extends JPanel {
         } catch (NumberFormatException e) {
             ToastNotification.warning("裁剪时长格式无效，请输入数字秒数（如 30）");
             return null;
+        }
+
+        // 编码模式
+        if (rateControlModeCombo != null && rateControlModeCombo.getSelectedIndex() == 1) {
+            config.setRateControlMode(VideoCompressConfig.RateControlMode.TARGET_SIZE);
+            config.setTargetSizeMB(targetSizeMBSpinner != null
+                    ? (int) targetSizeMBSpinner.getValue() : 0);
+        } else {
+            config.setRateControlMode(VideoCompressConfig.RateControlMode.CRF);
         }
 
         return config;

@@ -77,9 +77,19 @@ public final class VideoCompressUtil {
         cmd.add("-c:v");
         cmd.add(videoCodec);
 
-        // --- CRF 质量 ---
-        cmd.add("-crf");
-        cmd.add(String.valueOf(config.getCrf()));
+        // --- 码率控制：CRF 画质优先 vs 目标大小模式 ---
+        if (config.getRateControlMode() == VideoCompressConfig.RateControlMode.TARGET_SIZE
+                && config.getTargetBitrate() > 0) {
+            cmd.add("-b:v");
+            cmd.add(config.getTargetBitrate() + "k");
+            cmd.add("-maxrate");
+            cmd.add((config.getTargetBitrate() * 3 / 2) + "k");
+            cmd.add("-bufsize");
+            cmd.add((config.getTargetBitrate() * 2) + "k");
+        } else {
+            cmd.add("-crf");
+            cmd.add(String.valueOf(config.getCrf()));
+        }
 
         // --- 编码预设 ---
         cmd.add("-preset");

@@ -168,7 +168,32 @@ public class VideoCompressConfig {
         public String toString() { return displayName; }
     }
 
+    // ==================== 编码模式枚举 ====================
+
+    /** 码率控制模式 */
+    public enum RateControlMode {
+        /** 画质优先：使用 CRF 恒定质量编码 */
+        CRF("画质优先"),
+        /** 大小优先：使用 bitrate 模式逼近目标文件大小 */
+        TARGET_SIZE("限制大小");
+
+        private final String displayName;
+        RateControlMode(String displayName) { this.displayName = displayName; }
+        public String getDisplayName() { return displayName; }
+        @Override
+        public String toString() { return displayName; }
+    }
+
     // ==================== 参数字段 ====================
+
+    /** 码率控制模式，默认画质优先 (CRF) */
+    private RateControlMode rateControlMode = RateControlMode.CRF;
+
+    /** 目标文件大小 (MB)，仅在 TARGET_SIZE 模式下有效 */
+    private int targetSizeMB = 0;
+
+    /** 计算出的目标视频码率 (kbps)，仅在 TARGET_SIZE 模式下由 VideoCompressService 设置 */
+    private int targetBitrate = 0;
 
     /** CRF 质量值 (0-51)，默认 23 */
     private int crf = 23;
@@ -269,6 +294,15 @@ public class VideoCompressConfig {
 
     public int getCrf() { return crf; }
     public void setCrf(int crf) { this.crf = Math.max(0, Math.min(51, crf)); }
+
+    public RateControlMode getRateControlMode() { return rateControlMode; }
+    public void setRateControlMode(RateControlMode mode) { this.rateControlMode = mode; }
+
+    public int getTargetSizeMB() { return targetSizeMB; }
+    public void setTargetSizeMB(int targetSizeMB) { this.targetSizeMB = Math.max(0, targetSizeMB); }
+
+    public int getTargetBitrate() { return targetBitrate; }
+    public void setTargetBitrate(int targetBitrate) { this.targetBitrate = targetBitrate; }
 
     public ResolutionMode getResolutionMode() { return resolutionMode; }
     public void setResolutionMode(ResolutionMode resolutionMode) { this.resolutionMode = resolutionMode; }
