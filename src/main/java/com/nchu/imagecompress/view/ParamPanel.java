@@ -55,6 +55,7 @@ public class ParamPanel extends JPanel {
     private javax.swing.JCheckBox targetSizeCheckBox;
     private javax.swing.JSpinner targetSizeSpinner;
     private JButton activePresetBtn;
+    private JLabel estimatedSizeLabel;
 
     // ==================== GIF 压缩控件（默认隐藏，选中 GIF 时显示） ====================
     private JLabel gifSectionLabel;
@@ -181,6 +182,15 @@ public class ParamPanel extends JPanel {
         qualityPanel.add(qualityValueLabel, BorderLayout.EAST);
 
         addFormControl(panel, gbc, qualityWrapper, row);
+        row++;
+
+        // 预估输出大小
+        addFormLabel(panel, gbc, "", row);
+        estimatedSizeLabel = new JLabel(" ");
+        estimatedSizeLabel.setFont(ThemeUtil.FONT_SMALL);
+        ThemeUtil.setDynamicForeground(estimatedSizeLabel, () -> ThemeUtil.TEXT_TERTIARY);
+        estimatedSizeLabel.setVisible(false);
+        addFormControl(panel, gbc, estimatedSizeLabel, row);
         row++;
 
         // 快捷预设按钮
@@ -483,11 +493,27 @@ public class ParamPanel extends JPanel {
     public JButton getOutputDirButton() { return outputDirButton; }
     public JSlider getQualitySlider() { return qualitySlider; }
     public JComboBox<String> getScaleModeCombo() { return scaleModeCombo; }
+    public JSpinner getScalePercentSpinner() { return scalePercentSpinner; }
     public JComboBox<String> getOutputFormatCombo() { return outputFormatCombo; }
     public JComboBox<String> getNamingRuleCombo() { return namingRuleCombo; }
     public JCheckBox getOverwriteCheckBox() { return overwriteCheckBox; }
 
     public void setQualityDisplay(int quality) {
         qualityValueLabel.setText(quality + "%");
+    }
+
+    /** 更新预估输出大小文本（图片模式） */
+    public void setEstimatedSize(String text) {
+        if (estimatedSizeLabel != null) {
+            estimatedSizeLabel.setText(text);
+            estimatedSizeLabel.setVisible(text != null && !text.isEmpty());
+        }
+    }
+
+    /** 隐藏预估输出大小 */
+    public void hideEstimatedSize() {
+        if (estimatedSizeLabel != null) {
+            estimatedSizeLabel.setVisible(false);
+        }
     }
 }

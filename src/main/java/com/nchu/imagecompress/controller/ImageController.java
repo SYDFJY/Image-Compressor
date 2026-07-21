@@ -82,6 +82,9 @@ public class ImageController {
     /** 上次打开的目录（用于文件选择器记忆） */
     private File lastOpenDir;
 
+    /** 当前选中文件的原始大小（用于预估输出大小），-1 表示无选中文件 */
+    private long selectedOriginalSize = -1;
+
     /** 预览防抖定时器：质量滑块拖动停止 200ms 后刷新效果预览 */
     private final javax.swing.Timer previewDebounceTimer;
 
@@ -133,15 +136,29 @@ public class ImageController {
         paramPanel.getCancelButton().addActionListener(e -> onCancelCompress());
         paramPanel.getOutputDirButton().addActionListener(e -> onChooseOutputDir());
 
-        // 质量滑块实时更新 + 预览刷新
+        // 质量滑块实时更新 + 预览刷新 + 预估大小
         paramPanel.getQualitySlider().addChangeListener(e -> {
             int quality = paramPanel.getQuality();
             paramPanel.setQualityDisplay(quality);
             if (!paramPanel.getQualitySlider().getValueIsAdjusting()) {
                 onQualityChanged(quality);
+                updateEstimatedImageSize();
             }
             previewDebounceTimer.restart();
         });
+
+        // 输出格式变更时更新预估大小
+        paramPanel.getOutputFormatCombo().addActionListener(e -> updateEstimatedImageSize());
+
+        // 缩放模式/百分比变更时刷新预览
+        paramPanel.getScaleModeCombo().addActionListener(e -> previewDebounceTimer.restart());
+        ((javax.swing.JSpinner.DefaultEditor) paramPanel.getScalePercentSpinner().getEditor())
+                .getTextField().addFocusListener(new java.awt.event.FocusAdapter() {
+                    @Override
+                    public void focusLost(java.awt.event.FocusEvent e) {
+                        previewDebounceTimer.restart();
+                    }
+                });
 
         LogUtil.info("[ImageController] 事件绑定完成");
     }
@@ -315,6 +332,8 @@ public class ImageController {
         if (index < 0) {
             previewPanel.clearPreview();
             paramPanel.showGifControls(false);
+            paramPanel.hideEstimatedSize();
+            selectedOriginalSize = -1;
             return;
         }
 
@@ -323,6 +342,10 @@ public class ImageController {
         final ImageFileInfo info = (ImageFileInfo) selected;
         if (info.getSourceFile() == null) return;
         final File sourceFile = info.getSourceFile();
+
+        // 保存原始大小用于预估输出大小
+        selectedOriginalSize = info.getOriginalSize();
+        updateEstimatedImageSize();
 
         new Thread(() -> {
             ImageIcon preview = ImageUtil.loadScaledIcon(sourceFile, 1024, 768);
@@ -343,6 +366,40 @@ public class ImageController {
      */
     public void clearPreview() {
         previewPanel.clearPreview();
+    }
+
+    /**
+     * 根据当前质量/格式/原始大小更新预估输出大小标签。
+     */
+    private void updateEstimatedImageSize() {
+        if (selectedOriginalSize <= 0) {
+            paramPanel.hideEstimatedSize();
+            return;
+        }
+        int quality = paramPanel.getQuality();
+        int formatIdx = paramPanel.getOutputFormatIndex();
+        double factor;
+        switch (formatIdx) {
+            case 1: factor = 0.30; break;  // JPEG
+            case 2: factor = 1.00; break;  // PNG
+            case 3: factor = 3.00; break;  // BMP
+            case 4: factor = 0.25; break;  // WebP
+            default: factor = 0.30; break; // 保持原格式（按 JPEG 估算）
+        }
+        long estimatedBytes = (long) (selectedOriginalSize * (quality / 100.0) * factor);
+        if (estimatedBytes < 1024) estimatedBytes = 1024;
+        String sizeText = formatFileSize(estimatedBytes);
+        paramPanel.setEstimatedSize("预估输出: 约 " + sizeText + (quality < 30 ? " (画质较低)" : ""));
+    }
+
+    /** 文件大小格式化（内部使用） */
+    private static String formatFileSize(long bytes) {
+        if (bytes <= 0) return "0 B";
+        if (bytes < 1024) return bytes + " B";
+        double kb = bytes / 1024.0;
+        if (kb < 1024) return String.format("%.1f KB", kb);
+        double mb = kb / 1024.0;
+        return String.format("%.1f MB", mb);
     }
 
     // ==================== 压缩 ====================
@@ -676,11 +733,15 @@ public class ImageController {
         final File sourceFile = ((ImageFileInfo) selected).getSourceFile();
         if (sourceFile == null) return;
         final double quality = paramPanel.getQuality() / 100.0;
+        // 仅在「按百分比」缩放模式下使用缩放比例
+        final int scalePercent = paramPanel.getScaleModeIndex() == 1
+                ? paramPanel.getScalePercent() : 100;
 
         new Thread(() -> {
             BufferedImage effect = ImageUtil.generateEffectPreview(
                     sourceFile, quality,
-                    ImageUtil.PREVIEW_MAX_WIDTH, ImageUtil.PREVIEW_MAX_HEIGHT);
+                    ImageUtil.PREVIEW_MAX_WIDTH, ImageUtil.PREVIEW_MAX_HEIGHT,
+                    scalePercent);
             SwingUtilities.invokeLater(() -> {
                 if (effect != null) {
                     previewPanel.showEffect(ImageUtil.toImageIcon(effect));

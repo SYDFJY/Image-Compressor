@@ -68,6 +68,7 @@ public class VideoParamPanel extends JPanel {
     private javax.swing.JTextField customNameField;
     private JCheckBox overwriteCheckBox;
     private JButton activePresetBtn;
+    private JLabel estimatedSizeLabel;
     private javax.swing.JTextField startTimeField;
     private javax.swing.JTextField durationField;
 
@@ -158,6 +159,15 @@ public class VideoParamPanel extends JPanel {
         crfPanel.add(crfValueLabel, BorderLayout.EAST);
 
         addFormControl(panel, gbc, crfPanel, row);
+        row++;
+
+        // 预估输出大小
+        addFormLabel(panel, gbc, "", row);
+        estimatedSizeLabel = new JLabel(" ");
+        estimatedSizeLabel.setFont(ThemeUtil.FONT_SMALL);
+        ThemeUtil.setDynamicForeground(estimatedSizeLabel, () -> ThemeUtil.TEXT_TERTIARY);
+        estimatedSizeLabel.setVisible(false);
+        addFormControl(panel, gbc, estimatedSizeLabel, row);
         row++;
 
         // 快捷预设按钮
@@ -561,6 +571,21 @@ public class VideoParamPanel extends JPanel {
     /** 更新 CRF 显示标签 */
     public void setCrfDisplay(int crf) {
         crfValueLabel.setText(String.valueOf(crf));
+    }
+
+    /** 更新预估输出大小文本（视频模式） */
+    public void setEstimatedSize(String text) {
+        if (estimatedSizeLabel != null) {
+            estimatedSizeLabel.setText(text);
+            estimatedSizeLabel.setVisible(text != null && !text.isEmpty());
+        }
+    }
+
+    /** 隐藏预估输出大小 */
+    public void hideEstimatedSize() {
+        if (estimatedSizeLabel != null) {
+            estimatedSizeLabel.setVisible(false);
+        }
     }
 
     // ==================== 控件访问器 ====================

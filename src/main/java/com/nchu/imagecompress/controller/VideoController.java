@@ -123,11 +123,12 @@ public class VideoController {
         videoParamPanel.setOnVariantChanged(this::updateVideoCompressButtonState);
 
         videoParamPanel.getCrfSlider().addChangeListener(e -> {
+            int quality = videoParamPanel.getQualityDisplay();
+            videoParamPanel.setCrfDisplay(quality);
             if (!videoParamPanel.getCrfSlider().getValueIsAdjusting()) {
-                int quality = videoParamPanel.getQualityDisplay();
-                videoParamPanel.setCrfDisplay(quality);
                 appConfig.setLastVideoCrf(videoParamPanel.getCrf());
                 configService.saveConfig(appConfig);
+                updateEstimatedVideoSize();
             }
         });
 
@@ -277,14 +278,22 @@ public class VideoController {
     /**
      * 选中视频文件时显示元信息。
      */
+    /** 当前选中视频的原始大小（用于预估输出大小），-1 表示无选中 */
+    private long selectedVideoOriginalSize = -1;
+
     public void onFileSelected(int index) {
         if (index < 0) {
             videoPreviewPanel.clearPreview();
+            videoParamPanel.hideEstimatedSize();
+            selectedVideoOriginalSize = -1;
             return;
         }
         FileInfo info = fileListPanel.getFileList().get(index);
         if (info instanceof VideoFileInfo) {
-            videoPreviewPanel.showVideoInfo((VideoFileInfo) info);
+            VideoFileInfo vInfo = (VideoFileInfo) info;
+            selectedVideoOriginalSize = vInfo.getOriginalSize();
+            videoPreviewPanel.showVideoInfo(vInfo);
+            updateEstimatedVideoSize();
         }
     }
 
@@ -293,6 +302,43 @@ public class VideoController {
      */
     public void clearPreview() {
         videoPreviewPanel.clearPreview();
+        videoParamPanel.hideEstimatedSize();
+        selectedVideoOriginalSize = -1;
+    }
+
+    /**
+     * 根据当前 CRF 查表预估输出大小范围。
+     */
+    private void updateEstimatedVideoSize() {
+        if (selectedVideoOriginalSize <= 0) {
+            videoParamPanel.hideEstimatedSize();
+            return;
+        }
+        int quality = videoParamPanel.getQualityDisplay();
+        int lowPct, highPct;
+        if (quality >= 90) { lowPct = 70; highPct = 100; }
+        else if (quality >= 70) { lowPct = 50; highPct = 80; }
+        else if (quality >= 50) { lowPct = 30; highPct = 55; }
+        else if (quality >= 30) { lowPct = 20; highPct = 40; }
+        else if (quality >= 15) { lowPct = 10; highPct = 25; }
+        else { lowPct = 5; highPct = 15; }
+
+        long lowBytes = selectedVideoOriginalSize * lowPct / 100;
+        long highBytes = selectedVideoOriginalSize * highPct / 100;
+        String lowSize = formatVideoSize(lowBytes);
+        String highSize = formatVideoSize(highBytes);
+        videoParamPanel.setEstimatedSize("预估输出: 约 " + lowSize + " ~ " + highSize);
+    }
+
+    /** 视频文件大小格式化 */
+    private static String formatVideoSize(long bytes) {
+        if (bytes <= 0) return "0 B";
+        if (bytes < 1024) return bytes + " B";
+        double kb = bytes / 1024.0;
+        if (kb < 1024) return String.format("%.1f KB", kb);
+        double mb = kb / 1024.0;
+        if (mb < 1024) return String.format("%.1f MB", mb);
+        return String.format("%.2f GB", mb / 1024.0);
     }
 
     // ==================== 压缩调度 ====================

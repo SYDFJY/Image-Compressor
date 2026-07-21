@@ -192,12 +192,31 @@ public final class ImageUtil {
      */
     public static BufferedImage generateEffectPreview(File imageFile, double quality,
                                                        int maxWidth, int maxHeight) {
+        return generateEffectPreview(imageFile, quality, maxWidth, maxHeight, 100);
+    }
+
+    /**
+     * 生成模拟压缩效果的预览图（支持缩放比例参数）。
+     *
+     * @param imageFile   原始图片文件
+     * @param quality     模拟压缩质量 [0.0, 1.0]
+     * @param maxWidth    预览容器最大宽度
+     * @param maxHeight   预览容器最大高度
+     * @param scalePercent 缩放比例 (1-100, 100=原尺寸)
+     * @return 模拟压缩效果后的 BufferedImage
+     */
+    public static BufferedImage generateEffectPreview(File imageFile, double quality,
+                                                       int maxWidth, int maxHeight,
+                                                       int scalePercent) {
         if (imageFile == null || !imageFile.isFile()) {
             return null;
         }
+        if (scalePercent <= 0 || scalePercent > 100) scalePercent = 100;
         try {
+            int w = maxWidth * scalePercent / 100;
+            int h = maxHeight * scalePercent / 100;
             return Thumbnails.of(imageFile)
-                    .size(maxWidth, maxHeight)
+                    .size(Math.max(1, w), Math.max(1, h))
                     .outputQuality(quality)
                     .asBufferedImage();
         } catch (IOException e) {
