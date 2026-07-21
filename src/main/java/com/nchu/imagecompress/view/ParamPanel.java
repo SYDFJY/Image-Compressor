@@ -212,9 +212,31 @@ public class ParamPanel extends JPanel {
 
         // --- 缩放模式 ---
         addFormLabel(panel, gbc, "缩放模式", row);
+
+        JPanel scalePanel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
+        scalePanel.setOpaque(false);
         scaleModeCombo = new JComboBox<>(new String[]{"不缩放", "按百分比", "按最大尺寸"});
         scaleModeCombo.setToolTipText("不缩放：保持原分辨率 | 按百分比：宽高等比缩放 | 按最大尺寸：限制宽高 ≤ 1920×1080");
-        addFormControl(panel, gbc, scaleModeCombo, row);
+        scalePanel.add(scaleModeCombo, BorderLayout.CENTER);
+
+        JButton scaleInfoBtn = new JButton("?");
+        scaleInfoBtn.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
+        scaleInfoBtn.setFocusPainted(false);
+        ThemeUtil.setDynamicForeground(scaleInfoBtn, () -> ThemeUtil.PRIMARY);
+        scaleInfoBtn.setBackground(ThemeUtil.BG_HOVER);
+        scaleInfoBtn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+        scaleInfoBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        scaleInfoBtn.setToolTipText("点击了解缩放功能");
+        scaleInfoBtn.addActionListener(e -> ThemeUtil.showStyledMessageDialog(this,
+                "缩放 = 改变输出图片的像素尺寸（宽×高），不影响画面比例。\n\n"
+                + "不缩放  — 保持原始分辨率，像素数不变，仅靠压缩质量减小文件体积。\n"
+                + "按百分比 — 宽高等比缩小。例如 70% 表示 4000×3000 → 2800×2100，像素总数减少近一半。\n"
+                + "按最大尺寸 — 限制宽高不超过 1920×1080，超出的自动等比缩小，未超出则保持原尺寸。\n\n"
+                + "缩放和压缩质量可以叠加使用：先缩放减少像素数，再降质量，能把文件压到最小。",
+                "缩放模式说明"));
+        scalePanel.add(scaleInfoBtn, BorderLayout.EAST);
+
+        addFormControl(panel, gbc, scalePanel, row);
         row++;
 
         // --- 缩放百分比 ---
