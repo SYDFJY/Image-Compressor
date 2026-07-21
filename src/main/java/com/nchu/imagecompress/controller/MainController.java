@@ -84,6 +84,9 @@ public class MainController implements MainControllerCallback,
     /** 窗口是否正在关闭 */
     private boolean shuttingDown = false;
 
+    /** 切换到视频模式前保存的图片文件列表（切回图片模式时恢复，修复清空 Bug） */
+    private List<FileInfo> savedImageFileList = null;
+
     // 撤销支持
     private FileInfo undoRemovedFile = null;
     private int undoRemovedIndex = -1;
@@ -189,7 +192,6 @@ public class MainController implements MainControllerCallback,
         mainFrame.getImportBtn().addActionListener(e -> onImportFiles());
         mainFrame.getImportFolderBtn().addActionListener(e -> onImportFolder());
         mainFrame.getClearBtn().addActionListener(e -> onClearAllFiles());
-        mainFrame.getCompressBtn().addActionListener(e -> onStartCompress());
         mainFrame.getThemeBtn().addActionListener(e -> onToggleTheme());
 
         // ---- 模式切换分段控件 ----
@@ -232,6 +234,45 @@ public class MainController implements MainControllerCallback,
 
         // ---- 拖拽导入 ----
         bindDragAndDrop();
+
+        // ---- 预览面板操作按钮回调 ----
+        mainFrame.getPreviewPanel().setOnOpenOriginalFile(() -> {
+            FileInfo selected = fileListPanel.getSelectedFile();
+            if (selected == null) {
+                ToastNotification.info("请先在文件列表中选择一个文件");
+                return;
+            }
+            File sourceFile;
+            if (selected instanceof ImageFileInfo) {
+                sourceFile = ((ImageFileInfo) selected).getSourceFile();
+            } else if (selected instanceof VideoFileInfo) {
+                sourceFile = ((VideoFileInfo) selected).getSourceFile();
+            } else {
+                return;
+            }
+            if (sourceFile != null && sourceFile.exists()) {
+                try {
+                    Desktop.getDesktop().open(sourceFile);
+                } catch (IOException ex) {
+                    ToastNotification.warning("无法打开文件: " + ex.getMessage());
+                }
+            }
+        });
+        mainFrame.getPreviewPanel().setOnOpenOutputDir(() -> {
+            try {
+                String outputDir = imageController.getCurrentOutputDir();
+                if (outputDir == null || outputDir.isEmpty()) {
+                    outputDir = configService.getDefaultOutputDir();
+                }
+                File dir = new File(outputDir);
+                if (!dir.exists()) {
+                    dir.mkdirs();
+                }
+                Desktop.getDesktop().open(dir);
+            } catch (IOException ex) {
+                ToastNotification.warning("无法打开输出目录: " + ex.getMessage());
+            }
+        });
 
         LogUtil.info("[MainController] 事件绑定完成（含子控制器、右键菜单、快捷键）");
     }
@@ -505,7 +546,6 @@ public class MainController implements MainControllerCallback,
             mainFrame.getParamPanel().getCompressButton().setEnabled(!compressing);
             mainFrame.getParamPanel().getCancelButton().setEnabled(compressing);
         }
-        mainFrame.getCompressBtn().setEnabled(!compressing);
         mainFrame.getImportBtn().setEnabled(!compressing);
         mainFrame.getImportFolderBtn().setEnabled(!compressing);
         mainFrame.getClearBtn().setEnabled(!compressing);
@@ -662,6 +702,9 @@ public class MainController implements MainControllerCallback,
     @Override
     public void onModeToggle(boolean videoMode) {
         if (videoMode) {
+            // 保存当前图片文件列表（用于切回图片模式时恢复）
+            savedImageFileList = new ArrayList<>(fileListPanel.getFileList());
+
             mainFrame.switchCompressMode("VIDEO");
             fileListPanel.setFileList(new ArrayList<>(videoController.getVideoFileList()));
             if (!VideoUtil.checkFfmpegAvailable()) {
@@ -673,7 +716,12 @@ public class MainController implements MainControllerCallback,
         } else {
             videoController.clearPreview();
             mainFrame.switchCompressMode("IMAGE");
-            fileListPanel.clearAllFiles();
+            // 恢复之前保存的图片文件列表（修复切换模式清空图片列表的 Bug）
+            if (savedImageFileList != null && !savedImageFileList.isEmpty()) {
+                fileListPanel.setFileList(new ArrayList<>(savedImageFileList));
+            } else {
+                fileListPanel.clearAllFiles();
+            }
             imageController.restoreParamsFromConfig();
             imageController.updateCompressButtonState();
             statusBar.setStatus("图片模式 — 请导入图片文件", "ready");

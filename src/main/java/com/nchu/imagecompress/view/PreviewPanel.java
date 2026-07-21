@@ -57,6 +57,10 @@ public class PreviewPanel extends JPanel {
     // 画布（非 final — JDK 8 限制：构造方法内匿名类引用必须先赋值）
     private PreviewCanvas canvas;
 
+    // 操作按钮回调（由 MainController 注入）
+    private Runnable onOpenOriginalFile;
+    private Runnable onOpenOutputDir;
+
     // 数据浮层
     private final JPanel overlayBar;
     private JLabel origSizeLabel;
@@ -97,7 +101,7 @@ public class PreviewPanel extends JPanel {
                 ThemeUtil.SPACE_LG, ThemeUtil.SPACE_LG,
                 ThemeUtil.SPACE_LG, ThemeUtil.SPACE_LG));
 
-        // === 顶部：标题 + 缩放按钮 + 分段控件 ===
+        // === 顶部：标题 + 操作按钮 + 分段控件 ===
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
         topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, ThemeUtil.SPACE_SM, 0));
@@ -107,19 +111,25 @@ public class PreviewPanel extends JPanel {
         ThemeUtil.setDynamicForeground(titleLabel, () -> ThemeUtil.TEXT_TERTIARY);
         topPanel.add(titleLabel, BorderLayout.WEST);
 
-        // 缩放按钮：⊡ 适合窗口 / 1:1 实际像素
-        JPanel zoomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0));
-        zoomPanel.setOpaque(false);
+        // 操作按钮：打开原文件 + 打开输出目录（替代原缩放按钮）
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
+        actionPanel.setOpaque(false);
 
-        JButton fitBtn = createZoomBtn("[ ]", "适合窗口");
-        fitBtn.addActionListener(e -> canvas.setZoomMode(PreviewCanvas.ZoomMode.FIT_INSIDE));
-        zoomPanel.add(fitBtn);
+        JButton openFileBtn = createActionBtn("打开原文件", "icons/image.svg",
+                "用系统默认程序打开当前选中的图片");
+        openFileBtn.addActionListener(e -> {
+            if (onOpenOriginalFile != null) onOpenOriginalFile.run();
+        });
+        actionPanel.add(openFileBtn);
 
-        JButton actualBtn = createZoomBtn("1:1", "实际像素");
-        actualBtn.addActionListener(e -> canvas.setZoomMode(PreviewCanvas.ZoomMode.ACTUAL_PIXELS));
-        zoomPanel.add(actualBtn);
+        JButton openDirBtn = createActionBtn("打开输出目录", "icons/folder.svg",
+                "打开压缩输出文件夹");
+        openDirBtn.addActionListener(e -> {
+            if (onOpenOutputDir != null) onOpenOutputDir.run();
+        });
+        actionPanel.add(openDirBtn);
 
-        topPanel.add(zoomPanel, BorderLayout.CENTER);
+        topPanel.add(actionPanel, BorderLayout.CENTER);
 
         segmentedControl = createSegmentedControl();
         topPanel.add(segmentedControl, BorderLayout.EAST);
@@ -172,17 +182,41 @@ public class PreviewPanel extends JPanel {
         });
     }
 
-    // ==================== 缩放按钮 ====================
+    // ==================== 操作按钮 ====================
 
-    private JButton createZoomBtn(String text, String tooltip) {
-        JButton btn = new JButton(text);
+    /**
+     * 创建预览区操作按钮（图标 + 文字 + 主色边框，风格明显）。
+     */
+    private JButton createActionBtn(String text, String iconPath, String tooltip) {
+        JButton btn = new JButton(text, new FlatSVGIcon(iconPath));
         btn.setFont(ThemeUtil.FONT_SMALL);
         btn.setToolTipText(tooltip);
         btn.setFocusPainted(false);
-        btn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+        ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.PRIMARY);
+        ThemeUtil.setDynamicBackground(btn, () -> ThemeUtil.BG_CARD);
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ThemeUtil.PRIMARY, 1),
+                BorderFactory.createEmptyBorder(3, 10, 3, 10)));
         btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        // hover 时浅蓝背景
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                btn.setBackground(ThemeUtil.PRIMARY_LIGHTEST);
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                btn.setBackground(ThemeUtil.BG_CARD);
+            }
+        });
         return btn;
     }
+
+    /** 设置"打开原文件"按钮的回调（由 MainController 注入） */
+    public void setOnOpenOriginalFile(Runnable r) { this.onOpenOriginalFile = r; }
+
+    /** 设置"打开输出目录"按钮的回调（由 MainController 注入） */
+    public void setOnOpenOutputDir(Runnable r) { this.onOpenOutputDir = r; }
 
     // ==================== 分段控件 [原图 | 效果图 | 对比] v2 ====================
 

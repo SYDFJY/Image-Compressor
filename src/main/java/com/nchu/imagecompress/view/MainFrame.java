@@ -77,7 +77,6 @@ public class MainFrame extends JFrame {
     private JButton importBtn;
     private JButton importFolderBtn;
     private JButton clearBtn;
-    private JButton compressBtn;
     private JButton themeBtn;
     // 模式切换分段控件（图片 / 视频）
     private JToggleButton imageModeBtn;
@@ -288,10 +287,6 @@ public class MainFrame extends JFrame {
         themeBtn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         ThemeUtil.addThemeChangeListener(() -> themeBtn.setBackground(ThemeUtil.BG_CARD));
         rightPanel.add(themeBtn);
-
-        compressBtn = createGradientButton("开始压缩", "icons/play.svg");
-        compressBtn.setToolTipText("开始压缩处理");
-        rightPanel.add(compressBtn);
 
         toolBarPanel.add(rightPanel, BorderLayout.EAST);
 
@@ -725,7 +720,6 @@ public class MainFrame extends JFrame {
     public JButton getImportBtn() { return importBtn; }
     public JButton getImportFolderBtn() { return importFolderBtn; }
     public JButton getClearBtn() { return clearBtn; }
-    public JButton getCompressBtn() { return compressBtn; }
     public JButton getThemeBtn() { return themeBtn; }
     public JToggleButton getImageModeBtn() { return imageModeBtn; }
     public JToggleButton getVideoModeBtn() { return videoModeBtn; }

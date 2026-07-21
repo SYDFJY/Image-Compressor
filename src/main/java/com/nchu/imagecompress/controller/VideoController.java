@@ -23,6 +23,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -249,7 +251,16 @@ public class VideoController {
                 }
                 videoFileList.clear();
                 videoFileList.addAll(imported);
-                fileListPanel.setFileList(imported);
+                // 按文件修改时间倒序排列（最新的在前）
+                Collections.sort(videoFileList, new Comparator<VideoFileInfo>() {
+                    @Override
+                    public int compare(VideoFileInfo a, VideoFileInfo b) {
+                        long t1 = a.getSourceFile() != null ? a.getSourceFile().lastModified() : 0L;
+                        long t2 = b.getSourceFile() != null ? b.getSourceFile().lastModified() : 0L;
+                        return Long.compare(t2, t1);
+                    }
+                });
+                fileListPanel.setFileList(videoFileList);
                 updateVideoCompressButtonState();
                 statusBar.setStatus("已导入 " + imported.size() + " 个视频", "success");
                 ToastNotification.success("成功导入 " + imported.size() + " 个视频文件");
@@ -574,7 +585,6 @@ public class VideoController {
         boolean hasFiles = !fileListPanel.getFileList().isEmpty();
         videoParamPanel.getCompressButton().setEnabled(hasFiles);
         videoParamPanel.updateCompressButtonText(hasFiles ? videoFileList.size() : 0);
-        mainFrame.getCompressBtn().setEnabled(hasFiles);
     }
 
     // ==================== 配置持久化 ====================

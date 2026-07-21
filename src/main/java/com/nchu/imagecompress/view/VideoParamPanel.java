@@ -11,6 +11,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.SwingConstants;
@@ -137,7 +138,7 @@ public class VideoParamPanel extends JPanel {
         addGroupHeader(panel, gbc, "画质预设", row++);
 
         // --- 视频画质 ---
-        addFormLabel(panel, gbc, "视频画质", row);
+        addFormLabel(panel, gbc, "视频清晰度", row);
 
         JPanel crfPanel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
         crfPanel.setOpaque(false);
@@ -199,8 +200,30 @@ public class VideoParamPanel extends JPanel {
 
         // --- 输出格式 ---
         addFormLabel(panel, gbc, "输出格式", row);
+
+        JPanel formatPanel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
+        formatPanel.setOpaque(false);
         outputFormatCombo = new JComboBox<>(FORMAT_OPTIONS);
-        addFormControl(panel, gbc, outputFormatCombo, row);
+        formatPanel.add(outputFormatCombo, BorderLayout.CENTER);
+
+        JButton formatInfoBtn = new JButton("?");
+        formatInfoBtn.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
+        formatInfoBtn.setFocusPainted(false);
+        ThemeUtil.setDynamicForeground(formatInfoBtn, () -> ThemeUtil.PRIMARY);
+        formatInfoBtn.setBackground(ThemeUtil.BG_HOVER);
+        formatInfoBtn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+        formatInfoBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        formatInfoBtn.setToolTipText("点击查看各格式说明");
+        formatInfoBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
+                "MP4 (H.264) — 兼容性最好、体积合理、通用推荐\n"
+                + "WebM (VP9)  — 开源格式、同画质体积更小、部分设备不兼容\n"
+                + "AVI         — 支持无损、体积极大、适合后期编辑\n"
+                + "MOV         — 苹果生态兼容好、Windows需QuickTime\n"
+                + "MKV         — 支持多音轨/字幕、影音收藏",
+                "视频格式说明", JOptionPane.INFORMATION_MESSAGE));
+        formatPanel.add(formatInfoBtn, BorderLayout.EAST);
+
+        addFormControl(panel, gbc, formatPanel, row);
         row++;
 
         // ==================== 输出设置组 ====================

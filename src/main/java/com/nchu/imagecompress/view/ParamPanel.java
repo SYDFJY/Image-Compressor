@@ -8,6 +8,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JSpinner;
@@ -145,8 +146,24 @@ public class ParamPanel extends JPanel {
         gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0);
         int row = 0;
 
-        // --- 压缩质量 ---
-        addFormLabel(panel, gbc, "压缩质量", row);
+        // --- 画质清晰度 ---
+        addFormLabel(panel, gbc, "画质清晰度", row);
+
+        // 滑块两端标注
+        JPanel qualityWrapper = new JPanel(new BorderLayout(0, 2));
+        qualityWrapper.setOpaque(false);
+
+        JLabel qualityLeftHint = new JLabel("体积更小 ←");
+        qualityLeftHint.setFont(ThemeUtil.FONT_SMALL);
+        ThemeUtil.setDynamicForeground(qualityLeftHint, () -> ThemeUtil.TEXT_TERTIARY);
+        qualityLeftHint.setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 0));
+        qualityWrapper.add(qualityLeftHint, BorderLayout.WEST);
+
+        JLabel qualityRightHint = new JLabel("→ 更清晰");
+        qualityRightHint.setFont(ThemeUtil.FONT_SMALL);
+        ThemeUtil.setDynamicForeground(qualityRightHint, () -> ThemeUtil.TEXT_TERTIARY);
+        qualityRightHint.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 2));
+        qualityWrapper.add(qualityRightHint, BorderLayout.EAST);
 
         JPanel qualityPanel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
         qualityPanel.setOpaque(false);
@@ -155,22 +172,25 @@ public class ParamPanel extends JPanel {
         qualitySlider.setUI(new GradientSliderUI());
         qualityPanel.add(qualitySlider, BorderLayout.CENTER);
 
+        qualityWrapper.add(qualityPanel, BorderLayout.CENTER);
+
         qualityValueLabel = new JLabel("80%", SwingConstants.RIGHT);
         qualityValueLabel.setFont(new java.awt.Font("Microsoft YaHei", java.awt.Font.BOLD, 14));
         ThemeUtil.setDynamicForeground(qualityValueLabel, () -> ThemeUtil.PRIMARY);
         qualityValueLabel.setPreferredSize(new java.awt.Dimension(40, 24));
         qualityPanel.add(qualityValueLabel, BorderLayout.EAST);
 
-        addFormControl(panel, gbc, qualityPanel, row);
+        addFormControl(panel, gbc, qualityWrapper, row);
         row++;
 
         // 快捷预设按钮
         JPanel presetPanel = new JPanel(new java.awt.FlowLayout(
                 java.awt.FlowLayout.LEFT, ThemeUtil.SPACE_SM, 0));
         presetPanel.setOpaque(false);
-        presetPanel.add(createPresetBtn("标准", 80));
-        presetPanel.add(createPresetBtn("高效", 60));
-        presetPanel.add(createPresetBtn("高清", 90));
+        presetPanel.add(createPresetBtn("网络分享", 60));
+        presetPanel.add(createPresetBtn("日常存档", 80));
+        presetPanel.add(createPresetBtn("摄影作品", 95));
+        presetPanel.add(createPresetBtn("极限压缩", 30));
 
         JPanel presetWrapper = new JPanel(new BorderLayout());
         presetWrapper.setOpaque(false);
@@ -185,15 +205,37 @@ public class ParamPanel extends JPanel {
         row++;
 
         // --- 缩放百分比 ---
-        addFormLabel(panel, gbc, "百分比", row);
+        addFormLabel(panel, gbc, "缩放比例 (%)", row);
         scalePercentSpinner = new JSpinner(new SpinnerNumberModel(100, 1, 100, 5));
+        scalePercentSpinner.setToolTipText("输出图片相对原图的尺寸百分比，100%=保持原尺寸");
         addFormControl(panel, gbc, scalePercentSpinner, row);
         row++;
 
         // --- 输出格式 ---
         addFormLabel(panel, gbc, "输出格式", row);
+
+        JPanel formatPanel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
+        formatPanel.setOpaque(false);
         outputFormatCombo = new JComboBox<>(new String[]{"保持原格式", "JPEG", "PNG", "BMP", "WebP"});
-        addFormControl(panel, gbc, outputFormatCombo, row);
+        formatPanel.add(outputFormatCombo, BorderLayout.CENTER);
+
+        JButton formatInfoBtn = new JButton("?");
+        formatInfoBtn.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
+        formatInfoBtn.setFocusPainted(false);
+        ThemeUtil.setDynamicForeground(formatInfoBtn, () -> ThemeUtil.PRIMARY);
+        formatInfoBtn.setBackground(ThemeUtil.BG_HOVER);
+        formatInfoBtn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+        formatInfoBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        formatInfoBtn.setToolTipText("点击查看各格式说明");
+        formatInfoBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
+                "JPEG  — 体积最小、兼容性最好、不支持透明、适合照片和网络分享\n"
+                + "PNG   — 无损压缩、支持透明、体积较大、适合截图和Logo\n"
+                + "BMP   — 无压缩、体积巨大、一般不推荐\n"
+                + "WebP  — 体积比JPEG小30%、支持透明、部分老软件不兼容、适合网页",
+                "图片格式说明", JOptionPane.INFORMATION_MESSAGE));
+        formatPanel.add(formatInfoBtn, BorderLayout.EAST);
+
+        addFormControl(panel, gbc, formatPanel, row);
         row++;
 
         // 弹性填充
@@ -292,7 +334,7 @@ public class ParamPanel extends JPanel {
         addFormControl(panel, gbc, gifSectionLabel, row);
         row++;
 
-        addFormLabel(panel, gbc, "最大颜色数", row);
+        addFormLabel(panel, gbc, "最大颜色数 (GIF专用)", row);
 
         JPanel gifPanel = new JPanel(new BorderLayout(ThemeUtil.SPACE_SM, 0));
         gifPanel.setOpaque(false);

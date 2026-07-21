@@ -31,6 +31,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -269,6 +271,20 @@ public class ImageController {
             fileListPanel.addFile(info);
         }
 
+        // 按文件修改时间倒序排列（最新的在前）
+        if (!deduped.isEmpty()) {
+            List<FileInfo> allFiles = fileListPanel.getFileList();
+            java.util.Collections.sort(allFiles, new java.util.Comparator<FileInfo>() {
+                @Override
+                public int compare(FileInfo a, FileInfo b) {
+                    long t1 = getLastModifiedSafe(a);
+                    long t2 = getLastModifiedSafe(b);
+                    return Long.compare(t2, t1); // 降序
+                }
+            });
+            fileListPanel.setFileList(allFiles);
+        }
+
         updateCompressButtonState();
 
         if (skipped > 0) {
@@ -277,6 +293,17 @@ public class ImageController {
         if (!deduped.isEmpty()) {
             ToastNotification.success("成功导入 " + deduped.size() + " 个文件");
         }
+    }
+
+    /** 安全获取文件的最后修改时间（避免 null/不存在的文件抛异常） */
+    private static long getLastModifiedSafe(FileInfo info) {
+        try {
+            if (info instanceof ImageFileInfo) {
+                File f = ((ImageFileInfo) info).getSourceFile();
+                return f != null ? f.lastModified() : 0L;
+            }
+        } catch (Exception ignored) { }
+        return 0L;
     }
 
     // ==================== 预览 ====================
@@ -662,6 +689,21 @@ public class ImageController {
         }).start();
     }
 
+    // ==================== 辅助方法 ====================
+
+    /**
+     * 获取当前输出目录路径。
+     * 优先使用当前压缩配置中的目录，其次使用全局默认目录。
+     */
+    public String getCurrentOutputDir() {
+        if (currentCompressConfig != null
+                && currentCompressConfig.getOutputPath() != null
+                && !currentCompressConfig.getOutputPath().isEmpty()) {
+            return currentCompressConfig.getOutputPath();
+        }
+        return configService.getDefaultOutputDir();
+    }
+
     // ==================== 按钮状态 ====================
 
     /**
@@ -670,7 +712,6 @@ public class ImageController {
     public void updateCompressButtonState() {
         boolean hasFiles = !fileListPanel.getFileList().isEmpty();
         paramPanel.getCompressButton().setEnabled(hasFiles);
-        mainFrame.getCompressBtn().setEnabled(hasFiles);
     }
 
     // ==================== 工具方法 ====================
