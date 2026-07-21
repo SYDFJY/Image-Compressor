@@ -197,40 +197,39 @@ public class CompressService {
         int bestQuality = 0; // 从 0 开始，确保二分搜索能记录任意有效质量值
         long bestSize = 0;
         boolean found = false;
+        boolean targetUnreachableLow = false; // 目标太小，连 quality=5 都超限
 
         int low = 5;
         int high = 100;
         int iterations = 0;
         final int MAX_ITERATIONS = 8;
 
-        // 先试最低质量 → 如果还是太大，放弃
+        // 先试最低质量 → 如果还是太大，标记为不可达
         try {
-            File tmpFile = File.createTempFile("nchu_target_", ".tmp");
+            File tmpFile = File.createTempFile("nchu_target_", ".jpg");
             tmpFile.deleteOnExit();
             CompressConfig trialConfig = buildTrialConfig(config, low);
             CompressResult trial = ImageCompressUtil.compress(inputFile, trialConfig, tmpFile);
             if (trial.isSuccess()) {
                 long size = tmpFile.length();
-                if (size > targetBytes) {
-                    // 最低质量仍然超限 → 记录最低质量的最好结果
-                    bestQuality = low;
-                    bestSize = size;
-                } else {
-                    bestQuality = low;
-                    bestSize = size;
+                bestQuality = low;
+                bestSize = size;
+                if (size <= targetBytes) {
                     found = true;
+                } else {
+                    targetUnreachableLow = true; // quality=5 仍超限
                 }
                 tmpFile.delete();
             }
         } catch (Exception ignored) { /* 试压缩失败，继续 */ }
 
-        // 二分搜索
+        // 二分搜索（仅在目标可达时执行）
         while (low <= high && iterations < MAX_ITERATIONS) {
             int mid = (low + high) / 2;
             iterations++;
 
             try {
-                File tmpFile = File.createTempFile("nchu_target_", ".tmp");
+                File tmpFile = File.createTempFile("nchu_target_", ".jpg");
                 tmpFile.deleteOnExit();
                 CompressConfig trialConfig = buildTrialConfig(config, mid);
                 CompressResult trial = ImageCompressUtil.compress(inputFile, trialConfig, tmpFile);
@@ -238,7 +237,7 @@ public class CompressService {
                 if (trial.isSuccess()) {
                     long size = tmpFile.length();
                     if (size <= targetBytes && size > 0) {
-                        // 满足目标 → 记录并尝试更高画质（bestQuality=0 保证首次 mid 一定被记录）
+                        // 满足目标 → 记录并尝试更高画质
                         if (mid > bestQuality || (mid == bestQuality && size > bestSize)) {
                             bestQuality = mid;
                             bestSize = size;
@@ -258,10 +257,14 @@ public class CompressService {
             }
         }
 
-        // 使用最佳质量执行最终压缩（浅拷贝避免修改共享 config）
-        if (!found) {
-            bestQuality = config.getQuality(); // 搜索失败时回退到用户滑块值
-            LogUtil.info("[CompressService] 目标大小搜索未收敛，回退到用户质量=" + bestQuality);
+        // 确定最终质量：found=true 用搜索到的；否则保持 bestQuality（初始试压缩已记录）
+        if (!found && bestQuality == 0) {
+            // 初始试压缩也失败了 → 回退到用户滑块值
+            bestQuality = config.getQuality();
+            LogUtil.info("[CompressService] 目标大小搜索完全失败，回退到用户质量=" + bestQuality);
+        } else if (!found) {
+            // 已有 bestQuality（来自初始试压缩或搜索过程），保留它
+            LogUtil.info("[CompressService] 目标大小搜索未找到精确匹配，使用最佳质量=" + bestQuality);
         } else {
             LogUtil.info("[CompressService] 目标大小搜索完成: 最佳质量=" + bestQuality
                     + ", 预估大小=" + bestSize + " bytes, 迭代=" + iterations);
@@ -269,14 +272,19 @@ public class CompressService {
 
         // 浅拷贝 config 防止覆盖共享对象（批量压缩竞态）
         CompressConfig finalConfig = buildTrialConfig(config, bestQuality);
-        // 保留原始 targetSizeKB 以供结果判断
         CompressResult result = ImageCompressUtil.compress(inputFile, finalConfig, outputFile);
 
         // 目标无法达到时添加警告
-        if (result.isSuccess() && bestQuality >= 100 && result.getOutputSize() < targetBytes) {
-            long shortfall = targetBytes - result.getOutputSize();
-            result.addWarning("无法达到目标大小（" + config.getTargetSizeKB() + " KB），"
-                    + "已使用最高画质，结果约 " + (result.getOutputSize() / 1024) + " KB，建议提高目标大小。");
+        if (result.isSuccess()) {
+            if (targetUnreachableLow) {
+                result.addWarning("目标大小（" + config.getTargetSizeKB() + " KB）过低，"
+                        + "即使使用最高压缩（quality=5）仍超出目标。"
+                        + "结果约 " + (result.getOutputSize() / 1024) + " KB，建议调高目标大小。");
+            } else if (bestQuality >= 100 && result.getOutputSize() < targetBytes) {
+                result.addWarning("无法达到目标大小（" + config.getTargetSizeKB() + " KB），"
+                        + "已使用最高画质（quality=100），结果约 "
+                        + (result.getOutputSize() / 1024) + " KB，建议调低目标大小。");
+            }
         }
 
         return result;
@@ -294,6 +302,7 @@ public class CompressService {
         cfg.setMaxHeight(base.getMaxHeight());
         cfg.setOutputFormat(base.getOutputFormat());
         cfg.setPreserveMetadata(base.isPreserveMetadata());
+        cfg.setGifMaxColors(base.getGifMaxColors());
         return cfg;
     }
 }

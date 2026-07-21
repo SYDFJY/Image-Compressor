@@ -198,6 +198,10 @@ public final class ImageUtil {
     /**
      * 生成模拟压缩效果的预览图（支持缩放比例参数）。
      *
+     * <p>先按全尺寸生成预览，再按 scalePercent 对图像内容做实际缩放。
+     * 与旧实现的关键区别：缩放作用于图像像素而非预览容器，
+     * 确保对比模式下的 W×H 标签能体现真实的尺寸差异。</p>
+     *
      * @param imageFile   原始图片文件
      * @param quality     模拟压缩质量 [0.0, 1.0]
      * @param maxWidth    预览容器最大宽度
@@ -213,12 +217,18 @@ public final class ImageUtil {
         }
         if (scalePercent <= 0 || scalePercent > 100) scalePercent = 100;
         try {
-            int w = maxWidth * scalePercent / 100;
-            int h = maxHeight * scalePercent / 100;
-            return Thumbnails.of(imageFile)
-                    .size(Math.max(1, w), Math.max(1, h))
+            // ① 先按全尺寸生成预览（受 maxWidth/maxHeight 约束，等比缩放）
+            BufferedImage fullPreview = Thumbnails.of(imageFile)
+                    .size(maxWidth, maxHeight)
                     .outputQuality(quality)
                     .asBufferedImage();
+            // ② 若需要缩放，对预览图像素做实际缩小
+            if (scalePercent < 100) {
+                int w = Math.max(1, fullPreview.getWidth() * scalePercent / 100);
+                int h = Math.max(1, fullPreview.getHeight() * scalePercent / 100);
+                return Thumbnails.of(fullPreview).size(w, h).asBufferedImage();
+            }
+            return fullPreview;
         } catch (IOException e) {
             return null;
         }

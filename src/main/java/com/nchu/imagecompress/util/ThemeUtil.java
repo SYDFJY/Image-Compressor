@@ -443,16 +443,22 @@ public final class ThemeUtil {
         Object oldBg = UIManager.get("Button.background");
         Object oldFg = UIManager.get("Button.foreground");
         Object oldHoverBg = UIManager.get("Button.hoverBackground");
+        Object oldBorderColor = UIManager.get("Button.borderColor");
         try {
-            UIManager.put("Button.background", new ColorUIResource(PRIMARY));
-            UIManager.put("Button.foreground", new ColorUIResource(Color.WHITE));
-            UIManager.put("Button.hoverBackground", new ColorUIResource(PRIMARY_DEEP));
+            // 浅色背景 + 深色文字 + 主色可见边框，与全局 BG_WINDOW 背景区分开
+            UIManager.put("Button.background", new ColorUIResource(BG_CARD));
+            UIManager.put("Button.foreground", new ColorUIResource(TEXT_PRIMARY));
+            UIManager.put("Button.hoverBackground", new ColorUIResource(PRIMARY_LIGHTEST));
+            UIManager.put("Button.borderColor", new ColorUIResource(PRIMARY));
             JOptionPane.showMessageDialog(parent, message, title, JOptionPane.INFORMATION_MESSAGE);
         } finally {
             UIManager.put("Button.background", oldBg);
             UIManager.put("Button.foreground", oldFg);
             if (oldHoverBg != null) {
                 UIManager.put("Button.hoverBackground", oldHoverBg);
+            }
+            if (oldBorderColor != null) {
+                UIManager.put("Button.borderColor", oldBorderColor);
             }
         }
     }
