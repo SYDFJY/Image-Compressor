@@ -194,8 +194,8 @@ public class CompressService {
      */
     private CompressResult compressWithTargetSize(File inputFile, CompressConfig config, File outputFile) {
         long targetBytes = config.getTargetSizeKB() * 1024L;
-        int bestQuality = config.getQuality(); // 默认：用户设定的质量
-        long bestSize = Long.MAX_VALUE;
+        int bestQuality = 0; // 从 0 开始，确保二分搜索能记录任意有效质量值
+        long bestSize = 0;
         boolean found = false;
 
         int low = 5;
@@ -212,16 +212,15 @@ public class CompressService {
             if (trial.isSuccess()) {
                 long size = tmpFile.length();
                 if (size > targetBytes) {
-                    // 最低质量仍然超限 → 返回最低质量的结果
+                    // 最低质量仍然超限 → 记录最低质量的最好结果
                     bestQuality = low;
                     bestSize = size;
-                    tmpFile.delete();
                 } else {
                     bestQuality = low;
                     bestSize = size;
                     found = true;
-                    tmpFile.delete();
                 }
+                tmpFile.delete();
             }
         } catch (Exception ignored) { /* 试压缩失败，继续 */ }
 
@@ -239,7 +238,7 @@ public class CompressService {
                 if (trial.isSuccess()) {
                     long size = tmpFile.length();
                     if (size <= targetBytes && size > 0) {
-                        // 满足目标 → 记录并尝试更高画质
+                        // 满足目标 → 记录并尝试更高画质（bestQuality=0 保证首次 mid 一定被记录）
                         if (mid > bestQuality || (mid == bestQuality && size > bestSize)) {
                             bestQuality = mid;
                             bestSize = size;
@@ -259,13 +258,28 @@ public class CompressService {
             }
         }
 
-        // 使用最佳质量执行最终压缩
-        if (found) {
-            config.setQuality(bestQuality);
+        // 使用最佳质量执行最终压缩（浅拷贝避免修改共享 config）
+        if (!found) {
+            bestQuality = config.getQuality(); // 搜索失败时回退到用户滑块值
+            LogUtil.info("[CompressService] 目标大小搜索未收敛，回退到用户质量=" + bestQuality);
+        } else {
             LogUtil.info("[CompressService] 目标大小搜索完成: 最佳质量=" + bestQuality
                     + ", 预估大小=" + bestSize + " bytes, 迭代=" + iterations);
         }
-        return ImageCompressUtil.compress(inputFile, config, outputFile);
+
+        // 浅拷贝 config 防止覆盖共享对象（批量压缩竞态）
+        CompressConfig finalConfig = buildTrialConfig(config, bestQuality);
+        // 保留原始 targetSizeKB 以供结果判断
+        CompressResult result = ImageCompressUtil.compress(inputFile, finalConfig, outputFile);
+
+        // 目标无法达到时添加警告
+        if (result.isSuccess() && bestQuality >= 100 && result.getOutputSize() < targetBytes) {
+            long shortfall = targetBytes - result.getOutputSize();
+            result.addWarning("无法达到目标大小（" + config.getTargetSizeKB() + " KB），"
+                    + "已使用最高画质，结果约 " + (result.getOutputSize() / 1024) + " KB，建议提高目标大小。");
+        }
+
+        return result;
     }
 
     /**

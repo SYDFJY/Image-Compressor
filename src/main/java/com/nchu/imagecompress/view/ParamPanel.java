@@ -56,6 +56,7 @@ public class ParamPanel extends JPanel {
     private javax.swing.JSpinner targetSizeSpinner;
     private JButton activePresetBtn;
     private JLabel estimatedSizeLabel;
+    private JLabel outputDimLabel;
 
     // ==================== GIF 压缩控件（默认隐藏，选中 GIF 时显示） ====================
     private JLabel gifSectionLabel;
@@ -211,6 +212,7 @@ public class ParamPanel extends JPanel {
         // --- 缩放模式 ---
         addFormLabel(panel, gbc, "缩放模式", row);
         scaleModeCombo = new JComboBox<>(new String[]{"不缩放", "按百分比", "按最大尺寸"});
+        scaleModeCombo.setToolTipText("不缩放：保持原分辨率 | 按百分比：宽高等比缩放 | 按最大尺寸：限制宽高 ≤ 1920×1080");
         addFormControl(panel, gbc, scaleModeCombo, row);
         row++;
 
@@ -219,6 +221,18 @@ public class ParamPanel extends JPanel {
         scalePercentSpinner = new JSpinner(new SpinnerNumberModel(100, 1, 100, 5));
         scalePercentSpinner.setToolTipText("输出图片相对原图的尺寸百分比，100%=保持原尺寸");
         addFormControl(panel, gbc, scalePercentSpinner, row);
+        row++;
+
+        // --- 输出尺寸预览 ---
+        outputDimLabel = new JLabel(" ");
+        outputDimLabel.setFont(ThemeUtil.FONT_SMALL);
+        ThemeUtil.setDynamicForeground(outputDimLabel, () -> ThemeUtil.TEXT_TERTIARY);
+        gbc.gridx = 0; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, ThemeUtil.SPACE_SM, 0);
+        panel.add(outputDimLabel, gbc);
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0);
         row++;
 
         // --- 输出格式 ---
@@ -237,12 +251,12 @@ public class ParamPanel extends JPanel {
         formatInfoBtn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
         formatInfoBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         formatInfoBtn.setToolTipText("点击查看各格式说明");
-        formatInfoBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
+        formatInfoBtn.addActionListener(e -> ThemeUtil.showStyledMessageDialog(this,
                 "JPEG  — 体积最小、兼容性最好、不支持透明、适合照片和网络分享\n"
                 + "PNG   — 无损压缩、支持透明、体积较大、适合截图和Logo\n"
                 + "BMP   — 无压缩、体积巨大、一般不推荐\n"
                 + "WebP  — 体积比JPEG小30%、支持透明、部分老软件不兼容、适合网页",
-                "图片格式说明", JOptionPane.INFORMATION_MESSAGE));
+                "图片格式说明"));
         formatPanel.add(formatInfoBtn, BorderLayout.EAST);
 
         addFormControl(panel, gbc, formatPanel, row);
@@ -514,6 +528,21 @@ public class ParamPanel extends JPanel {
     public void hideEstimatedSize() {
         if (estimatedSizeLabel != null) {
             estimatedSizeLabel.setVisible(false);
+        }
+    }
+
+    /** 更新输出尺寸预览标签 */
+    public void setOutputDimLabel(String text) {
+        if (outputDimLabel != null) {
+            outputDimLabel.setText(text != null ? text : " ");
+            outputDimLabel.setVisible(text != null && !text.isEmpty());
+        }
+    }
+
+    /** 隐藏输出尺寸预览 */
+    public void hideOutputDimLabel() {
+        if (outputDimLabel != null) {
+            outputDimLabel.setVisible(false);
         }
     }
 }

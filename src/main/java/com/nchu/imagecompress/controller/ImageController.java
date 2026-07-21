@@ -150,12 +150,16 @@ public class ImageController {
         // 输出格式变更时更新预估大小
         paramPanel.getOutputFormatCombo().addActionListener(e -> updateEstimatedImageSize());
 
-        // 缩放模式/百分比变更时刷新预览
-        paramPanel.getScaleModeCombo().addActionListener(e -> previewDebounceTimer.restart());
+        // 缩放模式/百分比变更时刷新预览 + 输出尺寸
+        paramPanel.getScaleModeCombo().addActionListener(e -> {
+            updateOutputDimLabelFromSelection();
+            previewDebounceTimer.restart();
+        });
         ((javax.swing.JSpinner.DefaultEditor) paramPanel.getScalePercentSpinner().getEditor())
                 .getTextField().addFocusListener(new java.awt.event.FocusAdapter() {
                     @Override
                     public void focusLost(java.awt.event.FocusEvent e) {
+                        updateOutputDimLabelFromSelection();
                         previewDebounceTimer.restart();
                     }
                 });
@@ -333,6 +337,7 @@ public class ImageController {
             previewPanel.clearPreview();
             paramPanel.showGifControls(false);
             paramPanel.hideEstimatedSize();
+            paramPanel.hideOutputDimLabel();
             selectedOriginalSize = -1;
             return;
         }
@@ -346,6 +351,7 @@ public class ImageController {
         // 保存原始大小用于预估输出大小
         selectedOriginalSize = info.getOriginalSize();
         updateEstimatedImageSize();
+        updateOutputDimLabel(info.getWidth(), info.getHeight());
 
         new Thread(() -> {
             ImageIcon preview = ImageUtil.loadScaledIcon(sourceFile, 1024, 768);
@@ -400,6 +406,51 @@ public class ImageController {
         if (kb < 1024) return String.format("%.1f KB", kb);
         double mb = kb / 1024.0;
         return String.format("%.1f MB", mb);
+    }
+
+    /**
+     * 更新输出尺寸预览标签（图片选中时调用）。
+     */
+    private void updateOutputDimLabel(int origW, int origH) {
+        if (origW <= 0 || origH <= 0) {
+            paramPanel.hideOutputDimLabel();
+            return;
+        }
+        int mode = paramPanel.getScaleModeIndex();
+        int outW = origW, outH = origH;
+        String desc;
+        if (mode == 0) { // 不缩放
+            desc = origW + " × " + origH + "（原尺寸）";
+        } else if (mode == 1) { // 按百分比
+            int pct = paramPanel.getScalePercent();
+            outW = Math.max(1, origW * pct / 100);
+            outH = Math.max(1, origH * pct / 100);
+            desc = outW + " × " + outH + "（" + pct + "%）";
+        } else { // 按最大尺寸 1920×1080
+            if (origW <= 1920 && origH <= 1080) {
+                desc = origW + " × " + origH + "（未超出限制）";
+            } else {
+                double ratio = Math.min(1920.0 / origW, 1080.0 / origH);
+                outW = (int) (origW * ratio);
+                outH = (int) (origH * ratio);
+                desc = outW + " × " + outH + "（等比缩放至 1920×1080 内）";
+            }
+        }
+        paramPanel.setOutputDimLabel("输出尺寸：" + desc);
+    }
+
+    /** 从当前选中文件读取尺寸并更新输出尺寸标签 */
+    private void updateOutputDimLabelFromSelection() {
+        int index = fileListPanel.getSelectedIndex();
+        if (index < 0) {
+            paramPanel.hideOutputDimLabel();
+            return;
+        }
+        FileInfo selected = fileListPanel.getFileList().get(index);
+        if (selected instanceof ImageFileInfo) {
+            ImageFileInfo info = (ImageFileInfo) selected;
+            updateOutputDimLabel(info.getWidth(), info.getHeight());
+        }
     }
 
     // ==================== 压缩 ====================
@@ -733,9 +784,10 @@ public class ImageController {
         final File sourceFile = ((ImageFileInfo) selected).getSourceFile();
         if (sourceFile == null) return;
         final double quality = paramPanel.getQuality() / 100.0;
-        // 仅在「按百分比」缩放模式下使用缩放比例
-        final int scalePercent = paramPanel.getScaleModeIndex() == 1
-                ? paramPanel.getScalePercent() : 100;
+        // 计算实际缩放百分比（按百分比 / 按最大尺寸 均需反映在预览中）
+        final int scalePercent = computeEffectScalePercent(
+                ((ImageFileInfo) selected).getWidth(),
+                ((ImageFileInfo) selected).getHeight());
 
         new Thread(() -> {
             BufferedImage effect = ImageUtil.generateEffectPreview(
@@ -751,6 +803,26 @@ public class ImageController {
     }
 
     // ==================== 辅助方法 ====================
+
+    /**
+     * 根据当前缩放模式计算效果预览应使用的缩放百分比。
+     *
+     * <p>「不缩放」→ 100%，「按百分比」→ 用户指定值，
+     * 「按最大尺寸」→ 根据原图与 1920×1080 的比值折算。</p>
+     */
+    private int computeEffectScalePercent(int origW, int origH) {
+        int mode = paramPanel.getScaleModeIndex();
+        if (mode == 1) { // 按百分比
+            return paramPanel.getScalePercent();
+        }
+        if (mode == 2 && origW > 0 && origH > 0) { // 按最大尺寸 1920×1080
+            int maxW = 1920, maxH = 1080;
+            if (origW <= maxW && origH <= maxH) return 100;
+            double ratio = Math.min((double) maxW / origW, (double) maxH / origH);
+            return (int) (ratio * 100);
+        }
+        return 100; // 不缩放
+    }
 
     /**
      * 获取当前输出目录路径。

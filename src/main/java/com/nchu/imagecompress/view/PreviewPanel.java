@@ -9,6 +9,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
@@ -163,7 +164,13 @@ public class PreviewPanel extends JPanel {
         infoCardPanel.add(infoDetailPanel, INFO_DETAIL);
         infoCardLayout.show(infoCardPanel, INFO_EMPTY);
 
-        tabbedPane.addTab("图片信息", new FlatSVGIcon("icons/clipboard.svg"), infoCardPanel);
+        JScrollPane infoScroll = new JScrollPane(infoCardPanel);
+        infoScroll.setOpaque(false);
+        infoScroll.getViewport().setOpaque(false);
+        infoScroll.setBorder(null);
+        infoScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        infoScroll.getVerticalScrollBar().setUnitIncrement(16);
+        tabbedPane.addTab("图片信息", new FlatSVGIcon("icons/clipboard.svg"), infoScroll);
 
         add(tabbedPane, BorderLayout.CENTER);
 

@@ -8,6 +8,7 @@ import com.nchu.imagecompress.util.VideoUtil;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -114,7 +115,13 @@ public class VideoPreviewPanel extends JPanel {
         infoCardPanel.add(infoDetailPanel, INFO_DETAIL);
         infoCardLayout.show(infoCardPanel, INFO_EMPTY);
 
-        tabbedPane.addTab("视频信息", new FlatSVGIcon("icons/clipboard.svg"), infoCardPanel);
+        JScrollPane infoScroll = new JScrollPane(infoCardPanel);
+        infoScroll.setOpaque(false);
+        infoScroll.getViewport().setOpaque(false);
+        infoScroll.setBorder(null);
+        infoScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        infoScroll.getVerticalScrollBar().setUnitIncrement(16);
+        tabbedPane.addTab("视频信息", new FlatSVGIcon("icons/clipboard.svg"), infoScroll);
 
         add(tabbedPane, BorderLayout.CENTER);
 

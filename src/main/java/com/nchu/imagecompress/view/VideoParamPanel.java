@@ -226,13 +226,13 @@ public class VideoParamPanel extends JPanel {
         formatInfoBtn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
         formatInfoBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         formatInfoBtn.setToolTipText("点击查看各格式说明");
-        formatInfoBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
+        formatInfoBtn.addActionListener(e -> ThemeUtil.showStyledMessageDialog(this,
                 "MP4 (H.264) — 兼容性最好、体积合理、通用推荐\n"
                 + "WebM (VP9)  — 开源格式、同画质体积更小、部分设备不兼容\n"
                 + "AVI         — 支持无损、体积极大、适合后期编辑\n"
                 + "MOV         — 苹果生态兼容好、Windows需QuickTime\n"
                 + "MKV         — 支持多音轨/字幕、影音收藏",
-                "视频格式说明", JOptionPane.INFORMATION_MESSAGE));
+                "视频格式说明"));
         formatPanel.add(formatInfoBtn, BorderLayout.EAST);
 
         addFormControl(panel, gbc, formatPanel, row);

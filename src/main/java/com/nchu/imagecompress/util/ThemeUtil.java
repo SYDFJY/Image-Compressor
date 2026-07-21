@@ -6,9 +6,11 @@ import com.nchu.imagecompress.model.Theme;
 import com.nchu.imagecompress.model.ThemePalette;
 
 import javax.swing.JComponent;
+import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Font;
 import java.awt.Insets;
 import java.util.ArrayList;
@@ -424,6 +426,35 @@ public final class ThemeUtil {
      */
     public static Theme getCurrentTheme() {
         return currentThemeCache != null ? currentThemeCache : Theme.BLUE_CLASSIC;
+    }
+
+    /**
+     * 显示带显式按钮样式的消息对话框。
+     *
+     * <p>全局 Button.background 设为 BG_CARD（接近 Panel.background = BG_WINDOW），
+     * 导致 JOptionPane 中的按钮融入背景看不见。此方法弹窗前临时覆盖为
+     * 主色背景 + 白色文字，弹窗后恢复。</p>
+     *
+     * @param parent  父组件
+     * @param message 消息文本
+     * @param title   对话框标题
+     */
+    public static void showStyledMessageDialog(Component parent, String message, String title) {
+        Object oldBg = UIManager.get("Button.background");
+        Object oldFg = UIManager.get("Button.foreground");
+        Object oldHoverBg = UIManager.get("Button.hoverBackground");
+        try {
+            UIManager.put("Button.background", new ColorUIResource(PRIMARY));
+            UIManager.put("Button.foreground", new ColorUIResource(Color.WHITE));
+            UIManager.put("Button.hoverBackground", new ColorUIResource(PRIMARY_DEEP));
+            JOptionPane.showMessageDialog(parent, message, title, JOptionPane.INFORMATION_MESSAGE);
+        } finally {
+            UIManager.put("Button.background", oldBg);
+            UIManager.put("Button.foreground", oldFg);
+            if (oldHoverBg != null) {
+                UIManager.put("Button.hoverBackground", oldHoverBg);
+            }
+        }
     }
 
     /** Color → hex int（用于 UIManager） */

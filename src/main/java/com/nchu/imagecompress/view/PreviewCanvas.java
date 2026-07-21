@@ -257,8 +257,9 @@ public class PreviewCanvas extends JPanel {
         drawImageBorder(g2d, leftX, ly, lw, lh);
         g2d.drawImage(image, leftX, ly, lw, lh, null);
 
-        // 标签：原图（左上角半透明）
-        drawComparisonLabel(g2d, leftX, ly, "原图");
+        // 标签：原图 + 尺寸（左上角半透明）
+        drawComparisonLabel(g2d, leftX, ly,
+                "原图 " + image.getWidth() + "×" + image.getHeight());
 
         // 右侧：效果图（居中于右半区域）
         int rw = (int) (effectImage.getWidth() * unifiedScale);
@@ -268,8 +269,9 @@ public class PreviewCanvas extends JPanel {
         drawImageBorder(g2d, rightX, ry, rw, rh);
         g2d.drawImage(effectImage, rightX, ry, rw, rh, null);
 
-        // 标签：效果（左上角半透明）
-        drawComparisonLabel(g2d, rightX, ry, "效果");
+        // 标签：效果 + 尺寸（左上角半透明）
+        drawComparisonLabel(g2d, rightX, ry,
+                "效果 " + effectImage.getWidth() + "×" + effectImage.getHeight());
 
         // 中间分隔线
         int dividerX = PADDING + halfW + gap / 2 - 1;
