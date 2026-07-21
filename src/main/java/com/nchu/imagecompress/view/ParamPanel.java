@@ -57,6 +57,7 @@ public class ParamPanel extends JPanel {
     private JButton activePresetBtn;
     private JLabel estimatedSizeLabel;
     private JLabel outputDimLabel;
+    private JLabel scaleHintLabel;
 
     // ==================== GIF 压缩控件（默认隐藏，选中 GIF 时显示） ====================
     private JLabel gifSectionLabel;
@@ -226,11 +227,27 @@ public class ParamPanel extends JPanel {
         // --- 输出尺寸预览 ---
         outputDimLabel = new JLabel(" ");
         outputDimLabel.setFont(ThemeUtil.FONT_SMALL);
+        outputDimLabel.setOpaque(true);
+        ThemeUtil.setDynamicBackground(outputDimLabel, () -> ThemeUtil.BG_CARD);
         ThemeUtil.setDynamicForeground(outputDimLabel, () -> ThemeUtil.TEXT_TERTIARY);
         gbc.gridx = 0; gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(0, 0, ThemeUtil.SPACE_SM, 0);
         panel.add(outputDimLabel, gbc);
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0);
+        row++;
+
+        // --- 缩放说明 ---
+        scaleHintLabel = new JLabel(" ");
+        scaleHintLabel.setFont(ThemeUtil.FONT_SMALL);
+        scaleHintLabel.setOpaque(true);
+        ThemeUtil.setDynamicBackground(scaleHintLabel, () -> ThemeUtil.BG_CARD);
+        ThemeUtil.setDynamicForeground(scaleHintLabel, () -> ThemeUtil.TEXT_TERTIARY);
+        gbc.gridx = 0; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, ThemeUtil.SPACE_SM, 0);
+        panel.add(scaleHintLabel, gbc);
         gbc.gridwidth = 1;
         gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0);
         row++;
@@ -543,6 +560,21 @@ public class ParamPanel extends JPanel {
     public void hideOutputDimLabel() {
         if (outputDimLabel != null) {
             outputDimLabel.setVisible(false);
+        }
+    }
+
+    /** 更新缩放说明文字 */
+    public void setScaleHintLabel(String text) {
+        if (scaleHintLabel != null) {
+            scaleHintLabel.setText(text != null ? text : " ");
+            scaleHintLabel.setVisible(text != null && !text.isEmpty());
+        }
+    }
+
+    /** 隐藏缩放说明 */
+    public void hideScaleHintLabel() {
+        if (scaleHintLabel != null) {
+            scaleHintLabel.setVisible(false);
         }
     }
 }

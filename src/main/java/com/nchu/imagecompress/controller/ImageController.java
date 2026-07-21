@@ -338,6 +338,7 @@ public class ImageController {
             paramPanel.showGifControls(false);
             paramPanel.hideEstimatedSize();
             paramPanel.hideOutputDimLabel();
+            paramPanel.hideScaleHintLabel();
             selectedOriginalSize = -1;
             return;
         }
@@ -411,9 +412,17 @@ public class ImageController {
     /**
      * 更新输出尺寸预览标签（图片选中时调用）。
      */
+    /** 缩放模式对应的通俗说明 */
+    private static final String[] SCALE_HINTS = {
+        "缩放说明：输出图片保持原始分辨率，像素尺寸不变，仅通过压缩质量减小文件体积",
+        "缩放说明：按百分比缩小输出图片的宽高，像素总数减少 → 文件自然变小",
+        "缩放说明：限制输出图片不超过 1920×1080，超出自动等比缩小；未超出则保持原尺寸",
+    };
+
     private void updateOutputDimLabel(int origW, int origH) {
         if (origW <= 0 || origH <= 0) {
             paramPanel.hideOutputDimLabel();
+            paramPanel.hideScaleHintLabel();
             return;
         }
         int mode = paramPanel.getScaleModeIndex();
@@ -437,6 +446,8 @@ public class ImageController {
             }
         }
         paramPanel.setOutputDimLabel("输出尺寸：" + desc);
+        paramPanel.setScaleHintLabel(mode >= 0 && mode < SCALE_HINTS.length
+                ? SCALE_HINTS[mode] : " ");
     }
 
     /** 从当前选中文件读取尺寸并更新输出尺寸标签 */
@@ -444,6 +455,7 @@ public class ImageController {
         int index = fileListPanel.getSelectedIndex();
         if (index < 0) {
             paramPanel.hideOutputDimLabel();
+            paramPanel.hideScaleHintLabel();
             return;
         }
         FileInfo selected = fileListPanel.getFileList().get(index);
