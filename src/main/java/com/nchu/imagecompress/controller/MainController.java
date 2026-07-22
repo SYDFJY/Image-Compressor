@@ -203,6 +203,8 @@ public class MainController implements MainControllerCallback,
         mainFrame.getClearBtn().addActionListener(e -> onClearAllFiles());
         mainFrame.getThemeBtn().addActionListener(e -> onToggleTheme());
         mainFrame.getWatchFolderBtn().addActionListener(e -> onOpenWatchSetup());
+        // 批量重命名快捷入口（ParamPanel 高级设置）
+        mainFrame.getParamPanel().getBatchRenameButton().addActionListener(e -> onBatchRename());
 
         // ---- 模式切换分段控件 ----
         mainFrame.getImageModeBtn().addActionListener(e -> {

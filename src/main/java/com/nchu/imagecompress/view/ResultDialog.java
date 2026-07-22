@@ -6,6 +6,7 @@ import com.nchu.imagecompress.model.CompressResult;
 import com.nchu.imagecompress.util.FileUtil;
 import com.nchu.imagecompress.util.LogUtil;
 import com.nchu.imagecompress.util.ThemeUtil;
+import com.nchu.imagecompress.view.ToastNotification;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -150,26 +151,11 @@ public class ResultDialog extends JDialog {
         mainPanel.add(detailWrapper, BorderLayout.SOUTH);
 
         // --- 底部按钮 ---
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        JPanel buttonPanel = new JPanel(new BorderLayout(12, 0));
         buttonPanel.setOpaque(false);
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
 
-        // 打开输出目录按钮（定位到首个成功文件）
-        JButton openDirBtn = new JButton("打开输出目录", new FlatSVGIcon("icons/folder.svg"));
-        openDirBtn.setFont(ThemeUtil.FONT_BODY);
-        openDirBtn.setPreferredSize(new Dimension(150, 36));
-        openDirBtn.addActionListener(e -> {
-            if (targetResult != null) {
-                // 优先定位到首个成功文件
-                FileUtil.openFileInExplorer(targetResult.getOutputPath());
-            } else {
-                // 无成功文件时回退到打开目录
-                openOutputDirectory(outputDir);
-            }
-        });
-        buttonPanel.add(openDirBtn);
-
-        // 自动定位 checkbox
+        // 左侧：自动定位 checkbox
         JCheckBox autoRevealCheck = new JCheckBox("完成后自动定位文件");
         autoRevealCheck.setFont(ThemeUtil.FONT_TINY);
         autoRevealCheck.setForeground(ThemeUtil.TEXT_SECONDARY);
@@ -181,14 +167,47 @@ public class ResultDialog extends JDialog {
                 appConfig.setAutoRevealOutput(autoRevealCheck.isSelected());
             }
         });
-        buttonPanel.add(autoRevealCheck);
+        buttonPanel.add(autoRevealCheck, BorderLayout.WEST);
 
-        // 关闭按钮
+        // 右侧：操作按钮
+        JPanel rightBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        rightBtns.setOpaque(false);
+
+        // 打开输出目录按钮（次要操作）
+        JButton openDirBtn = new JButton("打开输出目录");
+        openDirBtn.setFont(ThemeUtil.FONT_BODY);
+        openDirBtn.setPreferredSize(new Dimension(130, 36));
+        openDirBtn.setFocusPainted(false);
+        openDirBtn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        ThemeUtil.setDynamicForeground(openDirBtn, () -> ThemeUtil.PRIMARY);
+        ThemeUtil.setDynamicBackground(openDirBtn, () -> ThemeUtil.BG_CARD);
+        openDirBtn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ThemeUtil.PRIMARY, 1),
+                BorderFactory.createEmptyBorder(7, 15, 7, 15)));
+        openDirBtn.addActionListener(e -> {
+            if (targetResult != null) {
+                FileUtil.openFileInExplorer(targetResult.getOutputPath());
+                ToastNotification.success("已定位到输出文件");
+            } else {
+                openOutputDirectory(outputDir);
+                ToastNotification.info("已打开输出目录");
+            }
+        });
+        rightBtns.add(openDirBtn);
+
+        // 确定按钮（主操作 — 醒目样式）
         JButton closeBtn = new JButton("确定");
-        closeBtn.setFont(ThemeUtil.FONT_TITLE);
-        closeBtn.setPreferredSize(new Dimension(100, 36));
+        closeBtn.setFont(ThemeUtil.FONT_TITLE.deriveFont(15f));
+        closeBtn.setPreferredSize(new Dimension(140, 40));
+        closeBtn.setForeground(java.awt.Color.WHITE);
+        closeBtn.setFocusPainted(false);
+        closeBtn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        ThemeUtil.setDynamicBackground(closeBtn, () -> ThemeUtil.PRIMARY);
+        closeBtn.setBorder(BorderFactory.createEmptyBorder(10, 24, 10, 24));
         closeBtn.addActionListener(e -> dispose());
-        buttonPanel.add(closeBtn);
+        rightBtns.add(closeBtn);
+
+        buttonPanel.add(rightBtns, BorderLayout.EAST);
 
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 

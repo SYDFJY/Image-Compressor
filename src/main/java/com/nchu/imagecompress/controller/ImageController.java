@@ -289,22 +289,22 @@ public class ImageController {
         List<ImageFileInfo> deduped = fileManagerService.deduplicate(existing, newFiles);
         int skipped = newFiles.size() - deduped.size();
 
-        for (ImageFileInfo info : deduped) {
-            fileListPanel.addFile(info);
-        }
-
-        // 按文件修改时间倒序排列（最新的在前）
+        // 按文件修改时间倒序排列（最新的在前）— 先排序再添加，避免 setFileList 重建
         if (!deduped.isEmpty()) {
-            List<FileInfo> allFiles = fileListPanel.getFileList();
-            java.util.Collections.sort(allFiles, new java.util.Comparator<FileInfo>() {
+            java.util.Collections.sort(deduped, new java.util.Comparator<ImageFileInfo>() {
                 @Override
-                public int compare(FileInfo a, FileInfo b) {
+                public int compare(ImageFileInfo a, ImageFileInfo b) {
                     long t1 = getLastModifiedSafe(a);
                     long t2 = getLastModifiedSafe(b);
                     return Long.compare(t2, t1); // 降序
                 }
             });
-            fileListPanel.setFileList(allFiles);
+        }
+
+        for (ImageFileInfo info : deduped) {
+            fileListPanel.addFile(info);
+            // v2.4: 填充大缩略图缓存，否则悬停预览无法工作
+            fileListPanel.loadThumbnail(info);
         }
 
         updateCompressButtonState();

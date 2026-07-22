@@ -47,6 +47,7 @@ public class ParamPanel extends JPanel {
     private JComboBox<String> outputFormatCombo;
     private JComboBox<String> namingRuleCombo;
     private javax.swing.JTextField customNameField;
+    private JButton batchRenameButton;
     private JButton compressButton;
     private JButton cancelButton;
     private JButton outputDirButton;
@@ -337,6 +338,21 @@ public class ParamPanel extends JPanel {
         addFormControl(panel, gbc, namingRuleCombo, row);
         row++;
 
+        // 批量重命名按钮（快捷入口）
+        addFormLabel(panel, gbc, "", row);
+        batchRenameButton = new JButton("📝 批量重命名...");
+        batchRenameButton.setFont(ThemeUtil.FONT_SMALL);
+        batchRenameButton.setFocusPainted(false);
+        ThemeUtil.setDynamicForeground(batchRenameButton, () -> ThemeUtil.PRIMARY);
+        ThemeUtil.setDynamicBackground(batchRenameButton, () -> ThemeUtil.BG_CARD);
+        batchRenameButton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ThemeUtil.PRIMARY, 1),
+                BorderFactory.createEmptyBorder(4, 12, 4, 12)));
+        batchRenameButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        batchRenameButton.setToolTipText("使用模板批量重命名所有文件（支持日期/序号/自定义文本）");
+        addFormControl(panel, gbc, batchRenameButton, row);
+        row++;
+
         // 自定义文件名输入框（仅当选择"自定义文件名"时可见）
         addFormLabel(panel, gbc, "", row);
         customNameField = new javax.swing.JTextField(20);
@@ -566,6 +582,8 @@ public class ParamPanel extends JPanel {
     public JComboBox<String> getOutputFormatCombo() { return outputFormatCombo; }
     public JComboBox<String> getNamingRuleCombo() { return namingRuleCombo; }
     public JCheckBox getOverwriteCheckBox() { return overwriteCheckBox; }
+
+    public JButton getBatchRenameButton() { return batchRenameButton; }
 
     public void setQualityDisplay(int quality) {
         qualityValueLabel.setText(quality + "%");
