@@ -146,6 +146,20 @@ public class StatusBar extends JPanel {
         timer.start();
     }
 
+    /**
+     * 显示文件夹监控状态（v2.5: 提升监控可发现性）。
+     * 监控运行时在状态栏左侧持久显示监控目录信息。
+     */
+    public void showWatchStatus(String watchDir) {
+        if (watchDir != null && !watchDir.isEmpty()) {
+            String shortName = watchDir;
+            if (watchDir.length() > 40) {
+                shortName = "..." + watchDir.substring(watchDir.length() - 37);
+            }
+            setStatus("📁 监控中: " + shortName, "working");
+        }
+    }
+
     public JProgressBar getProgressBar() { return progressBar; }
     public JLabel getStatusLabel() { return statusLabel; }
 }

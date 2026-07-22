@@ -37,7 +37,9 @@ public class CompressConfig {
         /** 保持原文件名（仅当输出与输入不同目录时安全） */
         KEEP_ORIGINAL("保持原名"),
         /** 用户自定义文件名 */
-        CUSTOM("自定义文件名");
+        CUSTOM("自定义文件名"),
+        /** 基于图片信息自动命名（分辨率、大小等） */
+        INFO_BASED("基于图片信息");
 
         private final String displayName;
         NamingRule(String displayName) { this.displayName = displayName; }
@@ -90,6 +92,9 @@ public class CompressConfig {
     /** 自定义文件名（NamingRule 为 CUSTOM 时使用，不含扩展名） */
     private String customName = "";
 
+    /** 信息命名模板（仅在 INFO_BASED 模式下生效，支持 {width}/{height}/{size} 等标记） */
+    private String infoPattern = "{name}_{width}x{height}";
+
     /** 是否允许覆盖同名文件 */
     private boolean overwrite = false;
 
@@ -126,6 +131,42 @@ public class CompressConfig {
         return quality == 100
                 && (scaleMode == ScaleMode.NONE || scaleMode == ScaleMode.BY_PERCENT && scalePercent == 100)
                 && outputFormat == OutputFormat.ORIGINAL;
+    }
+
+    /**
+     * 创建应用逐文件覆盖后的新配置实例（v2.5）。
+     * PerFileCompressConfig 中非 null 的字段会覆盖当前实例的对应值。
+     * 原始配置实例保持不变。
+     *
+     * @param override 逐文件覆盖配置（null 或全 null 时返回 this）
+     * @return 合并后的配置（可能返回 this 如果无覆盖）
+     */
+    public CompressConfig applyOverride(PerFileCompressConfig override) {
+        if (override == null || !override.hasAnyOverride()) {
+            return this;
+        }
+        CompressConfig merged = new CompressConfig();
+        // 复制全局配置
+        merged.quality = this.quality;
+        merged.targetSizeKB = this.targetSizeKB;
+        merged.scaleMode = this.scaleMode;
+        merged.scalePercent = this.scalePercent;
+        merged.maxWidth = this.maxWidth;
+        merged.maxHeight = this.maxHeight;
+        merged.outputFormat = this.outputFormat;
+        merged.outputPath = this.outputPath;
+        merged.namingRule = this.namingRule;
+        merged.suffix = this.suffix;
+        merged.prefix = this.prefix;
+        merged.customName = this.customName;
+        merged.infoPattern = this.infoPattern;
+        merged.overwrite = this.overwrite;
+        merged.preserveMetadata = this.preserveMetadata;
+        merged.gifMaxColors = this.gifMaxColors;
+        // 应用覆盖
+        if (override.getQuality() != null) merged.quality = override.getQuality();
+        if (override.getOutputFormat() != null) merged.outputFormat = override.getOutputFormat();
+        return merged;
     }
 
     // ==================== Getter / Setter ====================
@@ -170,6 +211,9 @@ public class CompressConfig {
 
     public String getCustomName() { return customName; }
     public void setCustomName(String customName) { this.customName = customName; }
+
+    public String getInfoPattern() { return infoPattern; }
+    public void setInfoPattern(String infoPattern) { this.infoPattern = infoPattern; }
 
     public boolean isOverwrite() { return overwrite; }
     public void setOverwrite(boolean overwrite) { this.overwrite = overwrite; }

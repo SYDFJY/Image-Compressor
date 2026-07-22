@@ -123,7 +123,11 @@ public class BatchCompressService {
                     return cancelled;
                 }
                 CompressService service = new CompressService();
-                return service.compress(fileInfo, cfg);
+                // v2.5: 应用逐文件参数覆盖
+                CompressConfig effectiveConfig = fileInfo.hasPerFileConfig()
+                        ? cfg.applyOverride(fileInfo.getPerFileConfig())
+                        : cfg;
+                return service.compress(fileInfo, effectiveConfig);
             };
 
             Future<CompressResult> future = completionService.submit(task);
@@ -222,7 +226,11 @@ public class BatchCompressService {
                 listener.onFileProgress(i, fileInfo.getFileName(), 0.5);
             }
 
-            CompressResult result = service.compress(fileInfo, config);
+            // v2.5: 应用逐文件参数覆盖
+            CompressConfig effectiveConfig = fileInfo.hasPerFileConfig()
+                    ? config.applyOverride(fileInfo.getPerFileConfig())
+                    : config;
+            CompressResult result = service.compress(fileInfo, effectiveConfig);
             results.add(result);
 
             if (result.isSuccess()) {

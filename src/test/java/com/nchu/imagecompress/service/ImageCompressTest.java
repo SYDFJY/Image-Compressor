@@ -29,6 +29,13 @@ public class ImageCompressTest {
     private File tempDir;
     private File testImage;
 
+    /** v2.5: 从文件名创建轻量 ImageFileInfo，适配新的 buildOutputFileName 签名 */
+    private static ImageFileInfo info(String fileName) {
+        ImageFileInfo f = new ImageFileInfo();
+        f.setFileName(fileName);
+        return f;
+    }
+
     @Before
     public void setUp() throws Exception {
         tempDir = new File(System.getProperty("java.io.tmpdir"), "nchu_test_" + System.currentTimeMillis());
@@ -131,7 +138,7 @@ public class ImageCompressTest {
         CompressConfig config = new CompressConfig();
         config.setNamingRule(CompressConfig.NamingRule.ADD_SUFFIX);
         config.setSuffix("_mini");
-        assertEquals("photo_mini.jpg", service.buildOutputFileName("photo.jpg", config));
+        assertEquals("photo_mini.jpg", service.buildOutputFileName(info("photo.jpg"), config));
     }
 
     @Test
@@ -140,7 +147,7 @@ public class ImageCompressTest {
         CompressConfig config = new CompressConfig();
         config.setNamingRule(CompressConfig.NamingRule.ADD_PREFIX);
         config.setPrefix("thumb_");
-        assertEquals("thumb_photo.jpg", service.buildOutputFileName("photo.jpg", config));
+        assertEquals("thumb_photo.jpg", service.buildOutputFileName(info("photo.jpg"), config));
     }
 
     @Test
@@ -148,7 +155,7 @@ public class ImageCompressTest {
         CompressService service = new CompressService();
         CompressConfig config = new CompressConfig();
         config.setNamingRule(CompressConfig.NamingRule.KEEP_ORIGINAL);
-        assertEquals("photo.jpg", service.buildOutputFileName("photo.jpg", config));
+        assertEquals("photo.jpg", service.buildOutputFileName(info("photo.jpg"), config));
     }
 
     @Test
@@ -158,7 +165,7 @@ public class ImageCompressTest {
         config.setNamingRule(CompressConfig.NamingRule.CUSTOM);
         config.setCustomName("my_photo");
         // customName + 原扩展名
-        assertEquals("my_photo.jpg", service.buildOutputFileName("photo.jpg", config));
+        assertEquals("my_photo.jpg", service.buildOutputFileName(info("photo.jpg"), config));
     }
 
     @Test
@@ -166,7 +173,7 @@ public class ImageCompressTest {
         CompressService service = new CompressService();
         CompressConfig config = new CompressConfig();
         config.setOutputFormat(OutputFormat.PNG);
-        assertEquals("photo_compressed.png", service.buildOutputFileName("photo.jpg", config));
+        assertEquals("photo_compressed.png", service.buildOutputFileName(info("photo.jpg"), config));
     }
 
     @Test
@@ -176,7 +183,7 @@ public class ImageCompressTest {
         config.setNamingRule(CompressConfig.NamingRule.CUSTOM);
         config.setCustomName("test:file<name>");
         // 非法字符被过滤
-        assertEquals("testfilename.jpg", service.buildOutputFileName("photo.jpg", config));
+        assertEquals("testfilename.jpg", service.buildOutputFileName(info("photo.jpg"), config));
     }
 
     // ==================== ImageCompressUtil 压缩测试 ====================

@@ -289,9 +289,9 @@ public class MainFrame extends JFrame {
         ThemeUtil.addThemeChangeListener(() -> themeBtn.setBackground(ThemeUtil.BG_CARD));
         rightPanel.add(themeBtn);
 
-        watchFolderBtn = new JButton("文件夹监控", new FlatSVGIcon("icons/folder.svg"));
+        watchFolderBtn = new JButton("📁 文件夹监控", new FlatSVGIcon("icons/folder.svg"));
         watchFolderBtn.setFont(ThemeUtil.FONT_SMALL);
-        watchFolderBtn.setToolTipText("设置文件夹自动监控压缩");
+        watchFolderBtn.setToolTipText("设置文件夹自动监控压缩 — 放入文件即自动压缩");
         watchFolderBtn.setFocusPainted(false);
         ThemeUtil.setDynamicBackground(watchFolderBtn, () -> ThemeUtil.BG_CARD);
         ThemeUtil.setDynamicForeground(watchFolderBtn, () -> ThemeUtil.TEXT_SECONDARY);

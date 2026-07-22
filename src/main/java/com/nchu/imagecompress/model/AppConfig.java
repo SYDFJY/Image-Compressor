@@ -67,6 +67,9 @@ public class AppConfig {
     /** 上次使用的自定义文件名 */
     private String lastCustomName = "";
 
+    /** v2.5: 上次使用的信息命名模板 */
+    private String lastInfoPattern = "{name}_{width}x{height}";
+
     /** 上次使用的目标大小（KB），0=未启用 */
     private int lastTargetSizeKB = 0;
 
@@ -164,6 +167,9 @@ public class AppConfig {
 
     public String getLastCustomName() { return lastCustomName; }
     public void setLastCustomName(String lastCustomName) { this.lastCustomName = lastCustomName; }
+
+    public String getLastInfoPattern() { return lastInfoPattern; }
+    public void setLastInfoPattern(String pattern) { this.lastInfoPattern = pattern; }
 
     public int getLastTargetSizeKB() { return lastTargetSizeKB; }
     public void setLastTargetSizeKB(int kb) { this.lastTargetSizeKB = Math.max(0, kb); }

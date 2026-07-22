@@ -5,8 +5,10 @@ import com.nchu.imagecompress.model.AppConfig;
 import com.nchu.imagecompress.model.FileInfo;
 import com.nchu.imagecompress.model.FolderWatchConfig;
 import com.nchu.imagecompress.model.ImageFileInfo;
+import com.nchu.imagecompress.model.PerFileCompressConfig;
 import com.nchu.imagecompress.model.Theme;
 import com.nchu.imagecompress.model.VideoFileInfo;
+import com.nchu.imagecompress.view.PerFileConfigDialog;
 import com.nchu.imagecompress.service.ConfigService;
 import com.nchu.imagecompress.service.FileManagerService;
 import com.nchu.imagecompress.util.LogUtil;
@@ -448,7 +450,15 @@ public class MainController implements MainControllerCallback,
     public void onBatchRename() {
         List<FileInfo> files = fileListPanel.getFileList();
         if (files == null || files.isEmpty()) {
-            ToastNotification.warning("文件列表为空，无法重命名");
+            // v2.5: 用醒目弹窗替代易忽略的 Toast，并提供快捷导入入口
+            int choice = JOptionPane.showConfirmDialog(mainFrame,
+                    "文件列表为空，无法重命名。\n\n是否现在导入文件？",
+                    "批量重命名",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE);
+            if (choice == JOptionPane.YES_OPTION) {
+                onImportFiles();
+            }
             return;
         }
         // 构建可修改的列表副本
@@ -648,6 +658,11 @@ public class MainController implements MainControllerCallback,
                     // 启动监控
                     try {
                         watchController.start(cfg);
+                        // v2.5: 更新工具栏和状态栏
+                        mainFrame.getWatchFolderBtn().setText("● 监控中");
+                        mainFrame.getWatchFolderBtn().setForeground(ThemeUtil.SUCCESS);
+                        statusBar.showWatchStatus(cfg.getWatchFolderPath());
+                        ToastNotification.success("文件夹监控已启动 — 放入文件即自动压缩");
                     } catch (Exception ex) {
                         com.nchu.imagecompress.util.LogUtil.info(
                                 "[MainController] 启动监控失败: " + ex.getMessage());
@@ -659,6 +674,11 @@ public class MainController implements MainControllerCallback,
                 () -> {
                     // 停止监控
                     watchController.stop();
+                    // v2.5: 恢复工具栏和状态栏
+                    mainFrame.getWatchFolderBtn().setText("📁 文件夹监控");
+                    ThemeUtil.setDynamicForeground(mainFrame.getWatchFolderBtn(),
+                            () -> ThemeUtil.TEXT_SECONDARY);
+                    statusBar.setStatus("就绪", "ready");
                 });
     }
 
@@ -913,6 +933,31 @@ public class MainController implements MainControllerCallback,
             }
         });
         popupMenu.add(compressSingleItem);
+
+        // v2.5: 逐文件参数设置
+        JMenuItem perFileConfigItem = new JMenuItem("⚙ 单独设置此文件参数...");
+        perFileConfigItem.addActionListener(e -> {
+            FileInfo selected = fileListPanel.getSelectedFile();
+            if (selected instanceof ImageFileInfo) {
+                ImageFileInfo imgInfo = (ImageFileInfo) selected;
+                PerFileCompressConfig current = imgInfo.getPerFileConfig();
+                if (current == null) current = new PerFileCompressConfig();
+                PerFileConfigDialog dialog = new PerFileConfigDialog(
+                        mainFrame, imgInfo, current);
+                dialog.setVisible(true);
+                if (dialog.isConfirmed()) {
+                    PerFileCompressConfig updated = dialog.getResult();
+                    if (updated.hasAnyOverride()) {
+                        imgInfo.setPerFileConfig(updated);
+                    } else {
+                        imgInfo.setPerFileConfig(null);
+                    }
+                    fileListPanel.getFileJList().repaint();
+                    ToastNotification.success("已为 " + imgInfo.getFileName() + " 设置独立参数");
+                }
+            }
+        });
+        popupMenu.add(perFileConfigItem);
 
         popupMenu.addSeparator();
 

@@ -792,6 +792,15 @@ public class FileListPanel extends JPanel {
                     ThemeUtil.setDynamicForeground(statusLabel, () -> ThemeUtil.TEXT_SECONDARY);
             }
 
+            // v2.5: 有逐文件参数覆盖时在文件名后加 ⚙ 标记
+            if (isImage && ((ImageFileInfo) value).hasPerFileConfig()) {
+                String currentText = nameLabel.getText();
+                if (!currentText.contains("⚙")) {
+                    nameLabel.setText(currentText + "  ⚙");
+                }
+                ThemeUtil.setDynamicForeground(nameLabel, () -> ThemeUtil.PRIMARY);
+            }
+
             // === 背景与强调条 ===
             if (isSelected) {
                 setBackground(ThemeUtil.BG_SELECTED);

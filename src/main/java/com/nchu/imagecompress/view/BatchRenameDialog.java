@@ -25,6 +25,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Frame;
@@ -116,7 +117,7 @@ public class BatchRenameDialog extends JDialog {
 
         // 模板输入
         addLabel(panel, gbc, "模板:", row);
-        patternField = new JTextField("{name}");
+        patternField = new JTextField("{date}_{counter:3}");
         patternField.setFont(ThemeUtil.FONT_BODY);
         patternField.setBorder(ThemeUtil.createDynamicLineBorder());
         patternField.setToolTipText("{date} {counter} {name} {ext} {text}  |  示例: {date}_{text}_{counter:3}");
@@ -163,6 +164,62 @@ public class BatchRenameDialog extends JDialog {
         tokenHint.setForeground(ThemeUtil.TEXT_TERTIARY);
         gbc.gridx = 1; gbc.gridy = row; gbc.gridwidth = 2;
         panel.add(tokenHint, gbc);
+        row++;
+
+        // v2.5: 预设模板快捷按钮
+        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2;
+        JPanel presetPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        presetPanel.setOpaque(false);
+
+        JButton presetDateSeq = new JButton("日期+序号");
+        presetDateSeq.setFont(ThemeUtil.FONT_SMALL);
+        presetDateSeq.setFocusPainted(false);
+        presetDateSeq.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        presetDateSeq.setToolTipText("模板: {date}_{counter:3} → 20260722_001.jpg");
+        presetDateSeq.addActionListener(e -> {
+            patternField.setText("{date}_{counter:3}");
+            customTextField.setText("");
+            refreshPreview();
+        });
+
+        JButton presetCustomSeq = new JButton("自定义文本+序号");
+        presetCustomSeq.setFont(ThemeUtil.FONT_SMALL);
+        presetCustomSeq.setFocusPainted(false);
+        presetCustomSeq.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        presetCustomSeq.setToolTipText("模板: {text}_{counter:3} — 请在「自定义文本」中填入内容");
+        presetCustomSeq.addActionListener(e -> {
+            patternField.setText("{text}_{counter:3}");
+            refreshPreview();
+        });
+
+        JButton presetNameSeq = new JButton("原名+序号");
+        presetNameSeq.setFont(ThemeUtil.FONT_SMALL);
+        presetNameSeq.setFocusPainted(false);
+        presetNameSeq.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        presetNameSeq.setToolTipText("模板: {name}_{counter:3} → photo_001.jpg");
+        presetNameSeq.addActionListener(e -> {
+            patternField.setText("{name}_{counter:3}");
+            customTextField.setText("");
+            refreshPreview();
+        });
+
+        JButton presetKeepName = new JButton("保留原名");
+        presetKeepName.setFont(ThemeUtil.FONT_SMALL);
+        presetKeepName.setFocusPainted(false);
+        presetKeepName.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        presetKeepName.setToolTipText("模板: {name} → 保持原文件名不变");
+        presetKeepName.addActionListener(e -> {
+            patternField.setText("{name}");
+            customTextField.setText("");
+            refreshPreview();
+        });
+
+        presetPanel.add(presetDateSeq);
+        presetPanel.add(presetCustomSeq);
+        presetPanel.add(presetNameSeq);
+        presetPanel.add(presetKeepName);
+        panel.add(presetPanel, gbc);
+        row++;
 
         return panel;
     }

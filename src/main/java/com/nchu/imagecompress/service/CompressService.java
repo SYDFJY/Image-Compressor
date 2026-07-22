@@ -56,8 +56,8 @@ public class CompressService {
             return CompressResult.fail(inputInfo, config, pathCheck.getMessage());
         }
 
-        // ③ 生成输出文件名
-        String outputFileName = buildOutputFileName(inputFile.getName(), config);
+        // ③ 生成输出文件名（v2.5: 传入 ImageFileInfo 以支持基于图像信息的命名）
+        String outputFileName = buildOutputFileName(inputInfo, config);
 
         // ④ 去重处理（非覆盖模式下，自动编号）
         if (!config.isOverwrite()) {
@@ -110,13 +110,14 @@ public class CompressService {
     // ==================== 文件命名 ====================
 
     /**
-     * 根据命名规则生成输出文件名。
+     * 根据命名规则生成输出文件名（v2.5: 支持基于图片信息自动命名）。
      *
-     * @param originalName 原始文件名（如 "photo.jpg"）
-     * @param config       压缩配置
+     * @param inputInfo 输入文件信息（包含分辨率、大小等元数据）
+     * @param config    压缩配置
      * @return 生成的文件名
      */
-    public String buildOutputFileName(String originalName, CompressConfig config) {
+    public String buildOutputFileName(ImageFileInfo inputInfo, CompressConfig config) {
+        String originalName = inputInfo.getFileName();
         String nameWithoutExt = FileUtil.getNameWithoutExtension(originalName);
         String originalExt = FileUtil.getExtension(originalName);
 
@@ -140,15 +141,46 @@ public class CompressService {
             case CUSTOM:
                 String name = config.getCustomName();
                 if (name == null || name.trim().isEmpty()) {
-                    // 自定义名称为空时回退到后缀模式
                     return nameWithoutExt + config.getSuffix() + "." + outputExt;
                 }
                 return sanitizeFileName(name.trim()) + "." + outputExt;
+
+            case INFO_BASED:
+                return expandInfoPattern(inputInfo, config) + "." + outputExt;
 
             case ADD_SUFFIX:
             default:
                 return nameWithoutExt + config.getSuffix() + "." + outputExt;
         }
+    }
+
+    /**
+     * 展开信息命名模板中的占位符（v2.5）。
+     * 支持标记: {name} {ext} {width} {height} {size} {format} {quality}
+     */
+    private String expandInfoPattern(ImageFileInfo info, CompressConfig config) {
+        String pattern = config.getInfoPattern();
+        if (pattern == null || pattern.isEmpty()) {
+            pattern = "{name}_{width}x{height}";
+        }
+
+        String nameWithoutExt = FileUtil.getNameWithoutExtension(info.getFileName());
+        String ext = FileUtil.getExtension(info.getFileName());
+
+        String result = pattern;
+        result = result.replace("{name}", nameWithoutExt);
+        result = result.replace("{ext}", ext);
+        result = result.replace("{width}", String.valueOf(info.getWidth()));
+        result = result.replace("{height}", String.valueOf(info.getHeight()));
+        result = result.replace("{size}", ImageFileInfo.formatFileSize(info.getOriginalSize())
+                .replace(" ", ""));  // "1.5 MB" → "1.5MB"
+        result = result.replace("{sizeKB}", String.valueOf(info.getOriginalSize() / 1024));
+        result = result.replace("{format}", info.getFormat().toUpperCase());
+        result = result.replace("{quality}", "q" + config.getQuality());
+
+        // 清理连续下划线
+        result = result.replaceAll("_+", "_");
+        return sanitizeFileName(result);
     }
 
     /**

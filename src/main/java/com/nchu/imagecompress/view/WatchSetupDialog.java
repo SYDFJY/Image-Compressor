@@ -96,6 +96,21 @@ public class WatchSetupDialog extends JDialog {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         int row = 0;
 
+        // v2.5: 首次使用引导说明（仅在未设置过文件夹时显示）
+        if (config.getWatchFolderPath() == null || config.getWatchFolderPath().isEmpty()) {
+            gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2;
+            gbc.insets = new Insets(4, 0, 10, 0);
+            JLabel guideLabel = new JLabel(
+                    "<html><div style='color:#888; font-size:11px;'>"
+                    + "💡 选择一个文件夹，应用将自动压缩放入其中的新图片和视频。<br>"
+                    + "设置完成后点击「启动监控」即可开始。</div></html>");
+            guideLabel.setFont(ThemeUtil.FONT_SMALL);
+            panel.add(guideLabel, gbc);
+            gbc.gridwidth = 1;  // 恢复默认
+            gbc.insets = new Insets(6, 0, 6, 12);
+            row++;
+        }
+
         // --- 源文件夹 ---
         addLabel(panel, gbc, "监控文件夹:", row);
         watchFolderField = new JTextField(30);

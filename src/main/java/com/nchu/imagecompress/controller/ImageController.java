@@ -590,18 +590,28 @@ public class ImageController {
             fileListPanel.getFileJList().repaint();
             updateCompressButtonState();
 
-            // 自动预览第一个成功的文件
+            // 自动预览第一个成功的文件（v2.5: 同步加载原图，确保对比模式下是同一文件）
             for (CompressResult r : results) {
                 if (r.isSuccess()) {
                     final File outputFile = new File(r.getOutputPath());
+                    final ImageFileInfo matchedInput = r.getInputInfo();
                     if (outputFile.exists()) {
                         new Thread(() -> {
-                            ImageIcon preview = ImageUtil.loadScaledIcon(outputFile, 1024, 768);
+                            // 加载匹配的原图（与效果图是同一文件）
+                            final ImageIcon originalIcon = (matchedInput != null
+                                    && matchedInput.getSourceFile().exists())
+                                    ? ImageUtil.loadScaledIcon(matchedInput.getSourceFile(), 1024, 768)
+                                    : null;
+                            final ImageIcon effectIcon = ImageUtil.loadScaledIcon(outputFile, 1024, 768);
+                            // 统一调度到 EDT，避免显示错乱
                             SwingUtilities.invokeLater(() -> {
-                                previewPanel.showEffect(preview);
-                                if (r.getInputInfo() != null) {
+                                if (originalIcon != null) {
+                                    previewPanel.showOriginal(originalIcon);
+                                }
+                                previewPanel.showEffect(effectIcon);
+                                if (matchedInput != null) {
                                     previewPanel.updateComparison(
-                                            r.getInputInfo().getOriginalSize(),
+                                            matchedInput.getOriginalSize(),
                                             r.getOutputSize(),
                                             r.getCompressionRatio());
                                 }
@@ -667,9 +677,11 @@ public class ImageController {
             case 1: config.setNamingRule(CompressConfig.NamingRule.ADD_PREFIX); break;
             case 2: config.setNamingRule(CompressConfig.NamingRule.KEEP_ORIGINAL); break;
             case 3: config.setNamingRule(CompressConfig.NamingRule.CUSTOM); break;
+            case 4: config.setNamingRule(CompressConfig.NamingRule.INFO_BASED); break;  // v2.5
             default: config.setNamingRule(CompressConfig.NamingRule.ADD_SUFFIX);
         }
         config.setCustomName(paramPanel.getCustomFileName());
+        config.setInfoPattern(paramPanel.getInfoPattern());  // v2.5
         config.setTargetSizeKB(paramPanel.getTargetSizeKB());
 
         appConfig.setLastNamingRule(config.getNamingRule().name());

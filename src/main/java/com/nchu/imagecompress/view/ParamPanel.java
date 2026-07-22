@@ -47,6 +47,7 @@ public class ParamPanel extends JPanel {
     private JComboBox<String> outputFormatCombo;
     private JComboBox<String> namingRuleCombo;
     private javax.swing.JTextField customNameField;
+    private javax.swing.JTextField infoPatternField;  // v2.5: 信息命名模板
     private JButton batchRenameButton;
     private JButton compressButton;
     private JButton cancelButton;
@@ -316,6 +317,30 @@ public class ParamPanel extends JPanel {
         addFormControl(panel, gbc, formatPanel, row);
         row++;
 
+        // --- 批量重命名快捷入口 (v2.5) ---
+        addFormLabel(panel, gbc, "批量操作", row);
+        JPanel batchRow = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+        batchRow.setOpaque(false);
+        JButton basicRenameBtn = new JButton("📝 批量重命名...");
+        basicRenameBtn.setFont(ThemeUtil.FONT_SMALL);
+        basicRenameBtn.setFocusPainted(false);
+        basicRenameBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        basicRenameBtn.setToolTipText("使用模板批量重命名所有已导入文件（支持日期/序号/自定义文本）");
+        ThemeUtil.setDynamicForeground(basicRenameBtn, () -> ThemeUtil.PRIMARY);
+        ThemeUtil.setDynamicBackground(basicRenameBtn, () -> ThemeUtil.BG_CARD);
+        basicRenameBtn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ThemeUtil.PRIMARY, 1),
+                BorderFactory.createEmptyBorder(4, 12, 4, 12)));
+        basicRenameBtn.addActionListener(e -> {
+            // 触发同一个 Action：委托给高级 Tab 中的 batchRenameButton
+            for (java.awt.event.ActionListener al : batchRenameButton.getActionListeners()) {
+                al.actionPerformed(e);
+            }
+        });
+        batchRow.add(basicRenameBtn);
+        addFormControl(panel, gbc, batchRow, row);
+        row++;
+
         // 弹性填充
         gbc.gridy = row; gbc.gridx = 0; gbc.gridwidth = 2;
         gbc.weighty = 1.0; gbc.fill = GridBagConstraints.BOTH;
@@ -333,7 +358,7 @@ public class ParamPanel extends JPanel {
         int row = 0;
 
         addFormLabel(panel, gbc, "文件命名", row);
-        namingRuleCombo = new JComboBox<>(new String[]{"添加后缀 _compressed", "添加前缀 compressed_", "保持原名", "自定义文件名"});
+        namingRuleCombo = new JComboBox<>(new String[]{"添加后缀 _compressed", "添加前缀 compressed_", "保持原名", "自定义文件名", "基于图片信息（分辨率/大小等）"});
         namingRuleCombo.setFont(ThemeUtil.FONT_SMALL);
         addFormControl(panel, gbc, namingRuleCombo, row);
         row++;
@@ -363,11 +388,24 @@ public class ParamPanel extends JPanel {
         addFormControl(panel, gbc, customNameField, row);
         row++;
 
-        // 下拉框切换时显示/隐藏自定义文件名输入框
+        // 信息命名模板输入框（仅当选择"基于图片信息"时可见，v2.5）
+        addFormLabel(panel, gbc, "", row);
+        infoPatternField = new javax.swing.JTextField(20);
+        infoPatternField.setFont(ThemeUtil.FONT_SMALL);
+        infoPatternField.setText("{name}_{width}x{height}");
+        infoPatternField.setToolTipText("可用: {name} {width} {height} {size} {sizeKB} {format} {quality} | 例: {name}_{width}x{height}");
+        infoPatternField.setBorder(ThemeUtil.createDynamicLineBorder());
+        infoPatternField.setVisible(false);
+        addFormControl(panel, gbc, infoPatternField, row);
+        row++;
+
+        // 下拉框切换时显示/隐藏对应输入框
         namingRuleCombo.addItemListener(e -> {
             if (e.getStateChange() == java.awt.event.ItemEvent.SELECTED) {
                 boolean isCustom = namingRuleCombo.getSelectedIndex() == 3;
+                boolean isInfoBased = namingRuleCombo.getSelectedIndex() == 4;
                 customNameField.setVisible(isCustom);
+                if (infoPatternField != null) infoPatternField.setVisible(isInfoBased);
                 panel.revalidate();
                 panel.repaint();
             }
@@ -562,6 +600,11 @@ public class ParamPanel extends JPanel {
     public int getNamingRuleIndex() { return namingRuleCombo.getSelectedIndex(); }
     public String getCustomFileName() { return customNameField.getText(); }
     public void setCustomFileName(String name) { customNameField.setText(name != null ? name : ""); }
+
+    /** v2.5: 获取信息命名模板 */
+    public String getInfoPattern() {
+        return infoPatternField != null ? infoPatternField.getText() : "{name}_{width}x{height}";
+    }
     public boolean isOverwrite() { return overwriteCheckBox.isSelected(); }
     public boolean isPreserveMetadata() { return preserveMetadataCheckBox.isSelected(); }
     public boolean isTargetSizeEnabled() { return targetSizeCheckBox != null && targetSizeCheckBox.isSelected(); }

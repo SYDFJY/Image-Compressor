@@ -55,6 +55,9 @@ public class ImageFileInfo implements FileInfo {
     /** EXIF 元数据（懒加载，初始为 null） */
     private com.nchu.imagecompress.util.ImageExifUtil.ExifData exifData;
 
+    /** v2.5: 逐文件压缩参数覆盖（null = 使用全局设置） */
+    private PerFileCompressConfig perFileConfig;
+
     // ==================== 构造函数 ====================
 
     /** 无参构造（用于 JSON 反序列化等场景） */
@@ -158,6 +161,11 @@ public class ImageFileInfo implements FileInfo {
 
     public com.nchu.imagecompress.util.ImageExifUtil.ExifData getExifData() { return exifData; }
     public void setExifData(com.nchu.imagecompress.util.ImageExifUtil.ExifData exifData) { this.exifData = exifData; }
+
+    /** v2.5: 逐文件压缩参数覆盖 */
+    public PerFileCompressConfig getPerFileConfig() { return perFileConfig; }
+    public void setPerFileConfig(PerFileCompressConfig cfg) { this.perFileConfig = cfg; }
+    public boolean hasPerFileConfig() { return perFileConfig != null && perFileConfig.hasAnyOverride(); }
     public boolean hasExifData() { return exifData != null && exifData.hasAnyData(); }
 
     @Override
