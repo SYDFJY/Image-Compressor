@@ -307,7 +307,7 @@ public class MainFrame extends JFrame {
         ThemeUtil.setDynamicBackground(btn, () -> ThemeUtil.BG_HOVER);
         ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.TEXT_PRIMARY);
         btn.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ThemeUtil.BORDER, 1),
+                BorderFactory.createLineBorder(ThemeUtil.PRIMARY, 1),
                 BorderFactory.createEmptyBorder(5, 14, 5, 14)));
         btn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         // hover/press 效果
@@ -315,13 +315,13 @@ public class MainFrame extends JFrame {
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 btn.setBackground(ThemeUtil.BG_SELECTED);
                 btn.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(ThemeUtil.PRIMARY, 1),
+                        BorderFactory.createLineBorder(ThemeUtil.PRIMARY_DEEP, 1),
                         BorderFactory.createEmptyBorder(5, 14, 5, 14)));
             }
             public void mouseExited(java.awt.event.MouseEvent e) {
                 btn.setBackground(ThemeUtil.BG_HOVER);
                 btn.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(ThemeUtil.BORDER, 1),
+                        BorderFactory.createLineBorder(ThemeUtil.PRIMARY, 1),
                         BorderFactory.createEmptyBorder(5, 14, 5, 14)));
             }
             public void mousePressed(java.awt.event.MouseEvent e) {
@@ -335,7 +335,7 @@ public class MainFrame extends JFrame {
         ThemeUtil.addThemeChangeListener(() -> {
             btn.setBackground(ThemeUtil.BG_HOVER);
             btn.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(ThemeUtil.BORDER, 1),
+                    BorderFactory.createLineBorder(ThemeUtil.PRIMARY, 1),
                     BorderFactory.createEmptyBorder(5, 14, 5, 14)));
         });
         return btn;
@@ -523,15 +523,15 @@ public class MainFrame extends JFrame {
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
                         RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-                // 背景：选中时 BG_CARD（凸起卡片），否则透明
+                // 背景：选中时 PRIMARY（强调色填充），否则透明
                 if (isSelected()) {
-                    g2.setColor(ThemeUtil.BG_CARD);
+                    g2.setColor(ThemeUtil.PRIMARY);
                     g2.fillRoundRect(0, 0, getWidth(), getHeight(),
                             ThemeUtil.ARC_TAG - 1, ThemeUtil.ARC_TAG - 1);
                 }
 
                 // 文字颜色
-                Color fg = isSelected() ? ThemeUtil.PRIMARY : ThemeUtil.TEXT_SECONDARY;
+                Color fg = isSelected() ? Color.WHITE : ThemeUtil.TEXT_SECONDARY;
                 g2.setColor(fg);
                 g2.setFont(getFont());
 

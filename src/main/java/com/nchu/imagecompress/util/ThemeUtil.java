@@ -253,7 +253,7 @@ public final class ThemeUtil {
         UIManager.put("Button.endBackground", new ColorUIResource(BG_HOVER));
         UIManager.put("Button.disabledText", new ColorUIResource(TEXT_TERTIARY));
         UIManager.put("Button.disabledBackground", new ColorUIResource(BG_HOVER));
-        UIManager.put("Button.borderColor", new ColorUIResource(BORDER));
+        UIManager.put("Button.borderColor", new ColorUIResource(PRIMARY));
 
         // 默认按钮（主操作）
         UIManager.put("Button.default.background", new ColorUIResource(PRIMARY));

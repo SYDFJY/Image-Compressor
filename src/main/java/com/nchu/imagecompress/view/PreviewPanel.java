@@ -274,15 +274,15 @@ public class PreviewPanel extends JPanel {
                 g2.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
                         java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-                // 背景：选中时 BG_CARD（凸起卡片），否则透明（由父面板 BG_HOVER 提供）
+                // 背景：选中时 PRIMARY（强调色填充），否则透明（由父面板 BG_HOVER 提供）
                 if (isSelected()) {
-                    g2.setColor(ThemeUtil.BG_CARD);
+                    g2.setColor(ThemeUtil.PRIMARY);
                     g2.fillRoundRect(0, 0, getWidth(), getHeight(),
                             ThemeUtil.ARC_TAG - 1, ThemeUtil.ARC_TAG - 1);
                 }
 
                 // 文字：始终手动绘制，绕过 FlatLaf ButtonUI 在 opaque=false + contentAreaFilled=false 时不渲染文字的问题
-                Color fg = isSelected() ? ThemeUtil.PRIMARY : ThemeUtil.TEXT_SECONDARY;
+                Color fg = isSelected() ? Color.WHITE : ThemeUtil.TEXT_SECONDARY;
                 g2.setColor(fg);
                 g2.setFont(getFont());
                 java.awt.FontMetrics fm = g2.getFontMetrics();

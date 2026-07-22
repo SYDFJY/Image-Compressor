@@ -117,9 +117,10 @@ public class ParamPanel extends JPanel {
         cancelButton.setFocusPainted(false);
         ThemeUtil.setDynamicForeground(cancelButton, () -> ThemeUtil.TEXT_SECONDARY);
         ThemeUtil.setDynamicBackground(cancelButton, () -> ThemeUtil.BG_CARD);
-        cancelButton.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        cancelButton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ThemeUtil.PRIMARY, 1),
+                BorderFactory.createEmptyBorder(7, 15, 7, 15)));
         cancelButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        cancelButton.setBorderPainted(false);
         rightBtns.add(cancelButton);
 
         compressButton = new JButton("开始压缩", new com.formdev.flatlaf.extras.FlatSVGIcon("icons/play.svg"));
@@ -139,6 +140,9 @@ public class ParamPanel extends JPanel {
         ThemeUtil.addThemeChangeListener(() -> {
             setBackground(ThemeUtil.BG_CARD);
             cancelButton.setBackground(ThemeUtil.BG_CARD);
+            cancelButton.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(ThemeUtil.PRIMARY, 1),
+                    BorderFactory.createEmptyBorder(7, 15, 7, 15)));
             compressButton.setBackground(ThemeUtil.PRIMARY);
             repaint();
         });
