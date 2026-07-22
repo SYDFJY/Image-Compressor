@@ -57,7 +57,9 @@ public class ParamPanel extends JPanel {
     private JButton activePresetBtn;
     private JLabel estimatedSizeLabel;
     private JLabel outputDimLabel;
+    private JPanel dimWrapper;
     private JLabel scaleHintLabel;
+    private JPanel hintWrapper;
 
     // ==================== GIF 压缩控件（默认隐藏，选中 GIF 时显示） ====================
     private JLabel gifSectionLabel;
@@ -249,13 +251,17 @@ public class ParamPanel extends JPanel {
         // --- 输出尺寸预览 ---
         outputDimLabel = new JLabel(" ");
         outputDimLabel.setFont(ThemeUtil.FONT_SMALL);
-        outputDimLabel.setOpaque(true);
-        ThemeUtil.setDynamicBackground(outputDimLabel, () -> ThemeUtil.BG_CARD);
         ThemeUtil.setDynamicForeground(outputDimLabel, () -> ThemeUtil.TEXT_TERTIARY);
+
+        dimWrapper = new JPanel(new BorderLayout());
+        dimWrapper.setOpaque(true);
+        ThemeUtil.setDynamicBackground(dimWrapper, () -> ThemeUtil.BG_CARD);
+        dimWrapper.add(outputDimLabel, BorderLayout.CENTER);
+
         gbc.gridx = 0; gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(0, 0, ThemeUtil.SPACE_SM, 0);
-        panel.add(outputDimLabel, gbc);
+        panel.add(dimWrapper, gbc);
         gbc.gridwidth = 1;
         gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0);
         row++;
@@ -263,13 +269,17 @@ public class ParamPanel extends JPanel {
         // --- 缩放说明 ---
         scaleHintLabel = new JLabel(" ");
         scaleHintLabel.setFont(ThemeUtil.FONT_SMALL);
-        scaleHintLabel.setOpaque(true);
-        ThemeUtil.setDynamicBackground(scaleHintLabel, () -> ThemeUtil.BG_CARD);
         ThemeUtil.setDynamicForeground(scaleHintLabel, () -> ThemeUtil.TEXT_TERTIARY);
+
+        hintWrapper = new JPanel(new BorderLayout());
+        hintWrapper.setOpaque(true);
+        ThemeUtil.setDynamicBackground(hintWrapper, () -> ThemeUtil.BG_CARD);
+        hintWrapper.add(scaleHintLabel, BorderLayout.CENTER);
+
         gbc.gridx = 0; gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(0, 0, ThemeUtil.SPACE_SM, 0);
-        panel.add(scaleHintLabel, gbc);
+        panel.add(hintWrapper, gbc);
         gbc.gridwidth = 1;
         gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0);
         row++;
@@ -574,29 +584,31 @@ public class ParamPanel extends JPanel {
     public void setOutputDimLabel(String text) {
         if (outputDimLabel != null) {
             outputDimLabel.setText(text != null ? text : " ");
-            outputDimLabel.setVisible(text != null && !text.isEmpty());
         }
+        boolean visible = text != null && !text.isEmpty();
+        if (outputDimLabel != null) outputDimLabel.setVisible(visible);
+        if (dimWrapper != null) dimWrapper.setVisible(visible);
     }
 
     /** 隐藏输出尺寸预览 */
     public void hideOutputDimLabel() {
-        if (outputDimLabel != null) {
-            outputDimLabel.setVisible(false);
-        }
+        if (outputDimLabel != null) outputDimLabel.setVisible(false);
+        if (dimWrapper != null) dimWrapper.setVisible(false);
     }
 
     /** 更新缩放说明文字 */
     public void setScaleHintLabel(String text) {
         if (scaleHintLabel != null) {
             scaleHintLabel.setText(text != null ? text : " ");
-            scaleHintLabel.setVisible(text != null && !text.isEmpty());
         }
+        boolean visible = text != null && !text.isEmpty();
+        if (scaleHintLabel != null) scaleHintLabel.setVisible(visible);
+        if (hintWrapper != null) hintWrapper.setVisible(visible);
     }
 
     /** 隐藏缩放说明 */
     public void hideScaleHintLabel() {
-        if (scaleHintLabel != null) {
-            scaleHintLabel.setVisible(false);
-        }
+        if (scaleHintLabel != null) scaleHintLabel.setVisible(false);
+        if (hintWrapper != null) hintWrapper.setVisible(false);
     }
 }
