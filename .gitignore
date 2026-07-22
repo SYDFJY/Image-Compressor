@@ -62,3 +62,8 @@ NCHU-Image-Compressor-免安装版/
 dist/standalone/jre/
 dist/standalone/ffmpeg/
 dist/standalone/vlc/
+
+# Portable distribution (contains JRE/FFmpeg/VLC binaries)
+NCHU-Compressor-v1.0.0-免安装版/
+NCHU-Compressor-v1.0.0-免安装版.zip
+NCHU-Compressor-v1.0.0-免安装版.tar.gz
