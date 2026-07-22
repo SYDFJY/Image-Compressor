@@ -342,6 +342,7 @@ public class ParamPanel extends JPanel {
         customNameField = new javax.swing.JTextField(20);
         customNameField.setFont(ThemeUtil.FONT_SMALL);
         customNameField.setToolTipText("输入自定义文件名（不含扩展名），留空则使用默认命名");
+        customNameField.setBorder(ThemeUtil.createDynamicLineBorder());
         customNameField.setVisible(false);
         addFormControl(panel, gbc, customNameField, row);
         row++;
@@ -392,6 +393,7 @@ public class ParamPanel extends JPanel {
         targetSizeSpinner = new javax.swing.JSpinner(new javax.swing.SpinnerNumberModel(500, 10, 50000, 10));
         targetSizeSpinner.setFont(ThemeUtil.FONT_SMALL);
         targetSizeSpinner.setPreferredSize(new java.awt.Dimension(80, 24));
+        targetSizeSpinner.setBorder(ThemeUtil.createDynamicLineBorder());
         targetSizeSpinner.setEnabled(false);
         targetSizePanel.add(targetSizeSpinner);
         javax.swing.JLabel kbLabel = new javax.swing.JLabel("KB");

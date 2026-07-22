@@ -317,6 +317,7 @@ public class FileListPanel extends JPanel {
         searchField.setFont(ThemeUtil.FONT_SMALL);
         searchField.putClientProperty("JTextField.placeholderText", "搜索文件名...");
         searchField.putClientProperty("JTextField.showClearButton", true);
+        searchField.setBorder(ThemeUtil.createDynamicLineBorder());
         searchField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
@@ -329,6 +330,7 @@ public class FileListPanel extends JPanel {
         // 排序下拉
         sortCombo = new JComboBox<>(new String[]{"原始顺序", "按名称", "按大小"});
         sortCombo.setFont(ThemeUtil.FONT_SMALL);
+        sortCombo.setBorder(ThemeUtil.createDynamicLineBorder());
         sortCombo.addActionListener(e -> {
             currentSort = sortCombo.getSelectedIndex();
             applyFilter();

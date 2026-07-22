@@ -256,6 +256,7 @@ public class VideoParamPanel extends JPanel {
         targetSizeMBSpinner = new javax.swing.JSpinner(
                 new javax.swing.SpinnerNumberModel(50, 1, 10000, 10));
         targetSizeMBSpinner.setFont(ThemeUtil.FONT_SMALL);
+        targetSizeMBSpinner.setBorder(ThemeUtil.createDynamicLineBorder());
         targetSizeMBSpinner.setPreferredSize(new Dimension(70, 24));
         targetSizeMBSpinner.setEnabled(false);
         ratePanel.add(targetSizeMBSpinner, BorderLayout.CENTER);
@@ -284,6 +285,7 @@ public class VideoParamPanel extends JPanel {
         addFormLabel(panel, gbc, "", row);
         customNameField = new javax.swing.JTextField(20);
         customNameField.setFont(ThemeUtil.FONT_SMALL);
+        customNameField.setBorder(ThemeUtil.createDynamicLineBorder());
         customNameField.setToolTipText("输入自定义文件名（不含扩展名），留空则自动生成");
         customNameField.setVisible(false);
         addFormControl(panel, gbc, customNameField, row);
@@ -353,11 +355,13 @@ public class VideoParamPanel extends JPanel {
         trimPanel.setOpaque(false);
         startTimeField = new javax.swing.JTextField(5);
         startTimeField.setFont(ThemeUtil.FONT_SMALL);
+        startTimeField.setBorder(ThemeUtil.createDynamicLineBorder());
         startTimeField.setToolTipText("开始时间 (秒)");
         trimPanel.add(new javax.swing.JLabel("起始:"));
         trimPanel.add(startTimeField);
         endTimeField = new javax.swing.JTextField(5);
         endTimeField.setFont(ThemeUtil.FONT_SMALL);
+        endTimeField.setBorder(ThemeUtil.createDynamicLineBorder());
         endTimeField.setToolTipText("结束时间 (秒)，留空=到视频结尾");
         trimPanel.add(new javax.swing.JLabel("结束:"));
         trimPanel.add(endTimeField);
@@ -963,6 +967,7 @@ public class VideoParamPanel extends JPanel {
             namePanel.add(nameLbl, BorderLayout.WEST);
             customNameField = new javax.swing.JTextField(8);
             customNameField.setFont(ThemeUtil.FONT_TINY);
+            customNameField.setBorder(ThemeUtil.createDynamicLineBorder());
             customNameField.setToolTipText("可选：此变体自定义文件名（不含扩展名），留空=继承基础");
             namePanel.add(customNameField, BorderLayout.CENTER);
             row2.add(namePanel);
@@ -976,11 +981,13 @@ public class VideoParamPanel extends JPanel {
             trimPanel.add(trimLbl);
             trimStartField = new javax.swing.JTextField(3);
             trimStartField.setFont(ThemeUtil.FONT_TINY);
+            trimStartField.setBorder(ThemeUtil.createDynamicLineBorder());
             trimStartField.setToolTipText("起始(秒)，留空=继承基础");
             trimPanel.add(trimStartField);
             trimPanel.add(new JLabel("-"));
             trimEndField = new javax.swing.JTextField(3);
             trimEndField.setFont(ThemeUtil.FONT_TINY);
+            trimEndField.setBorder(ThemeUtil.createDynamicLineBorder());
             trimEndField.setToolTipText("结束(秒)，留空=继承基础");
             trimPanel.add(trimEndField);
             row2.add(trimPanel);
@@ -994,6 +1001,7 @@ public class VideoParamPanel extends JPanel {
             sizePanel.add(sizeLbl, BorderLayout.WEST);
             targetSizeField = new javax.swing.JTextField(4);
             targetSizeField.setFont(ThemeUtil.FONT_TINY);
+            targetSizeField.setBorder(ThemeUtil.createDynamicLineBorder());
             targetSizeField.setToolTipText("目标大小(MB)，留空=继承基础");
             sizePanel.add(targetSizeField, BorderLayout.CENTER);
             JLabel mbLbl = new JLabel("MB");

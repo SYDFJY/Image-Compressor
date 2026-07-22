@@ -80,6 +80,7 @@ public class SettingsDialog extends JDialog {
         dirPanel.setOpaque(false);
         outputDirField = new JTextField(config.getLastOutputPath());
         outputDirField.setFont(ThemeUtil.FONT_SMALL);
+        outputDirField.setBorder(ThemeUtil.createDynamicLineBorder());
         dirPanel.add(outputDirField, BorderLayout.CENTER);
         JButton browseBtn = new JButton("浏览...");
         browseBtn.setFont(ThemeUtil.FONT_SMALL);
@@ -99,6 +100,7 @@ public class SettingsDialog extends JDialog {
         ffmpegPathField = new JTextField(
                 System.getProperty("ffmpeg.bin.path", ""));
         ffmpegPathField.setFont(ThemeUtil.FONT_SMALL);
+        ffmpegPathField.setBorder(ThemeUtil.createDynamicLineBorder());
         ffmpegPathField.setToolTipText("留空则自动检测系统 PATH 中的 FFmpeg");
         addFormControl(formPanel, gbc, ffmpegPathField, row);
         row++;

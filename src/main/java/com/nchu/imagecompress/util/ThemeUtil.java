@@ -289,9 +289,7 @@ public final class ThemeUtil {
         UIManager.put("TabbedPane.underlineColor", new ColorUIResource(PRIMARY));
         UIManager.put("TabbedPane.tabInsets", new Insets(6, 14, 6, 14));
 
-        // 输入框 — Component.borderColor 是 FlatLaf 3.2.5 唯一识别的边框主键
-        // （TextField/FormattedTextField/ComboBox/Spinner 均从此继承）
-        UIManager.put("Component.borderColor", new ColorUIResource(PRIMARY));
+        // 输入框背景
         UIManager.put("TextField.background", new ColorUIResource(BG_INPUT));
 
         // 下拉框
@@ -461,6 +459,26 @@ public final class ThemeUtil {
                 UIManager.put("Button.borderColor", oldBorderColor);
             }
         }
+    }
+
+    /**
+     * 创建随主题切换自动变色的 1px 线边框。
+     * paintBorder 时实时读取 {@link #PRIMARY}，无需手动监听主题变更。
+     *
+     * @return 动态线边框实例
+     */
+    public static javax.swing.border.Border createDynamicLineBorder() {
+        return new javax.swing.border.LineBorder(Color.BLACK, 1) {
+            @Override
+            public void paintBorder(java.awt.Component c, java.awt.Graphics g,
+                                    int x, int y, int width, int height) {
+                java.awt.Color old = g.getColor();
+                g.setColor(PRIMARY);
+                // 底边 = height-1，右边 = width-1（Swing 坐标系）
+                g.drawRect(x, y, width - 1, height - 1);
+                g.setColor(old);
+            }
+        };
     }
 
     /** Color → hex int（用于 UIManager） */
