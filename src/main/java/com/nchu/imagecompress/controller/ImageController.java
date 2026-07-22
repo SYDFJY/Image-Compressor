@@ -34,7 +34,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 图片压缩子控制器 — 管理图片模式的完整生命周期。
@@ -88,6 +90,9 @@ public class ImageController {
 
     /** 预览防抖定时器：质量滑块拖动停止 200ms 后刷新效果预览 */
     private final javax.swing.Timer previewDebounceTimer;
+
+    /** v2.5.3: 压缩结果缓存（key=源文件绝对路径），供切换文件时恢复对比预览 */
+    private final Map<String, CompressResult> resultCache = new HashMap<>();
 
     // ==================== 构造与初始化 ====================
 
@@ -355,9 +360,16 @@ public class ImageController {
         if (info.getSourceFile() == null) return;
         final File sourceFile = info.getSourceFile();
 
-        // v2.5.2: 切换文件时清除旧的压缩效果和对比数据，防止对比错乱
-        previewPanel.clearEffect();
-        previewPanel.clearComparison();
+        // v2.5.3: 检查是否有压缩结果缓存，有则恢复对比状态
+        final CompressResult cachedResult = resultCache.get(sourceFile.getAbsolutePath());
+        if (cachedResult != null && cachedResult.getOutputPath() != null) {
+            // 该文件已被压缩：加载效果图恢复对比状态
+            updateEffectForCachedResult(sourceFile, cachedResult, info);
+        } else {
+            // 未压缩过的文件：清除旧效果（v2.5.2 防错乱）
+            previewPanel.clearEffect();
+            previewPanel.clearComparison();
+        }
 
         // 保存原始大小用于预估输出大小
         selectedOriginalSize = info.getOriginalSize();
@@ -378,11 +390,32 @@ public class ImageController {
         }).start();
     }
 
+    /** v2.5.3: 从缓存结果加载效果图，恢复对比预览状态 */
+    private void updateEffectForCachedResult(final File sourceFile,
+                                              final CompressResult cachedResult,
+                                              final ImageFileInfo info) {
+        final File outputFile = new File(cachedResult.getOutputPath());
+        if (!outputFile.exists()) return;
+        final long originalSize = info.getOriginalSize();
+        final long compressedSize = cachedResult.getOutputSize();
+        final double ratio = cachedResult.getCompressionRatio();
+        new Thread(() -> {
+            ImageIcon effectIcon = ImageUtil.loadScaledIcon(outputFile, 1024, 768);
+            SwingUtilities.invokeLater(() -> {
+                if (effectIcon != null) {
+                    previewPanel.showEffect(effectIcon);
+                }
+                previewPanel.updateComparison(originalSize, compressedSize, ratio);
+            });
+        }).start();
+    }
+
     /**
      * 清除图片预览。
      */
     public void clearPreview() {
         previewPanel.clearPreview();
+        resultCache.clear();
     }
 
     /**
@@ -487,6 +520,9 @@ public class ImageController {
             ToastNotification.warning("请先导入图片文件");
             return;
         }
+
+        // v2.5.3: 新压缩任务开始前清空旧结果缓存
+        resultCache.clear();
 
         if (currentWorker != null && !currentWorker.isDone()) {
             ToastNotification.warning("压缩任务正在进行中");
@@ -599,6 +635,16 @@ public class ImageController {
 
             fileListPanel.getFileJList().repaint();
             updateCompressButtonState();
+
+            // v2.5.3: 缓存所有成功结果，供切换文件时恢复对比预览
+            resultCache.clear();
+            for (CompressResult r : results) {
+                if (r.isSuccess()
+                        && r.getInputInfo() != null
+                        && r.getInputInfo().getSourceFile() != null) {
+                    resultCache.put(r.getInputInfo().getSourceFile().getAbsolutePath(), r);
+                }
+            }
 
             // 自动预览第一个成功的文件（v2.5: 同步加载原图，确保对比模式下是同一文件）
             for (CompressResult r : results) {

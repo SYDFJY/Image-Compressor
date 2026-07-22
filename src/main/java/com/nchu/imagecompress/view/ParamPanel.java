@@ -264,6 +264,7 @@ public class ParamPanel extends JPanel {
         ThemeUtil.setDynamicBackground(dimWrapper, () -> ThemeUtil.BG_CARD);
         dimWrapper.add(outputDimLabel, BorderLayout.CENTER);
 
+        gbc.gridy = row;
         gbc.gridx = 0; gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(0, 0, ThemeUtil.SPACE_SM, 0);
@@ -282,6 +283,7 @@ public class ParamPanel extends JPanel {
         ThemeUtil.setDynamicBackground(hintWrapper, () -> ThemeUtil.BG_CARD);
         hintWrapper.add(scaleHintLabel, BorderLayout.CENTER);
 
+        gbc.gridy = row;
         gbc.gridx = 0; gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(0, 0, ThemeUtil.SPACE_SM, 0);
