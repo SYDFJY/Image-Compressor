@@ -53,7 +53,41 @@ public enum Theme {
     DARK_PURPLE("暗夜紫晶", "深紫科技风", "#A78BFA", ThemePalette.darkPurple()),
 
     /** 深海蓝调 · 藏青沉稳风 */
-    DEEP_NAVY("深海蓝调", "藏青沉稳风", "#60A5FA", ThemePalette.deepNavy());
+    DEEP_NAVY("深海蓝调", "藏青沉稳风", "#60A5FA", ThemePalette.deepNavy()),
+
+    // ==================== 撞色系列 5 套新主题（浅色） ====================
+
+    /** 紫黑电竞 · 专业神秘感（浅色） */
+    PURPLE_GAMING("紫黑电竞", "专业神秘", "#A855F7", ThemePalette.purpleGaming()),
+
+    /** 绿米自然 · 温润自然感（浅色） */
+    GREEN_NATURE("绿米自然", "温润自然", "#73AE52", ThemePalette.greenNature()),
+
+    /** 雾蓝冷感 · 工程师调性（浅色） */
+    MIST_BLUE("雾蓝冷感", "冷静专业", "#0EA5E9", ThemePalette.mistBlue()),
+
+    /** 嫩绿蓝清新 · 年轻活力感（浅色） */
+    FRESH_GREEN_BLUE("嫩绿蓝清新", "年轻活力", "#05A5FA", ThemePalette.freshGreenBlue()),
+
+    /** 浅粉红暖意 · 温柔有力（浅色） */
+    SOFT_PINK("浅粉红暖意", "温柔有力", "#E72D48", ThemePalette.softPink()),
+
+    // ==================== 撞色系列 5 套新主题（深色） ====================
+
+    /** 紫黑电竞 · 深紫未来感（深色） */
+    PURPLE_GAMING_DARK("紫黑电竞·暗", "深紫未来感", "#A855F7", ThemePalette.purpleGamingDark()),
+
+    /** 绿米自然 · 暗夜自然风（深色） */
+    GREEN_NATURE_DARK("绿米自然·暗", "暗夜自然风", "#73AE52", ThemePalette.greenNatureDark()),
+
+    /** 雾蓝冷感 · 夜蓝专注（深色） */
+    MIST_BLUE_DARK("雾蓝冷感·暗", "夜蓝专注", "#0EA5E9", ThemePalette.mistBlueDark()),
+
+    /** 嫩绿蓝清新 · 深海活力（深色） */
+    FRESH_GREEN_BLUE_DARK("嫩绿蓝清新·暗", "深海活力", "#05A5FA", ThemePalette.freshGreenBlueDark()),
+
+    /** 浅粉红暖意 · 夜红酒红（深色） */
+    SOFT_PINK_DARK("浅粉红暖意·暗", "夜红酒红", "#E72D48", ThemePalette.softPinkDark());
 
     /** 主题显示名称 */
     private final String displayName;

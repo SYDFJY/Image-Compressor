@@ -455,8 +455,236 @@ public class ThemePalette {
                 .build();
     }
 
+    // ==================== 撞色系列 5 套新主题（浅色 + 深色双模，共 10 种） ====================
+
+    /** 紫黑电竞（浅色） — 撞色 #A855F7 + #F5F3FF，专业神秘感 */
+    public static ThemePalette purpleGaming() {
+        return new Builder()
+                .primary(darken(c(0x9333EA), 0.75f), c(0x9333EA), c(0xA855F7),
+                         lighten(c(0xA855F7), 0.40f), lighten(c(0xA855F7), 0.82f))
+                .background(c(0xF5F3FF), c(0xFFFFFF), c(0xFFFFFF),
+                            blendOnWhite(c(0xA855F7), 0.08f), c(0xF0ECFF))
+                .text(c(0x1A1A2E), c(0x6B7280), c(0x9CA3AF))
+                .border(c(0xE9E3FA), c(0xA855F7))
+                .status(c(0x22C55E), c(0xF0FDF4), c(0xEF4444), c(0xFEF2F2),
+                        c(0xF59E0B), c(0xFFFBEB))
+                .shadow1(168, 85, 247, 15)
+                .shadow2(168, 85, 247, 20)
+                .segmented("A")
+                .build();
+    }
+
+    /** 紫黑电竞（深色） — 撞色 #A855F7 + #0B0C10，深紫未来感 */
+    public static ThemePalette purpleGamingDark() {
+        Color surface1 = c(0x15171F);
+        return new Builder()
+                .primary(darken(c(0xC084FC), 0.75f), c(0xC084FC), c(0xA855F7),
+                         lighten(c(0xA855F7), 0.40f), lighten(c(0xA855F7), 0.82f))
+                .background(c(0x0B0C10), surface1, c(0x1F2230),
+                            blendOnBg(c(0xA855F7), 0.12f, surface1), c(0x1F2230))
+                .text(c(0xF5F3FF), c(0x9CA3AF), c(0x6B7280))
+                .border(c(0x2A2D3A), c(0xA855F7))
+                .status(c(0x22C55E), c(0x0B0C10), c(0xEF4444), c(0x0B0C10),
+                        c(0xF59E0B), c(0x0B0C10))
+                .shadow1(0, 0, 0, 90)
+                .shadow2(0, 0, 0, 50)
+                .bgGradient(c(0x08090D), 135)
+                .cardBorder(new Color(255, 255, 255, 15))
+                .buttonGlow(new Color(168, 85, 247, 50))
+                .segmented("A")
+                .build();
+    }
+
+    /** 绿米自然（浅色） — 撞色 #73AE52 + #FBF1D7，温润自然感 */
+    public static ThemePalette greenNature() {
+        return new Builder()
+                .primary(darken(c(0x5C8E3F), 0.75f), c(0x5C8E3F), c(0x73AE52),
+                         lighten(c(0x73AE52), 0.40f), lighten(c(0x73AE52), 0.82f))
+                .background(c(0xFBF1D7), c(0xFFFFFF), c(0xFFFFFF),
+                            blendOnWhite(c(0x73AE52), 0.08f), c(0xFFFDF5))
+                .text(c(0x2A3819), c(0x6B7A5A), c(0x9CA38A))
+                .border(c(0xE8DFC7), c(0x73AE52))
+                .status(c(0x22C55E), c(0xF0FDF4), c(0xEF4444), c(0xFEF2F2),
+                        c(0xF59E0B), c(0xFFFBEB))
+                .shadow1(115, 174, 82, 15)
+                .shadow2(115, 174, 82, 20)
+                .segmented("B")
+                .build();
+    }
+
+    /** 绿米自然（深色） — 撞色 #73AE52 + #1A1F12，暗夜自然风 */
+    public static ThemePalette greenNatureDark() {
+        Color surface1 = c(0x252B1A);
+        return new Builder()
+                .primary(darken(c(0xB5D78A), 0.75f), c(0xB5D78A), c(0x73AE52),
+                         lighten(c(0x73AE52), 0.40f), lighten(c(0x73AE52), 0.82f))
+                .background(c(0x1A1F12), surface1, c(0x2F3624),
+                            blendOnBg(c(0x9BC76A), 0.12f, surface1), c(0x2F3624))
+                .text(c(0xFBF1D7), c(0xA8B090), c(0x7A8060))
+                .border(c(0x3A4230), c(0x73AE52))
+                .status(c(0x22C55E), c(0x1A1F12), c(0xEF4444), c(0x1A1F12),
+                        c(0xF59E0B), c(0x1A1F12))
+                .shadow1(0, 0, 0, 90)
+                .shadow2(0, 0, 0, 50)
+                .bgGradient(c(0x13180C), 135)
+                .cardBorder(new Color(255, 255, 255, 15))
+                .buttonGlow(new Color(115, 174, 82, 50))
+                .segmented("B")
+                .build();
+    }
+
+    /** 雾蓝冷感（浅色） — 撞色 #0EA5E9 + #F8FAFC，冷静工程师调性 */
+    public static ThemePalette mistBlue() {
+        return new Builder()
+                .primary(darken(c(0x0284C7), 0.75f), c(0x0284C7), c(0x0EA5E9),
+                         lighten(c(0x0EA5E9), 0.40f), lighten(c(0x0EA5E9), 0.82f))
+                .background(c(0xF8FAFC), c(0xFFFFFF), c(0xFFFFFF),
+                            blendOnWhite(c(0x0EA5E9), 0.08f), c(0xF1F5F9))
+                .text(c(0x0F172A), c(0x64748B), c(0x94A3B8))
+                .border(c(0xE2E8F0), c(0x0EA5E9))
+                .status(c(0x22C55E), c(0xF0FDF4), c(0xEF4444), c(0xFEF2F2),
+                        c(0xF59E0B), c(0xFFFBEB))
+                .shadow1(14, 165, 233, 15)
+                .shadow2(14, 165, 233, 20)
+                .segmented("A")
+                .build();
+    }
+
+    /** 雾蓝冷感（深色） — 撞色 #0EA5E9 + #0F172A，专业冷感 */
+    public static ThemePalette mistBlueDark() {
+        Color surface1 = c(0x1E293B);
+        return new Builder()
+                .primary(darken(c(0x7DD3FC), 0.75f), c(0x7DD3FC), c(0x0EA5E9),
+                         lighten(c(0x0EA5E9), 0.40f), lighten(c(0x0EA5E9), 0.82f))
+                .background(c(0x0F172A), surface1, c(0x334155),
+                            blendOnBg(c(0x38BDF8), 0.12f, surface1), c(0x334155))
+                .text(c(0xF1F5F9), c(0x94A3B8), c(0x64748B))
+                .border(c(0x475569), c(0x0EA5E9))
+                .status(c(0x22C55E), c(0x0F172A), c(0xEF4444), c(0x0F172A),
+                        c(0xF59E0B), c(0x0F172A))
+                .shadow1(0, 0, 0, 90)
+                .shadow2(0, 0, 0, 50)
+                .bgGradient(c(0x0A1020), 135)
+                .cardBorder(new Color(255, 255, 255, 15))
+                .buttonGlow(new Color(14, 165, 233, 50))
+                .segmented("A")
+                .build();
+    }
+
+    /** 嫩绿蓝清新（浅色） — 撞色 #05A5FA + #E8F8D8，年轻活力感 */
+    public static ThemePalette freshGreenBlue() {
+        return new Builder()
+                .primary(darken(c(0x0284C7), 0.75f), c(0x0284C7), c(0x05A5FA),
+                         lighten(c(0x05A5FA), 0.40f), lighten(c(0x05A5FA), 0.82f))
+                .background(c(0xE8F8D8), c(0xFFFFFF), c(0xFFFFFF),
+                            blendOnWhite(c(0x05A5FA), 0.08f), c(0xF0FDF4))
+                .text(c(0x0C4A6E), c(0x0369A1), c(0x64748B))
+                .border(c(0xBBF7D0), c(0x05A5FA))
+                .status(c(0x22C55E), c(0xF0FDF4), c(0xEF4444), c(0xFEF2F2),
+                        c(0xF59E0B), c(0xFFFBEB))
+                .shadow1(5, 165, 250, 15)
+                .shadow2(5, 165, 250, 20)
+                .segmented("B")
+                .build();
+    }
+
+    /** 嫩绿蓝清新（深色） — 撞色 #05A5FA + #0C4A6E，深蓝逆反差 */
+    public static ThemePalette freshGreenBlueDark() {
+        Color surface1 = c(0x075985);
+        return new Builder()
+                .primary(darken(c(0xA5F3FC), 0.75f), c(0xA5F3FC), c(0x05A5FA),
+                         lighten(c(0x05A5FA), 0.40f), lighten(c(0x05A5FA), 0.82f))
+                .background(c(0x0C4A6E), surface1, c(0x0E7490),
+                            blendOnBg(c(0x67E8F9), 0.12f, surface1), c(0x0E7490))
+                .text(c(0xD3FFAF), c(0x7DD3FC), c(0x38BDF8))
+                .border(c(0x155E75), c(0x05A5FA))
+                .status(c(0x22C55E), c(0x0C4A6E), c(0xEF4444), c(0x0C4A6E),
+                        c(0xF59E0B), c(0x0C4A6E))
+                .shadow1(0, 0, 0, 90)
+                .shadow2(0, 0, 0, 50)
+                .bgGradient(c(0x083A58), 135)
+                .cardBorder(new Color(255, 255, 255, 15))
+                .buttonGlow(new Color(5, 165, 250, 50))
+                .segmented("B")
+                .build();
+    }
+
+    /** 浅粉红暖意（浅色） — 撞色 #E72D48 + #F1DDDF，温柔但有力度 */
+    public static ThemePalette softPink() {
+        return new Builder()
+                .primary(darken(c(0xB91C1C), 0.75f), c(0xB91C1C), c(0xE72D48),
+                         lighten(c(0xE72D48), 0.40f), lighten(c(0xE72D48), 0.82f))
+                .background(c(0xF1DDDF), c(0xFFFFFF), c(0xFFFFFF),
+                            blendOnWhite(c(0xE72D48), 0.08f), c(0xFDF5F6))
+                .text(c(0x3F0A12), c(0x7A2A35), c(0xA05A65))
+                .border(c(0xE8C5C9), c(0xE72D48))
+                .status(c(0x22C55E), c(0xF0FDF4), c(0xEF4444), c(0xFEF2F2),
+                        c(0xF59E0B), c(0xFFFBEB))
+                .shadow1(231, 45, 72, 15)
+                .shadow2(231, 45, 72, 20)
+                .segmented("B")
+                .build();
+    }
+
+    /** 浅粉红暖意（深色） — 撞色 #E72D48 + #1F0A0D，夜红酒红 */
+    public static ThemePalette softPinkDark() {
+        Color surface1 = c(0x2A1015);
+        return new Builder()
+                .primary(darken(c(0xFCA5A5), 0.75f), c(0xFCA5A5), c(0xE72D48),
+                         lighten(c(0xE72D48), 0.40f), lighten(c(0xE72D48), 0.82f))
+                .background(c(0x1F0A0D), surface1, c(0x3A151A),
+                            blendOnBg(c(0xF87171), 0.12f, surface1), c(0x3A151A))
+                .text(c(0xF1DDDF), c(0xD4A8AC), c(0x9A7075))
+                .border(c(0x4A1A22), c(0xE72D48))
+                .status(c(0x22C55E), c(0x1F0A0D), c(0xEF4444), c(0x1F0A0D),
+                        c(0xF59E0B), c(0x1F0A0D))
+                .shadow1(0, 0, 0, 90)
+                .shadow2(0, 0, 0, 50)
+                .bgGradient(c(0x18070A), 135)
+                .cardBorder(new Color(255, 255, 255, 15))
+                .buttonGlow(new Color(231, 45, 72, 50))
+                .segmented("B")
+                .build();
+    }
+
+    // ==================== 颜色工具方法 ====================
+
     /** 便捷：hex int → Color */
     private static Color c(int hex) {
         return new Color(hex);
+    }
+
+    /** 加深：每个 RGB 分量乘以 factor（factor&lt;1 为加深） */
+    private static Color darken(Color c, float factor) {
+        return new Color(
+                (int)(c.getRed() * factor),
+                (int)(c.getGreen() * factor),
+                (int)(c.getBlue() * factor));
+    }
+
+    /** 提亮：向白色混合 factor 比例 */
+    private static Color lighten(Color c, float factor) {
+        return new Color(
+                (int)(c.getRed() + (255 - c.getRed()) * factor),
+                (int)(c.getGreen() + (255 - c.getGreen()) * factor),
+                (int)(c.getBlue() + (255 - c.getBlue()) * factor));
+    }
+
+    /** 将半透明颜色混合到白色背景上（用于浅色主题 accent-bg → bgSelected） */
+    private static Color blendOnWhite(Color accent, float alpha) {
+        float inv = 1.0f - alpha;
+        return new Color(
+                (int)(accent.getRed() * alpha + 255 * inv),
+                (int)(accent.getGreen() * alpha + 255 * inv),
+                (int)(accent.getBlue() * alpha + 255 * inv));
+    }
+
+    /** 将半透明颜色混合到指定深色背景上（用于深色主题 accent-bg → bgSelected） */
+    private static Color blendOnBg(Color accent, float alpha, Color bg) {
+        float inv = 1.0f - alpha;
+        return new Color(
+                (int)(accent.getRed() * alpha + bg.getRed() * inv),
+                (int)(accent.getGreen() * alpha + bg.getGreen() * inv),
+                (int)(accent.getBlue() * alpha + bg.getBlue() * inv));
     }
 }
