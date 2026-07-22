@@ -542,7 +542,7 @@ public class VideoController {
 
         String outputDir = currentVideoConfig != null
                 ? currentVideoConfig.getOutputPath() : "";
-        ResultDialog.show(mainFrame, results, outputDir, totalElapsed);
+        ResultDialog.show(mainFrame, results, outputDir, totalElapsed, appConfig);
 
         // 将压缩结果写入 VideoFileInfo Model
         for (CompressResult r : results) {

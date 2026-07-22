@@ -1,6 +1,7 @@
 package com.nchu.imagecompress.view;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.nchu.imagecompress.model.AppConfig;
 import com.nchu.imagecompress.model.CompressResult;
 import com.nchu.imagecompress.util.FileUtil;
 import com.nchu.imagecompress.util.LogUtil;
@@ -8,6 +9,7 @@ import com.nchu.imagecompress.util.ThemeUtil;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -39,14 +41,15 @@ public class ResultDialog extends JDialog {
     /**
      * 显示批量压缩结果弹窗。
      *
-     * @param owner       父窗口
-     * @param results     所有压缩结果
-     * @param outputDir   输出目录路径
+     * @param owner         父窗口
+     * @param results       所有压缩结果
+     * @param outputDir     输出目录路径
      * @param totalElapsedMs 总耗时（毫秒）
+     * @param appConfig     应用配置（用于读取"自动定位"偏好）
      */
     public static void show(Frame owner, List<CompressResult> results,
-                            String outputDir, long totalElapsedMs) {
-        ResultDialog dialog = new ResultDialog(owner, results, outputDir, totalElapsedMs);
+                            String outputDir, long totalElapsedMs, AppConfig appConfig) {
+        ResultDialog dialog = new ResultDialog(owner, results, outputDir, totalElapsedMs, appConfig);
         dialog.setVisible(true);
     }
 
@@ -54,10 +57,20 @@ public class ResultDialog extends JDialog {
      * 私有构造，通过静态工厂方法调用。
      */
     private ResultDialog(Frame owner, List<CompressResult> results,
-                         String outputDir, long totalElapsedMs) {
+                         String outputDir, long totalElapsedMs, AppConfig appConfig) {
         super(owner, "压缩结果", true);
         setResizable(false);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+
+        // 找到第一个成功的结果（用于定位文件）
+        CompressResult firstSuccess = null;
+        for (CompressResult r : results) {
+            if (r.isSuccess() && r.getOutputPath() != null) {
+                firstSuccess = r;
+                break;
+            }
+        }
+        final CompressResult targetResult = firstSuccess;
 
         // 统计（支持图片和视频两种结果）
         int success = 0, fail = 0;
@@ -141,14 +154,34 @@ public class ResultDialog extends JDialog {
         buttonPanel.setOpaque(false);
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
 
-        // 打开输出目录按钮（使用 SVG 图标替代 emoji）
+        // 打开输出目录按钮（定位到首个成功文件）
         JButton openDirBtn = new JButton("打开输出目录", new FlatSVGIcon("icons/folder.svg"));
         openDirBtn.setFont(ThemeUtil.FONT_BODY);
         openDirBtn.setPreferredSize(new Dimension(150, 36));
         openDirBtn.addActionListener(e -> {
-            openOutputDirectory(outputDir);
+            if (targetResult != null) {
+                // 优先定位到首个成功文件
+                FileUtil.openFileInExplorer(targetResult.getOutputPath());
+            } else {
+                // 无成功文件时回退到打开目录
+                openOutputDirectory(outputDir);
+            }
         });
         buttonPanel.add(openDirBtn);
+
+        // 自动定位 checkbox
+        JCheckBox autoRevealCheck = new JCheckBox("完成后自动定位文件");
+        autoRevealCheck.setFont(ThemeUtil.FONT_TINY);
+        autoRevealCheck.setForeground(ThemeUtil.TEXT_SECONDARY);
+        autoRevealCheck.setSelected(appConfig != null && appConfig.isAutoRevealOutput());
+        autoRevealCheck.setOpaque(false);
+        autoRevealCheck.setFocusPainted(false);
+        autoRevealCheck.addActionListener(e -> {
+            if (appConfig != null) {
+                appConfig.setAutoRevealOutput(autoRevealCheck.isSelected());
+            }
+        });
+        buttonPanel.add(autoRevealCheck);
 
         // 关闭按钮
         JButton closeBtn = new JButton("确定");

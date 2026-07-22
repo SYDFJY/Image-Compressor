@@ -236,4 +236,31 @@ public final class FileUtil {
         }
         return defaultDir.getAbsolutePath();
     }
+
+    // ==================== 系统集成 ====================
+
+    /**
+     * 在 Windows 资源管理器中打开并高亮选中指定文件。
+     *
+     * <p>等效于在命令行执行 {@code explorer /select, "文件绝对路径"}。
+     * 如果不是 Windows 系统或文件不存在，则静默跳过。</p>
+     *
+     * @param filePath 文件绝对路径
+     */
+    public static void openFileInExplorer(String filePath) {
+        if (filePath == null || filePath.isEmpty()) return;
+        File file = new File(filePath);
+        if (!file.exists()) return;
+
+        String osName = System.getProperty("os.name", "").toLowerCase();
+        if (!osName.contains("windows")) return;
+
+        try {
+            String cmd = "explorer /select, \"" + file.getAbsolutePath() + "\"";
+            Runtime.getRuntime().exec(cmd);
+        } catch (Exception e) {
+            // 非致命操作，静默失败
+            System.err.println("[FileUtil] 无法打开资源管理器: " + e.getMessage());
+        }
+    }
 }

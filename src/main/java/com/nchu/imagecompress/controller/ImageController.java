@@ -8,6 +8,7 @@ import com.nchu.imagecompress.model.ImageFileInfo;
 import com.nchu.imagecompress.model.OutputFormat;
 import com.nchu.imagecompress.model.ProgressChunk;
 import com.nchu.imagecompress.service.BatchCompressService;
+import com.nchu.imagecompress.util.FileUtil;
 import com.nchu.imagecompress.service.CompressService;
 import com.nchu.imagecompress.service.ConfigService;
 import com.nchu.imagecompress.service.FileManagerService;
@@ -584,7 +585,7 @@ public class ImageController {
             for (CompressResult r : results) {
                 totalElapsed += r.getElapsedMs();
             }
-            ResultDialog.show(mainFrame, results, outputDir, totalElapsed);
+            ResultDialog.show(mainFrame, results, outputDir, totalElapsed, appConfig);
 
             fileListPanel.getFileJList().repaint();
             updateCompressButtonState();
@@ -773,6 +774,11 @@ public class ImageController {
                     double ratio = originalSize > 0
                             ? (1.0 - (double) compressedSize / originalSize) * 100 : 0;
                     previewPanel.updateComparison(originalSize, compressedSize, ratio);
+
+                    // 自动在资源管理器中定位输出文件
+                    if (appConfig.isAutoRevealOutput()) {
+                        FileUtil.openFileInExplorer(result.getOutputPath());
+                    }
                 } else {
                     statusBar.flashError("压缩失败: " + info.getFileName());
                     ToastNotification.error("压缩失败: "

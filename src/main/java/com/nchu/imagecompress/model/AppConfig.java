@@ -201,6 +201,14 @@ public class AppConfig {
     public String getLastVideoOutputPath() { return lastVideoOutputPath; }
     public void setLastVideoOutputPath(String lastVideoOutputPath) { this.lastVideoOutputPath = lastVideoOutputPath; }
 
+    // ==================== 自动定位 ====================
+
+    /** 压缩完成后是否自动在资源管理器中定位输出文件 */
+    private boolean autoRevealOutput = true;
+
+    public boolean isAutoRevealOutput() { return autoRevealOutput; }
+    public void setAutoRevealOutput(boolean autoRevealOutput) { this.autoRevealOutput = autoRevealOutput; }
+
     @Override
     public String toString() {
         return "AppConfig{theme=" + theme + ", window=" + windowWidth + "x" + windowHeight
