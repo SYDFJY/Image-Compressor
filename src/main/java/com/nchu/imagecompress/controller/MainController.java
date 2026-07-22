@@ -650,6 +650,14 @@ public class MainController implements MainControllerCallback,
         configService.shutdown();
 
         LogUtil.info("[MainController] 应用退出");
+
+        // 释放悬停预览弹窗资源
+        try {
+            fileListPanel.getHoverPopup().dispose();
+        } catch (Exception ignored) {
+            // 悬停预览未初始化时忽略
+        }
+
         mainFrame.dispose();
         System.exit(0);
     }

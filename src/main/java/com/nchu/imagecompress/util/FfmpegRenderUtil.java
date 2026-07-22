@@ -151,14 +151,28 @@ public final class FfmpegRenderUtil {
     }
 
     /**
-     * 启动 ffmpeg 只输出一帧（用于提取封面/首帧）。
+     * 启动 ffmpeg 只输出一帧（用于提取封面/首帧，默认从第 0 秒截取）。
      *
      * @param videoFile   视频文件
      * @param targetWidth 目标宽度
-     * @return 已完成的 ffmpeg Process（需调用方读取这唯一一帧后关闭）
+     * @return 已启动的 ffmpeg Process（需调用方读取这唯一一帧后关闭）
      * @throws IOException 如果 ffmpeg 无法启动
      */
     public static Process startSingleFrame(File videoFile, int targetWidth) throws IOException {
+        return startSingleFrame(videoFile, targetWidth, 0);
+    }
+
+    /**
+     * 启动 ffmpeg 只输出一帧（用于提取封面/首帧/指定时间点快照）。
+     *
+     * @param videoFile   视频文件
+     * @param targetWidth 目标宽度
+     * @param seekSeconds 截取时间点（秒），0 表示第一帧
+     * @return 已启动的 ffmpeg Process（需调用方读取这唯一一帧后关闭）
+     * @throws IOException 如果 ffmpeg 无法启动
+     */
+    public static Process startSingleFrame(File videoFile, int targetWidth,
+                                           double seekSeconds) throws IOException {
         if (videoFile == null || !videoFile.exists()) {
             throw new IOException("视频文件不存在: " + videoFile);
         }
@@ -166,7 +180,7 @@ public final class FfmpegRenderUtil {
         List<String> args = new ArrayList<>();
         args.add(resolveFfmpeg());
         args.add("-ss");
-        args.add("0");
+        args.add(String.format("%.3f", seekSeconds));
         args.add("-loglevel");
         args.add("error");
         args.add("-i");

@@ -84,6 +84,14 @@ public class FileListPanel extends JPanel {
     private String currentQuery = "";
     private int currentSort = 0; // 0=原始, 1=名称, 2=大小
 
+    // v2.3: 悬停预览
+    private HoverPreviewPopup hoverPopup;
+    private final javax.swing.Timer hoverTimer;
+    private int hoveredIndex = -1;
+    private java.awt.Point lastMousePoint = null;
+    /** 大缩略图缓存（200×200），key 同 thumbnailCache */
+    private final Map<String, BufferedImage> largeThumbnailCache = new HashMap<>();
+
     public FileListPanel() {
         setLayout(new BorderLayout(0, 0));
         setBackground(ThemeUtil.BG_CARD);
@@ -165,6 +173,37 @@ public class FileListPanel extends JPanel {
         ThemeUtil.setDynamicForeground(statsLabel, () -> ThemeUtil.TEXT_TERTIARY);
         statsLabel.setBorder(BorderFactory.createEmptyBorder(ThemeUtil.SPACE_SM, 0, 0, 0));
         add(statsLabel, BorderLayout.SOUTH);
+
+        // === 悬停预览 ===
+        hoverPopup = new HoverPreviewPopup();
+        hoverTimer = new javax.swing.Timer(500, e -> triggerHoverPreview());
+        hoverTimer.setRepeats(false);
+
+        fileList.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e) {
+                int index = fileList.locationToIndex(e.getPoint());
+                if (index < 0 || index >= listModel.size()) {
+                    cancelHover();
+                    return;
+                }
+                if (index != hoveredIndex) {
+                    // 行号变化：隐藏旧预览，重新计时
+                    hoverPopup.hide();
+                    hoveredIndex = index;
+                    lastMousePoint = e.getPoint();
+                    hoverTimer.restart();
+                }
+                // 同行微移不重置计时（防止闪烁）
+            }
+        });
+
+        fileList.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                cancelHover();
+            }
+        });
 
         // 主题切换时刷新所有显式设置的背景色（防止背景停留在旧主题颜色）
         ThemeUtil.addThemeChangeListener(() -> {
@@ -303,6 +342,7 @@ public class FileListPanel extends JPanel {
         searchField.setText("");
         currentQuery = "";
         thumbnailCache.clear();
+        largeThumbnailCache.clear();
         updateStats();
     }
 
@@ -458,10 +498,11 @@ public class FileListPanel extends JPanel {
 
     /**
      * 异步加载文件缩略图（仅对图片文件生效，视频文件跳过）。
+     * 同时预缓存 200×200 大缩略图供悬停预览使用。
      * 应在文件导入后调用。
      */
     public void loadThumbnail(FileInfo info) {
-        // 视频文件无缩略图
+        // 视频文件无缩略图（悬停预览走 FFmpeg 异步提取）
         if (info.getFileType() == FileInfo.FileType.VIDEO) {
             return;
         }
@@ -477,11 +518,99 @@ public class FileListPanel extends JPanel {
         } catch (IOException ignored) {
             // 缩略图加载失败，回退为 emoji
         }
+
+        // 同时预生成 200×200 大缩略图（供悬停预览）
+        String largeKey = key + "#200";
+        if (!largeThumbnailCache.containsKey(largeKey)) {
+            try {
+                BufferedImage largeThumb = Thumbnails.of(src)
+                        .size(200, 200)
+                        .asBufferedImage();
+                largeThumbnailCache.put(largeKey, largeThumb);
+            } catch (IOException ignored) {
+                // 大缩略图生成失败不影响列表显示
+            }
+        }
     }
 
     /** 获取缓存的缩略图（可能为 null） */
     public BufferedImage getThumbnail(String path) {
         return thumbnailCache.get(path);
+    }
+
+    /** 获取悬停预览弹窗（供 Controller 在窗口关闭时 dispose） */
+    public HoverPreviewPopup getHoverPopup() {
+        return hoverPopup;
+    }
+
+    // ==================== 悬停预览 ====================
+
+    /**
+     * 悬停计时器触发：显示当前悬停文件的预览弹窗。
+     */
+    private void triggerHoverPreview() {
+        if (hoveredIndex < 0 || hoveredIndex >= listModel.size()) return;
+        FileInfo info = listModel.get(hoveredIndex);
+        if (info == null || info.getSourceFile() == null) return;
+
+        // 转换坐标为屏幕坐标
+        if (lastMousePoint == null) return;
+        java.awt.Point screenPoint = new java.awt.Point(lastMousePoint);
+        javax.swing.SwingUtilities.convertPointToScreen(screenPoint, fileList);
+
+        if (info.getFileType() == FileInfo.FileType.IMAGE) {
+            // 图片：从大缩略图缓存取
+            String largeKey = info.getSourceFile().getAbsolutePath() + "#200";
+            BufferedImage largeThumb = largeThumbnailCache.get(largeKey);
+            if (largeThumb != null) {
+                hoverPopup.show(screenPoint, largeThumb);
+            }
+        } else if (info.getFileType() == FileInfo.FileType.VIDEO) {
+            // 视频：检查缓存，未命中则异步提取
+            String videoKey = info.getSourceFile().getAbsolutePath() + "#video200";
+            BufferedImage cached = largeThumbnailCache.get(videoKey);
+            if (cached != null) {
+                hoverPopup.show(screenPoint, cached);
+            } else {
+                // 异步提取视频首帧
+                final int idx = hoveredIndex;
+                final java.awt.Point pt = new java.awt.Point(screenPoint);
+                new Thread(() -> {
+                    try {
+                        Process proc = com.nchu.imagecompress.util.FfmpegRenderUtil
+                                .startSingleFrame(info.getSourceFile(), 200, 0);
+                        java.awt.Dimension dim = com.nchu.imagecompress.util.FfmpegRenderUtil
+                                .calculatePreviewSize(
+                                        ((com.nchu.imagecompress.model.VideoFileInfo) info).getWidth(),
+                                        ((com.nchu.imagecompress.model.VideoFileInfo) info).getHeight(),
+                                        200);
+                        byte[] rgb = com.nchu.imagecompress.util.FfmpegRenderUtil
+                                .readFrame(proc.getInputStream(), dim.width, dim.height);
+                        if (rgb != null) {
+                            BufferedImage frame = com.nchu.imagecompress.util.FfmpegRenderUtil
+                                    .rgbToImage(rgb, dim.width, dim.height);
+                            largeThumbnailCache.put(videoKey, frame);
+                            // 只有当前悬停行没变时才显示
+                            if (hoveredIndex == idx) {
+                                javax.swing.SwingUtilities.invokeLater(() ->
+                                        hoverPopup.show(pt, frame));
+                            }
+                        }
+                        proc.destroy();
+                    } catch (Exception ignored) {
+                        // 视频首帧提取失败，静默跳过
+                    }
+                }, "Video-Thumbnail-Extractor").start();
+            }
+        }
+    }
+
+    /** 取消悬停：隐藏弹窗 + 停止计时器 + 重置状态 */
+    private void cancelHover() {
+        hoverTimer.stop();
+        hoverPopup.hide();
+        hoveredIndex = -1;
+        lastMousePoint = null;
     }
 
     // ==================== 内部方法 ====================
