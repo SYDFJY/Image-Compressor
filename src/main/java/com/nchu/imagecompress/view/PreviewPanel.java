@@ -614,6 +614,23 @@ public class PreviewPanel extends JPanel {
         }
     }
 
+    /** v2.5.2: 仅清除效果图槽位（保留原图），切换文件时调用以清除旧压缩效果 */
+    public void clearEffect() {
+        canvas.clearEffectImage();
+        if (currentPreviewMode == 1 || currentPreviewMode == 2) {
+            setPreviewMode(0);
+        }
+    }
+
+    /** v2.5.2: 清除对比数据浮层（切换文件时调用，避免显示旧文件指标） */
+    public void clearComparison() {
+        overlayBar.setVisible(false);
+        origSizeLabel.setText("—");
+        compSizeLabel.setText("—");
+        ratioLabel.setText("—");
+        dimsLabel.setText("—");
+    }
+
     public void clearPreview() {
         canvas.clearImage();
         overlayBar.setVisible(false);

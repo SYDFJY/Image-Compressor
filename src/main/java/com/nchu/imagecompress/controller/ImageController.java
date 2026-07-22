@@ -301,9 +301,14 @@ public class ImageController {
             });
         }
 
+        // v2.5.2: 批量导入所有文件，一次性 applyFilter 避免逐文件列表重建
+        List<FileInfo> dedupedInfo = new ArrayList<>(deduped.size());
         for (ImageFileInfo info : deduped) {
-            fileListPanel.addFile(info);
-            // v2.4: 填充大缩略图缓存，否则悬停预览无法工作
+            dedupedInfo.add(info);
+        }
+        fileListPanel.addFiles(dedupedInfo);
+        // v2.4: 填充大缩略图缓存
+        for (ImageFileInfo info : deduped) {
             fileListPanel.loadThumbnail(info);
         }
 
@@ -349,6 +354,10 @@ public class ImageController {
         final ImageFileInfo info = (ImageFileInfo) selected;
         if (info.getSourceFile() == null) return;
         final File sourceFile = info.getSourceFile();
+
+        // v2.5.2: 切换文件时清除旧的压缩效果和对比数据，防止对比错乱
+        previewPanel.clearEffect();
+        previewPanel.clearComparison();
 
         // 保存原始大小用于预估输出大小
         selectedOriginalSize = info.getOriginalSize();
@@ -472,7 +481,8 @@ public class ImageController {
      * 开始图片压缩（批量或单文件）。
      */
     public void onStartCompress() {
-        List<ImageFileInfo> fileList = fileListPanel.getImageFileList();
+        // v2.5.2: 从主数据源 allFiles 获取完整列表（不受搜索过滤影响）
+        List<ImageFileInfo> fileList = fileListPanel.getAllImageFiles();
         if (fileList.isEmpty()) {
             ToastNotification.warning("请先导入图片文件");
             return;
@@ -751,13 +761,17 @@ public class ImageController {
      */
     public void compressSingleFile(ImageFileInfo info) {
         CompressConfig config = buildCompressConfig();
+        // v2.5.2: 应用逐文件参数覆盖（与 BatchCompressService 保持一致）
+        final CompressConfig effectiveConfig = info.hasPerFileConfig()
+                ? config.applyOverride(info.getPerFileConfig())
+                : config;
         callback.setCompressingState(true);
         info.setFileInfoStatus(FileInfo.Status.PROCESSING);
         fileListPanel.getFileJList().repaint();
         statusBar.showProgress(0, "1/1", "正在压缩 " + info.getFileName() + "...");
 
         new Thread(() -> {
-            CompressResult result = compressService.compress(info, config);
+            CompressResult result = compressService.compress(info, effectiveConfig);
             SwingUtilities.invokeLater(() -> {
                 info.setFileInfoStatus(result.isSuccess()
                         ? FileInfo.Status.SUCCESS

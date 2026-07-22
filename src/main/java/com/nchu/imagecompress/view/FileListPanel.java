@@ -491,6 +491,20 @@ public class FileListPanel extends JPanel {
     }
 
     /**
+     * v2.5.2: 从主数据源 allFiles 获取所有图片文件（不受搜索/排序过滤影响）。
+     * 用于压缩任务等需要完整文件列表的场景。
+     */
+    public List<ImageFileInfo> getAllImageFiles() {
+        List<ImageFileInfo> images = new ArrayList<>();
+        for (FileInfo info : allFiles) {
+            if (info instanceof ImageFileInfo) {
+                images.add((ImageFileInfo) info);
+            }
+        }
+        return images;
+    }
+
+    /**
      * 获取文件列表中的视频文件。
      */
     @SuppressWarnings("unchecked")

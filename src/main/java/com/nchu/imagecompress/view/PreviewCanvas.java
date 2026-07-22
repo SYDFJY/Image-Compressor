@@ -123,6 +123,12 @@ public class PreviewCanvas extends JPanel {
         repaint();
     }
 
+    /** v2.5.2: 仅清除效果图（保留原图），用于文件切换时避免对比错乱 */
+    public void clearEffectImage() {
+        this.effectImage = null;
+        repaint();
+    }
+
     public void setEffectImage(BufferedImage effectImage) {
         this.effectImage = effectImage;
         repaint();
