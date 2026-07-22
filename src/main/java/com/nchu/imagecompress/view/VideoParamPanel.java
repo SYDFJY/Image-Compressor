@@ -72,7 +72,7 @@ public class VideoParamPanel extends JPanel {
     private JComboBox<String> rateControlModeCombo;
     private javax.swing.JSpinner targetSizeMBSpinner;
     private javax.swing.JTextField startTimeField;
-    private javax.swing.JTextField durationField;
+    private javax.swing.JTextField endTimeField;
 
     // ==================== 批量导出控件 ====================
 
@@ -325,11 +325,11 @@ public class VideoParamPanel extends JPanel {
         startTimeField.setToolTipText("开始时间 (秒)");
         trimPanel.add(new javax.swing.JLabel("起始:"));
         trimPanel.add(startTimeField);
-        durationField = new javax.swing.JTextField(5);
-        durationField.setFont(ThemeUtil.FONT_SMALL);
-        durationField.setToolTipText("持续时长 (秒)，留空=到结尾");
-        trimPanel.add(new javax.swing.JLabel("时长:"));
-        trimPanel.add(durationField);
+        endTimeField = new javax.swing.JTextField(5);
+        endTimeField.setFont(ThemeUtil.FONT_SMALL);
+        endTimeField.setToolTipText("结束时间 (秒)，留空=到视频结尾");
+        trimPanel.add(new javax.swing.JLabel("结束:"));
+        trimPanel.add(endTimeField);
         javax.swing.JLabel trimHint = new javax.swing.JLabel(" 秒");
         trimHint.setFont(ThemeUtil.FONT_TINY);
         ThemeUtil.setDynamicForeground(trimHint, () -> ThemeUtil.TEXT_TERTIARY);
@@ -551,17 +551,19 @@ public class VideoParamPanel extends JPanel {
             return null;
         }
         try {
-            String durText = durationField.getText().trim();
-            if (!durText.isEmpty()) {
-                double val = Double.parseDouble(durText);
-                if (val <= 0) {
-                    ToastNotification.warning("裁剪时长必须大于 0");
+            String endText = endTimeField.getText().trim();
+            if (!endText.isEmpty()) {
+                double endVal = Double.parseDouble(endText);
+                double startVal = config.getStartTimeSeconds();
+                if (endVal <= startVal) {
+                    ToastNotification.warning("结束时间必须大于起始时间（"
+                            + String.format("%.1f", startVal) + " 秒）");
                     return null;
                 }
-                config.setDurationSeconds(val);
+                config.setDurationSeconds(endVal - startVal);
             }
         } catch (NumberFormatException e) {
-            ToastNotification.warning("裁剪时长格式无效，请输入数字秒数（如 30）");
+            ToastNotification.warning("结束时间格式无效，请输入数字秒数（如 30）");
             return null;
         }
 
