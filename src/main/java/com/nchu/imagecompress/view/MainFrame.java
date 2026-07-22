@@ -78,6 +78,7 @@ public class MainFrame extends JFrame {
     private JButton importFolderBtn;
     private JButton clearBtn;
     private JButton themeBtn;
+    private JButton watchFolderBtn;
     // 模式切换分段控件（图片 / 视频）
     private JToggleButton imageModeBtn;
     private JToggleButton videoModeBtn;
@@ -287,6 +288,16 @@ public class MainFrame extends JFrame {
         themeBtn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         ThemeUtil.addThemeChangeListener(() -> themeBtn.setBackground(ThemeUtil.BG_CARD));
         rightPanel.add(themeBtn);
+
+        watchFolderBtn = new JButton("文件夹监控", new FlatSVGIcon("icons/folder.svg"));
+        watchFolderBtn.setFont(ThemeUtil.FONT_SMALL);
+        watchFolderBtn.setToolTipText("设置文件夹自动监控压缩");
+        watchFolderBtn.setFocusPainted(false);
+        ThemeUtil.setDynamicBackground(watchFolderBtn, () -> ThemeUtil.BG_CARD);
+        ThemeUtil.setDynamicForeground(watchFolderBtn, () -> ThemeUtil.TEXT_SECONDARY);
+        watchFolderBtn.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        watchFolderBtn.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        rightPanel.add(watchFolderBtn);
 
         toolBarPanel.add(rightPanel, BorderLayout.EAST);
 
@@ -721,6 +732,7 @@ public class MainFrame extends JFrame {
     public JButton getImportFolderBtn() { return importFolderBtn; }
     public JButton getClearBtn() { return clearBtn; }
     public JButton getThemeBtn() { return themeBtn; }
+    public JButton getWatchFolderBtn() { return watchFolderBtn; }
     public JToggleButton getImageModeBtn() { return imageModeBtn; }
     public JToggleButton getVideoModeBtn() { return videoModeBtn; }
 

@@ -229,6 +229,20 @@ public class AppConfig {
     public String getLastCoverFormat() { return lastCoverFormat; }
     public void setLastCoverFormat(String lastCoverFormat) { this.lastCoverFormat = lastCoverFormat; }
 
+    // ==================== 文件夹监控 ====================
+
+    /** 文件夹监控配置 */
+    private FolderWatchConfig watchConfig = new FolderWatchConfig();
+
+    /** 关闭窗口时是否最小化到系统托盘 */
+    private boolean minimizeToTray = true;
+
+    public FolderWatchConfig getWatchConfig() { return watchConfig; }
+    public void setWatchConfig(FolderWatchConfig watchConfig) { this.watchConfig = watchConfig; }
+
+    public boolean isMinimizeToTray() { return minimizeToTray; }
+    public void setMinimizeToTray(boolean minimizeToTray) { this.minimizeToTray = minimizeToTray; }
+
     @Override
     public String toString() {
         return "AppConfig{theme=" + theme + ", window=" + windowWidth + "x" + windowHeight

@@ -3,6 +3,7 @@ package com.nchu.imagecompress.controller;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.nchu.imagecompress.model.AppConfig;
 import com.nchu.imagecompress.model.FileInfo;
+import com.nchu.imagecompress.model.FolderWatchConfig;
 import com.nchu.imagecompress.model.ImageFileInfo;
 import com.nchu.imagecompress.model.Theme;
 import com.nchu.imagecompress.model.VideoFileInfo;
@@ -15,7 +16,9 @@ import com.nchu.imagecompress.view.FileListPanel;
 import com.nchu.imagecompress.view.MainFrame;
 import com.nchu.imagecompress.view.SettingsDialog;
 import com.nchu.imagecompress.view.StatusBar;
+import com.nchu.imagecompress.view.SystemTrayManager;
 import com.nchu.imagecompress.view.ToastNotification;
+import com.nchu.imagecompress.view.WatchSetupDialog;
 
 import javax.swing.JFileChooser;
 import javax.swing.JMenuItem;
@@ -83,6 +86,12 @@ public class MainController implements MainControllerCallback,
 
     /** 窗口是否正在关闭 */
     private boolean shuttingDown = false;
+
+    /** v2.3: 文件夹监控控制器 */
+    private WatchController watchController;
+
+    /** v2.3: 系统托盘管理器 */
+    private SystemTrayManager systemTrayManager;
 
     /** 切换到视频模式前保存的图片文件列表（切回图片模式时恢复，修复清空 Bug） */
     private List<FileInfo> savedImageFileList = null;
@@ -193,6 +202,7 @@ public class MainController implements MainControllerCallback,
         mainFrame.getImportFolderBtn().addActionListener(e -> onImportFolder());
         mainFrame.getClearBtn().addActionListener(e -> onClearAllFiles());
         mainFrame.getThemeBtn().addActionListener(e -> onToggleTheme());
+        mainFrame.getWatchFolderBtn().addActionListener(e -> onOpenWatchSetup());
 
         // ---- 模式切换分段控件 ----
         mainFrame.getImageModeBtn().addActionListener(e -> {
@@ -342,7 +352,24 @@ public class MainController implements MainControllerCallback,
         mainFrame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
+                // 如果监控正在运行且启用最小化到托盘，则隐藏到托盘
+                if (appConfig.isMinimizeToTray()
+                        && watchController != null
+                        && watchController.isRunning()) {
+                    watchController.minimizeToTray();
+                    return;
+                }
                 onWindowClosing();
+            }
+
+            @Override
+            public void windowIconified(WindowEvent e) {
+                // 最小化到托盘（如果监控正在运行）
+                if (appConfig.isMinimizeToTray()
+                        && watchController != null
+                        && watchController.isRunning()) {
+                    watchController.minimizeToTray();
+                }
             }
         });
 
@@ -592,6 +619,48 @@ public class MainController implements MainControllerCallback,
     }
 
     /**
+     * 打开文件夹监控设置对话框。
+     */
+    public void onOpenWatchSetup() {
+        // 延迟初始化 WatchController
+        if (watchController == null) {
+            watchController = new WatchController(mainFrame);
+            watchController.setOnRestoreFromTray(() -> {});
+            watchController.setOnExitFromTray(() -> {
+                shuttingDown = true;
+                saveWindowState();
+                configService.shutdown();
+                mainFrame.dispose();
+                System.exit(0);
+            });
+        }
+
+        FolderWatchConfig watchConfig = appConfig.getWatchConfig();
+        new WatchSetupDialog(mainFrame,
+                watchConfig,
+                cfg -> {
+                    // 保存配置
+                    configService.saveConfig(appConfig);
+                },
+                cfg -> {
+                    // 启动监控
+                    try {
+                        watchController.start(cfg);
+                    } catch (Exception ex) {
+                        com.nchu.imagecompress.util.LogUtil.info(
+                                "[MainController] 启动监控失败: " + ex.getMessage());
+                        javax.swing.JOptionPane.showMessageDialog(mainFrame,
+                                "启动监控失败: " + ex.getMessage(),
+                                "错误", javax.swing.JOptionPane.ERROR_MESSAGE);
+                    }
+                },
+                () -> {
+                    // 停止监控
+                    watchController.stop();
+                });
+    }
+
+    /**
      * 切换到指定主题并持久化。
      */
     private void switchToTheme(Theme theme) {
@@ -668,6 +737,12 @@ public class MainController implements MainControllerCallback,
         }
 
         shuttingDown = true;
+
+        // 停止文件夹监控并移除托盘图标
+        if (watchController != null) {
+            watchController.stop();
+            watchController.removeTray();
+        }
 
         // 保存窗口状态
         saveWindowState();
