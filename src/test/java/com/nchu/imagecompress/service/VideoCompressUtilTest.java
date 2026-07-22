@@ -83,7 +83,7 @@ public class VideoCompressUtilTest {
         File output = new File("output.mp4");
         VideoCompressConfig config = VideoCompressConfig.getDefault();
 
-        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config);
+        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config, 0);
 
         // 验证基本结构
         assertEquals("ffmpeg", cmd.get(0));
@@ -104,7 +104,7 @@ public class VideoCompressUtilTest {
         VideoCompressConfig config = VideoCompressConfig.getDefault();
         config.setCrf(28);
 
-        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config);
+        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config, 0);
         int crfIndex = cmd.indexOf("-crf");
         assertTrue("Should have -crf flag", crfIndex >= 0);
         assertEquals("28", cmd.get(crfIndex + 1));
@@ -117,7 +117,7 @@ public class VideoCompressUtilTest {
         VideoCompressConfig config = VideoCompressConfig.getDefault();
         config.setAudioMode(VideoCompressConfig.AudioMode.REMOVE);
 
-        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config);
+        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config, 0);
         assertTrue("Should contain -an (no audio)", cmd.contains("-an"));
         assertFalse("Should not contain -c:a when audio removed", cmd.contains("-c:a"));
     }
@@ -129,7 +129,7 @@ public class VideoCompressUtilTest {
         VideoCompressConfig config = VideoCompressConfig.getDefault();
         config.setResolutionMode(VideoCompressConfig.ResolutionMode.R720P);
 
-        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config);
+        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config, 0);
         int vfIndex = cmd.indexOf("-vf");
         assertTrue("Should have -vf flag for scaling", vfIndex >= 0);
         assertTrue("Scale filter should contain 1280:-2 (auto even height)",
@@ -143,7 +143,7 @@ public class VideoCompressUtilTest {
         VideoCompressConfig config = VideoCompressConfig.getDefault();
         config.setResolutionMode(VideoCompressConfig.ResolutionMode.ORIGINAL);
 
-        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config);
+        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config, 0);
         assertFalse("Should not have -vf when keeping original resolution", cmd.contains("-vf"));
     }
 
@@ -154,7 +154,7 @@ public class VideoCompressUtilTest {
         VideoCompressConfig config = VideoCompressConfig.getDefault();
         config.setFpsMode(VideoCompressConfig.FpsMode.FPS_30);
 
-        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config);
+        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config, 0);
         int rIndex = cmd.indexOf("-r");
         assertTrue("Should have -r flag for fps", rIndex >= 0);
         assertEquals("30", cmd.get(rIndex + 1));
@@ -167,7 +167,7 @@ public class VideoCompressUtilTest {
         VideoCompressConfig config = VideoCompressConfig.getDefault();
         config.setFpsMode(VideoCompressConfig.FpsMode.ORIGINAL);
 
-        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config);
+        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config, 0);
         assertFalse("Should not have -r when keeping original fps", cmd.contains("-r"));
     }
 
@@ -178,7 +178,7 @@ public class VideoCompressUtilTest {
         VideoCompressConfig config = VideoCompressConfig.getDefault();
         config.setOutputFormat(VideoCompressConfig.VideoFormat.WEBM);
 
-        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config);
+        List<String> cmd = VideoCompressUtil.buildFfmpegCommand(input, output, config, 0);
         int cvIndex = cmd.indexOf("-c:v");
         assertTrue("Should have video codec", cvIndex >= 0);
         assertEquals("libvpx-vp9", cmd.get(cvIndex + 1));

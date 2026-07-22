@@ -360,8 +360,8 @@ public class VideoPlayerPanel extends JPanel {
                         cardLayout.show(cardPanel, CARD_FFMPEG);
                     }
                 });
-                // play(File) 没有元数据，ffmpeg 内部自行处理
-                ffmpegPlayer.play(videoFile, 0, 0, 0);
+                // play(File) 没有元数据，总时长传 0（进度条不更新）
+                ffmpegPlayer.play(videoFile, 0, 0, 0, 0);
             } else {
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
@@ -466,7 +466,8 @@ public class VideoPlayerPanel extends JPanel {
                     cardLayout.show(cardPanel, CARD_FFMPEG);
                 }
             });
-            ffmpegPlayer.play(videoFile, fps, w, h);
+            long durationMs = (long) (info.getDurationSeconds() * 1000);
+            ffmpegPlayer.play(videoFile, fps, w, h, durationMs);
         } else {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override

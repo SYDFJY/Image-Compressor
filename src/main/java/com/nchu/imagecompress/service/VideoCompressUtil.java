@@ -48,13 +48,15 @@ public final class VideoCompressUtil {
     /**
      * 根据配置构建完整的 FFmpeg 命令行。
      *
-     * @param inputFile  输入视频文件
-     * @param outputFile 输出视频文件
-     * @param config     视频压缩配置
+     * @param inputFile              输入视频文件
+     * @param outputFile             输出视频文件
+     * @param config                 视频压缩配置
+     * @param effectiveDurationSeconds 有效视频时长（秒），用于目标大小→码率换算（已扣除裁剪）
      * @return FFmpeg 命令行参数列表
      */
     public static List<String> buildFfmpegCommand(File inputFile, File outputFile,
-                                                   VideoCompressConfig config) {
+                                                   VideoCompressConfig config,
+                                                   double effectiveDurationSeconds) {
         List<String> cmd = new ArrayList<>();
         cmd.add(VideoUtil.getFfmpegPath());
 
@@ -77,8 +79,18 @@ public final class VideoCompressUtil {
         cmd.add("-c:v");
         cmd.add(videoCodec);
 
-        // --- 码率控制：CRF 画质优先 vs 目标大小模式 ---
-        if (config.getRateControlMode() == VideoCompressConfig.RateControlMode.TARGET_SIZE
+        // --- 码率控制：CRF 画质优先 vs 目标文件大小 vs 目标码率模式 ---
+        if (config.getTargetSizeMB() > 0 && effectiveDurationSeconds > 0) {
+            // 目标文件大小模式：根据目标大小自动计算码率
+            int bitrateKbps = calculateBitrateKbps(config.getTargetSizeMB(),
+                    effectiveDurationSeconds);
+            cmd.add("-b:v");
+            cmd.add(bitrateKbps + "k");
+            cmd.add("-maxrate");
+            cmd.add((bitrateKbps * 3 / 2) + "k");
+            cmd.add("-bufsize");
+            cmd.add((bitrateKbps * 2) + "k");
+        } else if (config.getRateControlMode() == VideoCompressConfig.RateControlMode.TARGET_SIZE
                 && config.getTargetBitrate() > 0) {
             cmd.add("-b:v");
             cmd.add(config.getTargetBitrate() + "k");
@@ -196,7 +208,8 @@ public final class VideoCompressUtil {
                                            VideoProgressCallback callback)
             throws IOException, InterruptedException {
 
-        List<String> command = buildFfmpegCommand(inputFile, outputFile, config);
+        List<String> command = buildFfmpegCommand(inputFile, outputFile, config,
+                totalDurationSeconds);
         LogUtil.info("[VideoCompressUtil] 执行命令: " + String.join(" ", command));
 
         ProcessBuilder pb = new ProcessBuilder(command);
@@ -380,5 +393,27 @@ public final class VideoCompressUtil {
             return String.valueOf((int) Math.round(seconds));
         }
         return String.format("%.3f", seconds);
+    }
+
+    // ==================== 码率计算 ====================
+
+    /**
+     * 根据目标文件大小计算视频码率（kbps）。
+     *
+     * <p>公式：targetSizeMB × 8192 / durationSeconds × 0.95</p>
+     * <ul>
+     *   <li>8192 = 8 (bits/byte) × 1024 (KB/MB)</li>
+     *   <li>0.95 = 预留 5% 给音频流和容器开销</li>
+     * </ul>
+     *
+     * @param targetSizeMB       目标文件大小（MB）
+     * @param durationSeconds    视频有效时长（秒），已扣除裁剪
+     * @return 视频码率（kbps），最低 100 kbps
+     */
+    static int calculateBitrateKbps(double targetSizeMB, double durationSeconds) {
+        double targetBits = targetSizeMB * 8.0 * 1024.0 * 1024.0;
+        double videoBits = targetBits * 0.95;
+        int bitrate = (int) (videoBits / durationSeconds / 1024.0);
+        return Math.max(100, bitrate);
     }
 }

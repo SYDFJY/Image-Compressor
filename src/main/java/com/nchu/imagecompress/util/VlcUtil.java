@@ -140,10 +140,16 @@ public final class VlcUtil {
 
             File vlcDir = new File(jarDir, "standalone/vlc");
             if (!vlcDir.isDirectory()) {
-                // 开发环境：从 target/classes 向上查找
-                File altDir = new File(jarDir.getParentFile(), "dist/standalone/vlc");
-                if (altDir.isDirectory()) vlcDir = altDir;
-                else return null;
+                // 场景1：JAR 运行 — dist/standalone/xxx.jar，vlc/ 是 JAR 的兄弟目录
+                File siblingDir = new File(jarDir, "vlc");
+                if (siblingDir.isDirectory()) {
+                    vlcDir = siblingDir;
+                } else {
+                    // 场景2：IDE 运行 — target/classes/，回退到项目根目录找 dist/standalone/vlc/
+                    File altDir = new File(jarDir.getParentFile(), "dist/standalone/vlc");
+                    if (altDir.isDirectory()) vlcDir = altDir;
+                    else return null;
+                }
             }
 
             File libvlcDll = new File(vlcDir, "libvlc.dll");

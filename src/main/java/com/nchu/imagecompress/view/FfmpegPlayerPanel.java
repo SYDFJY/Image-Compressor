@@ -8,7 +8,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
+import javax.swing.JSlider;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import java.awt.BorderLayout;
@@ -44,7 +44,7 @@ import java.io.InputStream;
  * </ul>
  *
  * @author NCHU-Student
- * @version 1.0.0
+ * @version 1.1.0
  * @since 2026-07-13
  */
 public class FfmpegPlayerPanel extends JPanel {
@@ -74,8 +74,14 @@ public class FfmpegPlayerPanel extends JPanel {
     /** 播放/暂停按钮 */
     private JButton playPauseBtn;
 
-    /** 状态/时间标签 */
-    private JLabel statusLabel;
+    /** 时长标签（当前 / 总时长） */
+    private JLabel durationLabel;
+
+    /** 进度滑块（只读 — ffmpeg 管道不支持 seek） */
+    private JSlider seekSlider;
+
+    /** 音量滑块（禁用 — ffmpeg 管道无音频输出） */
+    private JSlider volumeSlider;
 
     private JPanel controlBar;
 
@@ -90,8 +96,22 @@ public class FfmpegPlayerPanel extends JPanel {
     /** 帧渲染 Timer（EDT） */
     private Timer renderTimer;
 
+    /** 进度同步 Timer（每 200ms 更新进度条和时长） */
+    private Timer progressTimer;
+
     /** 帧间隔（毫秒），由目标帧率决定 */
     private int frameIntervalMs;
+
+    // ==================== 时长追踪 ====================
+
+    /** 视频总时长（毫秒），由调用方传入 */
+    private long totalDurationMs = 0;
+
+    /** 播放开始时的 System.currentTimeMillis()（用于计算已播放时间） */
+    private long playStartTime = 0;
+
+    /** 暂停时已累计的播放时间（毫秒） */
+    private long pausedElapsed = 0;
 
     // ==================== 状态 ====================
 
@@ -116,6 +136,14 @@ public class FfmpegPlayerPanel extends JPanel {
         controlBar.setVisible(false);
         add(controlBar, BorderLayout.SOUTH);
 
+        // 进度同步 Timer（每 200ms 更新进度条和时长标签）
+        progressTimer = new Timer(200, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateProgress();
+            }
+        });
+
         LogUtil.info("[FfmpegPlayerPanel] 初始化完成");
     }
 
@@ -126,7 +154,7 @@ public class FfmpegPlayerPanel extends JPanel {
         bar.setBackground(new Color(30, 30, 30, 230));
         bar.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
-        // 左侧：播放/暂停
+        // --- 左侧：播放/暂停 + 时长 ---
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         leftPanel.setOpaque(false);
 
@@ -145,12 +173,43 @@ public class FfmpegPlayerPanel extends JPanel {
         });
         leftPanel.add(playPauseBtn);
 
-        statusLabel = new JLabel("");
-        statusLabel.setFont(ThemeUtil.FONT_TINY);
-        statusLabel.setForeground(new Color(200, 200, 200));
-        leftPanel.add(statusLabel);
+        durationLabel = new JLabel("00:00 / 00:00");
+        durationLabel.setFont(ThemeUtil.FONT_TINY);
+        durationLabel.setForeground(new Color(200, 200, 200));
+        leftPanel.add(durationLabel);
 
         bar.add(leftPanel, BorderLayout.WEST);
+
+        // --- 中间：进度滑块（只读 — ffmpeg 管道不支持 seek） ---
+        seekSlider = new JSlider(0, 1000, 0);
+        seekSlider.setOpaque(false);
+        seekSlider.setPreferredSize(new Dimension(200, 20));
+        seekSlider.setEnabled(false);
+        seekSlider.setToolTipText("ffmpeg 降级模式不支持拖拽进度");
+        bar.add(seekSlider, BorderLayout.CENTER);
+
+        // --- 右侧：音量（禁用 — ffmpeg 管道无音频输出） ---
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        rightPanel.setOpaque(false);
+
+        JButton volumeBtn = new JButton("🔇");
+        volumeBtn.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
+        volumeBtn.setFocusPainted(false);
+        volumeBtn.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        volumeBtn.setContentAreaFilled(false);
+        volumeBtn.setForeground(Color.GRAY);
+        volumeBtn.setEnabled(false);
+        rightPanel.add(volumeBtn);
+
+        volumeSlider = new JSlider(0, 100, 0);
+        volumeSlider.setOpaque(false);
+        volumeSlider.setPreferredSize(new Dimension(80, 20));
+        volumeSlider.setEnabled(false);
+        volumeSlider.setToolTipText("ffmpeg 降级模式不支持音频输出");
+        rightPanel.add(volumeSlider);
+
+        bar.add(rightPanel, BorderLayout.EAST);
+
         return bar;
     }
 
@@ -159,12 +218,14 @@ public class FfmpegPlayerPanel extends JPanel {
     /**
      * 加载并自动播放视频（ffmpeg 管道帧渲染）。
      *
-     * @param videoFile 视频文件
-     * @param origFps   原始帧率（用于显示，实际渲染使用固定预览帧率）
-     * @param origW     原始宽度（像素）
-     * @param origH     原始高度（像素）
+     * @param videoFile       视频文件
+     * @param origFps         原始帧率（用于显示，实际渲染使用固定预览帧率）
+     * @param origW           原始宽度（像素）
+     * @param origH           原始高度（像素）
+     * @param totalDurationMs 视频总时长（毫秒），≤0 时进度条不更新
      */
-    public void play(final File videoFile, double origFps, int origW, int origH) {
+    public void play(final File videoFile, double origFps, int origW, int origH,
+                     long totalDurationMs) {
         if (videoFile == null || !videoFile.exists()) {
             LogUtil.info("[FfmpegPlayerPanel] 视频文件不存在: " + videoFile);
             return;
@@ -176,13 +237,14 @@ public class FfmpegPlayerPanel extends JPanel {
         this.currentVideo = videoFile;
         this.videoWidth = origW;
         this.videoHeight = origH;
+        this.totalDurationMs = totalDurationMs;
+        this.pausedElapsed = 0;
 
         // 计算预览尺寸
         Dimension size = FfmpegRenderUtil.calculatePreviewSize(origW, origH, TARGET_WIDTH);
         this.displayWidth = size.width;
         this.displayHeight = size.height;
         this.frameSize = displayWidth * displayHeight * 3;
-        // 使用原始视频帧率计算 Timer 间隔（fps=0 时默认 24fps）
         double effectiveFps = (origFps > 0) ? origFps : 24.0;
         this.frameIntervalMs = (int) (1000.0 / effectiveFps);
 
@@ -192,7 +254,8 @@ public class FfmpegPlayerPanel extends JPanel {
             @Override
             public void run() {
                 controlBar.setVisible(true);
-                statusLabel.setText("加载中...");
+                seekSlider.setValue(0);
+                durationLabel.setText("加载中... / " + formatMs(totalDurationMs));
                 playPauseBtn.setText("⏳");
                 playPauseBtn.setEnabled(false);
                 repaint();
@@ -222,11 +285,9 @@ public class FfmpegPlayerPanel extends JPanel {
                         byte[] frameData = FfmpegRenderUtil.readFrame(
                                 in, displayWidth, displayHeight);
                         if (frameData == null) {
-                            // 流结束
                             break;
                         }
 
-                        // 转换为 BufferedImage
                         BufferedImage img = FfmpegRenderUtil.rgbToImage(
                                 frameData, displayWidth, displayHeight);
                         currentFrame = img;
@@ -240,7 +301,9 @@ public class FfmpegPlayerPanel extends JPanel {
                                         setState(State.PLAYING);
                                         playPauseBtn.setText("⏸");
                                         playPauseBtn.setEnabled(true);
-                                        statusLabel.setText(formatTime(0));
+                                        playStartTime = System.currentTimeMillis();
+                                        progressTimer.start();
+                                        updateProgress();
                                         repaint();
                                     }
                                 }
@@ -257,22 +320,24 @@ public class FfmpegPlayerPanel extends JPanel {
                                 @Override
                                 public void run() {
                                     setState(State.ERROR);
-                                    statusLabel.setText("播放出错");
+                                    durationLabel.setText("播放出错");
                                     playPauseBtn.setText("⚠");
                                     playPauseBtn.setEnabled(false);
                                 }
                             });
                         } else if (state == State.PLAYING || state == State.PAUSED) {
-                            // 正常播放结束
                             SwingUtilities.invokeLater(new Runnable() {
                                 @Override
                                 public void run() {
                                     if (renderTimer != null) {
                                         renderTimer.stop();
                                     }
+                                    progressTimer.stop();
                                     setState(State.STOPPED);
                                     playPauseBtn.setText("重试");
-                                    statusLabel.setText("播放完毕");
+                                    seekSlider.setValue(1000);
+                                    durationLabel.setText(formatMs(totalDurationMs)
+                                            + " / " + formatMs(totalDurationMs));
                                 }
                             });
                         }
@@ -286,7 +351,7 @@ public class FfmpegPlayerPanel extends JPanel {
                         @Override
                         public void run() {
                             setState(State.ERROR);
-                            statusLabel.setText("播放失败");
+                            durationLabel.setText("播放失败");
                             playPauseBtn.setText("⚠");
                             playPauseBtn.setEnabled(false);
                         }
@@ -310,7 +375,8 @@ public class FfmpegPlayerPanel extends JPanel {
                 currentFrame = null;
                 controlBar.setVisible(false);
                 playPauseBtn.setText("▶");
-                statusLabel.setText("");
+                seekSlider.setValue(0);
+                durationLabel.setText("00:00 / 00:00");
                 repaint();
             }
         });
@@ -324,9 +390,12 @@ public class FfmpegPlayerPanel extends JPanel {
             if (renderTimer != null) {
                 renderTimer.stop();
             }
+            if (progressTimer != null) {
+                progressTimer.stop();
+            }
+            pausedElapsed += System.currentTimeMillis() - playStartTime;
             setState(State.PAUSED);
             playPauseBtn.setText("▶");
-            statusLabel.setText("已暂停");
         }
     }
 
@@ -338,9 +407,12 @@ public class FfmpegPlayerPanel extends JPanel {
             if (renderTimer != null) {
                 renderTimer.start();
             }
+            playStartTime = System.currentTimeMillis();
+            if (progressTimer != null) {
+                progressTimer.start();
+            }
             setState(State.PLAYING);
             playPauseBtn.setText("⏸");
-            statusLabel.setText("");
         }
     }
 
@@ -353,8 +425,7 @@ public class FfmpegPlayerPanel extends JPanel {
         } else if (state == State.PAUSED) {
             resume();
         } else if (state == State.STOPPED && currentVideo != null) {
-            // 播放完毕后重新播放
-            play(currentVideo, 0, videoWidth, videoHeight);
+            play(currentVideo, 0, videoWidth, videoHeight, totalDurationMs);
         }
     }
 
@@ -386,13 +457,11 @@ public class FfmpegPlayerPanel extends JPanel {
 
         BufferedImage frame = currentFrame;
         if (frame != null) {
-            // 高质量缩放
             g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
                     RenderingHints.VALUE_INTERPOLATION_BILINEAR);
             g2d.setRenderingHint(RenderingHints.KEY_RENDERING,
                     RenderingHints.VALUE_RENDER_QUALITY);
 
-            // 居中绘制，保持宽高比
             int panelW = getWidth();
             int panelH = getHeight();
             double scale = Math.min(
@@ -405,7 +474,6 @@ public class FfmpegPlayerPanel extends JPanel {
 
             g2d.drawImage(frame, x, y, drawW, drawH, this);
         } else if (state == State.LOADING) {
-            // 加载中指示
             g2d.setColor(new Color(200, 200, 200));
             g2d.setFont(ThemeUtil.FONT_BODY);
             String text = "正在加载视频...";
@@ -422,13 +490,14 @@ public class FfmpegPlayerPanel extends JPanel {
      * 停止播放（内部，不更新 UI 状态）。
      */
     private void stopInternal() {
-        // 停止 Timer
         if (renderTimer != null) {
             renderTimer.stop();
             renderTimer = null;
         }
+        if (progressTimer != null) {
+            progressTimer.stop();
+        }
 
-        // 中断读取线程
         if (readerThread != null && readerThread.isAlive()) {
             readerThread.interrupt();
             try {
@@ -439,7 +508,6 @@ public class FfmpegPlayerPanel extends JPanel {
             readerThread = null;
         }
 
-        // 销毁 ffmpeg 进程
         if (ffmpegProcess != null) {
             ffmpegProcess.destroy();
             try {
@@ -464,16 +532,50 @@ public class FfmpegPlayerPanel extends JPanel {
         }
     }
 
+    // ==================== 进度更新 ====================
+
+    /**
+     * 更新进度条和时长标签（由 progressTimer 每 200ms 调用一次）。
+     */
+    private void updateProgress() {
+        if (state != State.PLAYING) return;
+
+        long elapsed = pausedElapsed + (System.currentTimeMillis() - playStartTime);
+
+        if (totalDurationMs > 0) {
+            int sliderVal = (int) (elapsed * 1000L / totalDurationMs);
+            seekSlider.setValue(Math.min(sliderVal, 1000));
+            durationLabel.setText(formatMs(elapsed) + " / " + formatMs(totalDurationMs));
+
+            if (elapsed >= totalDurationMs) {
+                progressTimer.stop();
+                seekSlider.setValue(1000);
+                durationLabel.setText(formatMs(totalDurationMs) + " / " + formatMs(totalDurationMs));
+                if (renderTimer != null) {
+                    renderTimer.stop();
+                }
+                setState(State.STOPPED);
+                playPauseBtn.setText("重试");
+            }
+        } else {
+            durationLabel.setText(formatMs(elapsed) + " / --:--");
+        }
+    }
+
     // ==================== 工具方法 ====================
 
     /**
-     * 格式化毫秒为时间字符串（MM:SS）。
+     * 格式化毫秒为时间字符串（HH:MM:SS 或 MM:SS）。
      */
-    static String formatTime(long totalMs) {
+    static String formatMs(long totalMs) {
         if (totalMs <= 0) return "00:00";
         long totalSec = totalMs / 1000;
-        int m = (int) (totalSec / 60);
+        int h = (int) (totalSec / 3600);
+        int m = (int) ((totalSec % 3600) / 60);
         int s = (int) (totalSec % 60);
+        if (h > 0) {
+            return String.format("%d:%02d:%02d", h, m, s);
+        }
         return String.format("%02d:%02d", m, s);
     }
 }

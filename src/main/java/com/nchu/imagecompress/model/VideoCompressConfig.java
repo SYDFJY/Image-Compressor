@@ -368,6 +368,18 @@ public class VideoCompressConfig {
         private AudioMode audioMode = AudioMode.KEEP;
         private VideoFormat outputFormat = VideoFormat.ORIGINAL;
 
+        /** 自定义输出文件名（不含扩展名），为空时继承 base */
+        private String customName = "";
+
+        /** 裁剪起始时间（秒），-1=继承 base */
+        private double startTimeSeconds = -1;
+
+        /** 裁剪时长（秒），-1=继承 base。注意：UI 输入"结束时间"，buildPreset 内部转为时长 */
+        private double durationSeconds = -1;
+
+        /** 目标输出文件大小（MB），-1=继承 base，>0=码率模式 */
+        private double targetSizeMB = -1;
+
         public VariantPreset() {}
 
         public VariantPreset(ResolutionMode resolutionMode, FpsMode fpsMode, int crf,
@@ -395,6 +407,18 @@ public class VideoCompressConfig {
 
         public VideoFormat getOutputFormat() { return outputFormat; }
         public void setOutputFormat(VideoFormat outputFormat) { this.outputFormat = outputFormat; }
+
+        public String getCustomName() { return customName; }
+        public void setCustomName(String customName) { this.customName = customName != null ? customName : ""; }
+
+        public double getStartTimeSeconds() { return startTimeSeconds; }
+        public void setStartTimeSeconds(double s) { this.startTimeSeconds = s; }
+
+        public double getDurationSeconds() { return durationSeconds; }
+        public void setDurationSeconds(double s) { this.durationSeconds = s; }
+
+        public double getTargetSizeMB() { return targetSizeMB; }
+        public void setTargetSizeMB(double s) { this.targetSizeMB = s; }
 
         // ==================== 工具方法 ====================
 
@@ -449,9 +473,21 @@ public class VideoCompressConfig {
             merged.setOutputPath(base.getOutputPath());
             merged.setSuffix(buildSuffix());
             merged.setOverwrite(base.isOverwrite());
-            // 继承 base 的裁剪参数
-            merged.setStartTimeSeconds(base.getStartTimeSeconds());
-            merged.setDurationSeconds(base.getDurationSeconds());
+
+            // 裁剪：变体值优先（≥0 表示用户显式设置），否则继承 base
+            merged.setStartTimeSeconds(this.startTimeSeconds >= 0
+                    ? this.startTimeSeconds : base.getStartTimeSeconds());
+            merged.setDurationSeconds(this.durationSeconds >= 0
+                    ? this.durationSeconds : base.getDurationSeconds());
+
+            // 自定义文件名：变体值优先，否则继承 base
+            merged.setCustomName(this.customName != null && !this.customName.trim().isEmpty()
+                    ? this.customName.trim() : base.getCustomName());
+
+            // 目标文件大小：变体值优先（≥0 表示用户显式设置），否则继承 base
+            merged.setTargetSizeMB(this.targetSizeMB >= 0
+                    ? (int) this.targetSizeMB : base.getTargetSizeMB());
+
             return merged;
         }
 

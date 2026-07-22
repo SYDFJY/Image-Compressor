@@ -225,7 +225,7 @@ public class ParamPanel extends JPanel {
         scaleInfoBtn.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
         scaleInfoBtn.setFocusPainted(false);
         ThemeUtil.setDynamicForeground(scaleInfoBtn, () -> ThemeUtil.PRIMARY);
-        scaleInfoBtn.setBackground(ThemeUtil.BG_HOVER);
+        ThemeUtil.setDynamicBackground(scaleInfoBtn, () -> ThemeUtil.BG_HOVER);
         scaleInfoBtn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
         scaleInfoBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         scaleInfoBtn.setToolTipText("点击了解缩放功能");
@@ -296,7 +296,7 @@ public class ParamPanel extends JPanel {
         formatInfoBtn.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
         formatInfoBtn.setFocusPainted(false);
         ThemeUtil.setDynamicForeground(formatInfoBtn, () -> ThemeUtil.PRIMARY);
-        formatInfoBtn.setBackground(ThemeUtil.BG_HOVER);
+        ThemeUtil.setDynamicBackground(formatInfoBtn, () -> ThemeUtil.BG_HOVER);
         formatInfoBtn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
         formatInfoBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         formatInfoBtn.setToolTipText("点击查看各格式说明");
@@ -475,12 +475,12 @@ public class ParamPanel extends JPanel {
     }
 
     private void applyPresetSelected(JButton btn) {
-        btn.setBackground(ThemeUtil.PRIMARY);
+        ThemeUtil.setDynamicBackground(btn, () -> ThemeUtil.PRIMARY);
         btn.setForeground(java.awt.Color.WHITE);
     }
 
     private void applyPresetUnselected(JButton btn) {
-        btn.setBackground(ThemeUtil.BG_HOVER);
+        ThemeUtil.setDynamicBackground(btn, () -> ThemeUtil.BG_HOVER);
         ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.TEXT_SECONDARY);
     }
 

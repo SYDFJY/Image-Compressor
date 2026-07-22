@@ -222,7 +222,7 @@ public class VideoParamPanel extends JPanel {
         formatInfoBtn.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
         formatInfoBtn.setFocusPainted(false);
         ThemeUtil.setDynamicForeground(formatInfoBtn, () -> ThemeUtil.PRIMARY);
-        formatInfoBtn.setBackground(ThemeUtil.BG_HOVER);
+        ThemeUtil.setDynamicBackground(formatInfoBtn, () -> ThemeUtil.BG_HOVER);
         formatInfoBtn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
         formatInfoBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         formatInfoBtn.setToolTipText("点击查看各格式说明");
@@ -294,9 +294,37 @@ public class VideoParamPanel extends JPanel {
 
         // --- 输出目录 ---
         addFormLabel(panel, gbc, "输出目录", row);
+
+        JPanel outputDirPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, ThemeUtil.SPACE_SM, 0));
+        outputDirPanel.setOpaque(false);
+
         outputDirButton = new JButton("选择目录...");
         outputDirButton.setFont(ThemeUtil.FONT_BODY);
-        addFormControl(panel, gbc, outputDirButton, row);
+        outputDirPanel.add(outputDirButton);
+
+        JButton openOutputDirBtn = new JButton("📂 打开目录");
+        openOutputDirBtn.setFont(ThemeUtil.FONT_SMALL);
+        openOutputDirBtn.setFocusPainted(false);
+        ThemeUtil.setDynamicForeground(openOutputDirBtn, () -> ThemeUtil.TEXT_SECONDARY);
+        ThemeUtil.setDynamicBackground(openOutputDirBtn, () -> ThemeUtil.BG_HOVER);
+        openOutputDirBtn.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
+        openOutputDirBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        openOutputDirBtn.addActionListener(e -> {
+            String path = outputDirButton.getText();
+            if (path != null && !path.isEmpty() && !path.equals("选择目录...")) {
+                java.io.File dir = new java.io.File(path);
+                if (dir.isDirectory()) {
+                    try {
+                        java.awt.Desktop.getDesktop().open(dir);
+                    } catch (Exception ex) {
+                        ToastNotification.warning("无法打开目录: " + ex.getMessage());
+                    }
+                }
+            }
+        });
+        outputDirPanel.add(openOutputDirBtn);
+
+        addFormControl(panel, gbc, outputDirPanel, row);
         row++;
 
         // --- 覆盖设置 ---
@@ -422,12 +450,12 @@ public class VideoParamPanel extends JPanel {
     }
 
     private void applyPresetSelected(JButton btn) {
-        btn.setBackground(ThemeUtil.PRIMARY);
-        btn.setForeground(java.awt.Color.WHITE);
+        ThemeUtil.setDynamicBackground(btn, () -> ThemeUtil.PRIMARY);
+        btn.setForeground(java.awt.Color.WHITE);  // 白色通用，无需动态
     }
 
     private void applyPresetUnselected(JButton btn) {
-        btn.setBackground(ThemeUtil.BG_HOVER);
+        ThemeUtil.setDynamicBackground(btn, () -> ThemeUtil.BG_HOVER);
         ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.TEXT_SECONDARY);
     }
 
@@ -689,7 +717,10 @@ public class VideoParamPanel extends JPanel {
         batchSectionPanel.setBorder(BorderFactory.createEmptyBorder(
                 ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0));
 
-        // --- 复选框（始终可见） ---
+        // --- 复选框 + 帮助按钮（始终可见） ---
+        JPanel checkBoxRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        checkBoxRow.setOpaque(false);
+
         batchModeCheckBox = new JCheckBox("启用多版本批量导出");
         batchModeCheckBox.setFont(ThemeUtil.FONT_BODY);
         ThemeUtil.setDynamicForeground(batchModeCheckBox, () -> ThemeUtil.TEXT_PRIMARY);
@@ -698,12 +729,32 @@ public class VideoParamPanel extends JPanel {
             boolean on = batchModeCheckBox.isSelected();
             batchContentPanel.setVisible(on);
             if (on && variantRows.isEmpty()) {
-                addVariant(); // 默认添加一行
+                addVariant();
             }
-            // 按钮文字由 MainController.updateVideoCompressButtonState() 负责更新
-            // （MainController 在 batchModeCheckBox 上注册了第二个监听器，持有实际文件数）
         });
-        batchSectionPanel.add(batchModeCheckBox, BorderLayout.NORTH);
+        checkBoxRow.add(batchModeCheckBox);
+
+        // "?" 帮助按钮
+        JButton batchHelpBtn = new JButton("?");
+        batchHelpBtn.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
+        batchHelpBtn.setFocusPainted(false);
+        ThemeUtil.setDynamicForeground(batchHelpBtn, () -> ThemeUtil.PRIMARY);
+        ThemeUtil.setDynamicBackground(batchHelpBtn, () -> ThemeUtil.BG_HOVER);
+        batchHelpBtn.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+        batchHelpBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        batchHelpBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
+                "启用后可以一次性导出多个版本（如不同画质、分辨率、帧率、格式的组合）。\n\n"
+                        + "每个变体都有独立的质量滑块和参数设置。\n"
+                        + "第二行的自定义文件名、裁剪起止、目标大小留空时会从基础设置继承。\n\n"
+                        + "示例：\n"
+                        + "  • 变体 1：CRF 23 + 1080p + MP4（发布版）\n"
+                        + "  • 变体 2：CRF 28 + 720p + WebM（预览版）\n"
+                        + "  • 变体 3：CRF 18 + 原分辨率 + MP4（存档版）\n\n"
+                        + "选择多个文件时，每个文件都会生成对应的变体版本。",
+                "多版本批量导出说明", JOptionPane.INFORMATION_MESSAGE));
+        checkBoxRow.add(batchHelpBtn);
+
+        batchSectionPanel.add(checkBoxRow, BorderLayout.NORTH);
 
         // --- 变体内容区（可折叠） ---
         batchContentPanel = new JPanel(new BorderLayout(0, ThemeUtil.SPACE_SM));
@@ -786,6 +837,13 @@ public class VideoParamPanel extends JPanel {
         private final JComboBox<String> audioCombo;
         private final JComboBox<String> formatCombo;
         private final JButton deleteBtn;
+
+        // 变体级自定义参数（第二行）
+        private final javax.swing.JTextField customNameField;
+        private final javax.swing.JTextField trimStartField;
+        private final javax.swing.JTextField trimEndField;
+        private final javax.swing.JTextField targetSizeField;
+
         private Runnable onDelete;
 
         private static final String[] RES_ITEMS = {"原始", "480p", "720p", "1080p", "4K"};
@@ -819,9 +877,15 @@ public class VideoParamPanel extends JPanel {
         };
 
         VariantRow(int defaultQuality) {
-            setLayout(new FlowLayout(FlowLayout.LEFT, 4, 2));
+            setLayout(new javax.swing.BoxLayout(this, javax.swing.BoxLayout.Y_AXIS));
             setOpaque(false);
-            setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+            setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, ThemeUtil.BORDER),
+                    BorderFactory.createEmptyBorder(4, 0, 4, 0)));
+
+            // ========== 第一行：压缩参数 ==========
+            JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+            row1.setOpaque(false);
 
             // --- 画质滑块 + 标签 ---
             JPanel crfPanel = new JPanel(new BorderLayout(2, 0));
@@ -845,27 +909,27 @@ public class VideoParamPanel extends JPanel {
             crfSlider.addChangeListener(e -> crfLabel.setText(String.valueOf(crfSlider.getValue())));
             crfPanel.add(crfSlider, BorderLayout.CENTER);
             crfPanel.add(crfLabel, BorderLayout.EAST);
-            add(crfPanel);
+            row1.add(crfPanel);
 
             // --- 分辨率 ---
             JPanel resPanel = labeledCombo("分辨率:", RES_ITEMS);
             resolutionCombo = (JComboBox<String>) resPanel.getComponent(1);
-            add(resPanel);
+            row1.add(resPanel);
 
             // --- 帧率 ---
             JPanel fpsPanel = labeledCombo("帧率:", FPS_ITEMS);
             fpsCombo = (JComboBox<String>) fpsPanel.getComponent(1);
-            add(fpsPanel);
+            row1.add(fpsPanel);
 
             // --- 音频 ---
             JPanel audPanel = labeledCombo("音频:", AUDIO_ITEMS);
             audioCombo = (JComboBox<String>) audPanel.getComponent(1);
-            add(audPanel);
+            row1.add(audPanel);
 
             // --- 格式 ---
             JPanel fmtPanel = labeledCombo("格式:", FMT_ITEMS);
             formatCombo = (JComboBox<String>) fmtPanel.getComponent(1);
-            add(fmtPanel);
+            row1.add(fmtPanel);
 
             // --- 删除按钮 ---
             deleteBtn = new JButton(new FlatSVGIcon("icons/delete.svg"));
@@ -878,7 +942,63 @@ public class VideoParamPanel extends JPanel {
             deleteBtn.addActionListener(e -> {
                 if (onDelete != null) onDelete.run();
             });
-            add(deleteBtn);
+            row1.add(deleteBtn);
+
+            add(row1);
+
+            // ========== 第二行：自定义命名 + 裁剪 + 大小 ==========
+            JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+            row2.setOpaque(false);
+
+            // --- 文件名 ---
+            JPanel namePanel = new JPanel(new BorderLayout(1, 0));
+            namePanel.setOpaque(false);
+            JLabel nameLbl = new JLabel("名:");
+            nameLbl.setFont(ThemeUtil.FONT_TINY);
+            ThemeUtil.setDynamicForeground(nameLbl, () -> ThemeUtil.TEXT_TERTIARY);
+            namePanel.add(nameLbl, BorderLayout.WEST);
+            customNameField = new javax.swing.JTextField(8);
+            customNameField.setFont(ThemeUtil.FONT_TINY);
+            customNameField.setToolTipText("可选：此变体自定义文件名（不含扩展名），留空=继承基础");
+            namePanel.add(customNameField, BorderLayout.CENTER);
+            row2.add(namePanel);
+
+            // --- 裁剪：起始-结束 ---
+            JPanel trimPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 0));
+            trimPanel.setOpaque(false);
+            JLabel trimLbl = new JLabel("裁剪:");
+            trimLbl.setFont(ThemeUtil.FONT_TINY);
+            ThemeUtil.setDynamicForeground(trimLbl, () -> ThemeUtil.TEXT_TERTIARY);
+            trimPanel.add(trimLbl);
+            trimStartField = new javax.swing.JTextField(3);
+            trimStartField.setFont(ThemeUtil.FONT_TINY);
+            trimStartField.setToolTipText("起始(秒)，留空=继承基础");
+            trimPanel.add(trimStartField);
+            trimPanel.add(new JLabel("-"));
+            trimEndField = new javax.swing.JTextField(3);
+            trimEndField.setFont(ThemeUtil.FONT_TINY);
+            trimEndField.setToolTipText("结束(秒)，留空=继承基础");
+            trimPanel.add(trimEndField);
+            row2.add(trimPanel);
+
+            // --- 目标大小 ---
+            JPanel sizePanel = new JPanel(new BorderLayout(1, 0));
+            sizePanel.setOpaque(false);
+            JLabel sizeLbl = new JLabel("大小:");
+            sizeLbl.setFont(ThemeUtil.FONT_TINY);
+            ThemeUtil.setDynamicForeground(sizeLbl, () -> ThemeUtil.TEXT_TERTIARY);
+            sizePanel.add(sizeLbl, BorderLayout.WEST);
+            targetSizeField = new javax.swing.JTextField(4);
+            targetSizeField.setFont(ThemeUtil.FONT_TINY);
+            targetSizeField.setToolTipText("目标大小(MB)，留空=继承基础");
+            sizePanel.add(targetSizeField, BorderLayout.CENTER);
+            JLabel mbLbl = new JLabel("MB");
+            mbLbl.setFont(ThemeUtil.FONT_TINY);
+            ThemeUtil.setDynamicForeground(mbLbl, () -> ThemeUtil.TEXT_TERTIARY);
+            sizePanel.add(mbLbl, BorderLayout.EAST);
+            row2.add(sizePanel);
+
+            add(row2);
         }
 
         /** 辅助：创建 {label + combo} 水平面板 */
@@ -908,6 +1028,25 @@ public class VideoParamPanel extends JPanel {
             preset.setFpsMode(FPS_MODES[fpsCombo.getSelectedIndex()]);
             preset.setAudioMode(AUDIO_MODES[audioCombo.getSelectedIndex()]);
             preset.setOutputFormat(FMT_MODES[formatCombo.getSelectedIndex()]);
+
+            // 变体级自定义参数（留空=−1=继承base）
+            String cn = customNameField.getText().trim();
+            if (!cn.isEmpty()) preset.setCustomName(cn);
+
+            try {
+                double ts = Double.parseDouble(trimStartField.getText().trim());
+                double te = Double.parseDouble(trimEndField.getText().trim());
+                if (te > ts) {
+                    preset.setStartTimeSeconds(ts);
+                    preset.setDurationSeconds(te - ts);
+                }
+            } catch (NumberFormatException ignored) { /* 留空=继承base */ }
+
+            try {
+                double size = Double.parseDouble(targetSizeField.getText().trim());
+                if (size > 0) preset.setTargetSizeMB(size);
+            } catch (NumberFormatException ignored) { /* 留空=继承base */ }
+
             return preset;
         }
     }
