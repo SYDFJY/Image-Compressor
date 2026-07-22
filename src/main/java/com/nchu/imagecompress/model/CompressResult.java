@@ -54,6 +54,9 @@ public class CompressResult {
     /** 警告信息（成功但存在非致命问题，如"输出比输入大"） */
     private String warning;
 
+    /** v2.3: 封面快照输出路径（视频封面提取功能） */
+    private String coverPath;
+
     // ==================== 构造 ====================
 
     public CompressResult() {
@@ -203,6 +206,10 @@ public class CompressResult {
     public String getWarning() { return warning; }
     public void setWarning(String warning) { this.warning = warning; }
     public boolean hasWarning() { return warning != null && !warning.isEmpty(); }
+
+    public String getCoverPath() { return coverPath; }
+    public void setCoverPath(String coverPath) { this.coverPath = coverPath; }
+    public boolean hasCover() { return coverPath != null && !coverPath.isEmpty(); }
 
     /**
      * 追加警告信息（多条警告用分号分隔）。

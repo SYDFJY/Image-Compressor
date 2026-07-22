@@ -237,6 +237,15 @@ public class VideoCompressConfig {
     /** 额外 FFmpeg 参数（高级用户） */
     private String extraArgs = "";
 
+    /** v2.3: 是否在压缩后提取封面快照 */
+    private boolean extractCover = false;
+
+    /** v2.3: 封面截取时间点（秒），默认第 5 秒 */
+    private double coverSeekSeconds = 5.0;
+
+    /** v2.3: 封面输出格式（"jpg" 或 "png"） */
+    private String coverFormat = "jpg";
+
     // ==================== 默认实例 ====================
 
     /** 获取默认视频压缩配置 */
@@ -341,6 +350,15 @@ public class VideoCompressConfig {
 
     public String getExtraArgs() { return extraArgs; }
     public void setExtraArgs(String extraArgs) { this.extraArgs = extraArgs; }
+
+    public boolean isExtractCover() { return extractCover; }
+    public void setExtractCover(boolean extractCover) { this.extractCover = extractCover; }
+
+    public double getCoverSeekSeconds() { return coverSeekSeconds; }
+    public void setCoverSeekSeconds(double coverSeekSeconds) { this.coverSeekSeconds = coverSeekSeconds; }
+
+    public String getCoverFormat() { return coverFormat; }
+    public void setCoverFormat(String coverFormat) { this.coverFormat = coverFormat; }
 
     @Override
     public String toString() {

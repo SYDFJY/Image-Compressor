@@ -73,6 +73,9 @@ public class VideoParamPanel extends JPanel {
     private javax.swing.JSpinner targetSizeMBSpinner;
     private javax.swing.JTextField startTimeField;
     private javax.swing.JTextField endTimeField;
+    private JCheckBox extractCoverCheckBox;
+    private javax.swing.JTextField coverSeekField;
+    private JComboBox<String> coverFormatCombo;
 
     // ==================== 批量导出控件 ====================
 
@@ -339,6 +342,27 @@ public class VideoParamPanel extends JPanel {
         ThemeUtil.setDynamicForeground(overwriteCheckBox, () -> ThemeUtil.TEXT_SECONDARY);
         overwriteCheckBox.setOpaque(false);
         addFormControl(panel, gbc, overwriteCheckBox, row);
+        row++;
+
+        // v2.3: 封面快照
+        addFormLabel(panel, gbc, "封面快照", row);
+        JPanel coverPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 6, 0));
+        coverPanel.setOpaque(false);
+        extractCoverCheckBox = new JCheckBox("同时提取封面");
+        extractCoverCheckBox.setFont(ThemeUtil.FONT_SMALL);
+        ThemeUtil.setDynamicForeground(extractCoverCheckBox, () -> ThemeUtil.TEXT_SECONDARY);
+        extractCoverCheckBox.setOpaque(false);
+        coverPanel.add(extractCoverCheckBox);
+        coverSeekField = new javax.swing.JTextField("5", 3);
+        coverSeekField.setFont(ThemeUtil.FONT_SMALL);
+        coverSeekField.setBorder(ThemeUtil.createDynamicLineBorder());
+        coverSeekField.setToolTipText("截取时间点（秒）");
+        coverPanel.add(new javax.swing.JLabel(" 秒"));
+        coverPanel.add(coverSeekField);
+        coverFormatCombo = new JComboBox<>(new String[]{"JPG", "PNG"});
+        coverFormatCombo.setFont(ThemeUtil.FONT_SMALL);
+        coverPanel.add(coverFormatCombo);
+        addFormControl(panel, gbc, coverPanel, row);
         row++;
 
         // v2: 视频裁剪（默认隐藏，勾选后显示）
@@ -610,6 +634,20 @@ public class VideoParamPanel extends JPanel {
                     ? (int) targetSizeMBSpinner.getValue() : 0);
         } else {
             config.setRateControlMode(VideoCompressConfig.RateControlMode.CRF);
+        }
+
+        // v2.3: 封面快照
+        config.setExtractCover(extractCoverCheckBox != null && extractCoverCheckBox.isSelected());
+        try {
+            String seekText = coverSeekField.getText().trim();
+            if (!seekText.isEmpty()) {
+                config.setCoverSeekSeconds(Double.parseDouble(seekText));
+            }
+        } catch (NumberFormatException ignored) {
+            // 无效输入时使用默认值 5 秒
+        }
+        if (coverFormatCombo != null) {
+            config.setCoverFormat(coverFormatCombo.getSelectedIndex() == 1 ? "png" : "jpg");
         }
 
         return config;

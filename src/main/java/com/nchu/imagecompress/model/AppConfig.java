@@ -206,8 +206,28 @@ public class AppConfig {
     /** 压缩完成后是否自动在资源管理器中定位输出文件 */
     private boolean autoRevealOutput = true;
 
+    // ==================== 视频封面快照 ====================
+
+    /** 上次是否启用了封面提取 */
+    private boolean lastExtractCover = false;
+
+    /** 上次封面截取时间点（秒） */
+    private double lastCoverSeekSeconds = 5.0;
+
+    /** 上次封面格式 */
+    private String lastCoverFormat = "jpg";
+
     public boolean isAutoRevealOutput() { return autoRevealOutput; }
     public void setAutoRevealOutput(boolean autoRevealOutput) { this.autoRevealOutput = autoRevealOutput; }
+
+    public boolean isLastExtractCover() { return lastExtractCover; }
+    public void setLastExtractCover(boolean lastExtractCover) { this.lastExtractCover = lastExtractCover; }
+
+    public double getLastCoverSeekSeconds() { return lastCoverSeekSeconds; }
+    public void setLastCoverSeekSeconds(double lastCoverSeekSeconds) { this.lastCoverSeekSeconds = lastCoverSeekSeconds; }
+
+    public String getLastCoverFormat() { return lastCoverFormat; }
+    public void setLastCoverFormat(String lastCoverFormat) { this.lastCoverFormat = lastCoverFormat; }
 
     @Override
     public String toString() {

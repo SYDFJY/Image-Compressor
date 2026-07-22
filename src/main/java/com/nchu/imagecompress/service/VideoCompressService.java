@@ -118,6 +118,28 @@ public class VideoCompressService {
                         + ") >= 输入(" + VideoFileInfo.formatFileSize(inputSize) + ")");
             }
 
+            // v2.3: 提取封面快照
+            if (config.isExtractCover()) {
+                try {
+                    String baseName = FileUtil.getNameWithoutExtension(info.getFileName());
+                    String coverPath = com.nchu.imagecompress.util.CoverExtractUtil.extractCover(
+                            info.getSourceFile(),
+                            outputDir.getAbsolutePath(),
+                            baseName,
+                            config.getCoverSeekSeconds(),
+                            info.getWidth(),
+                            info.getHeight(),
+                            config.getCoverFormat());
+                    if (coverPath != null) {
+                        result.setCoverPath(coverPath);
+                        LogUtil.info("[VideoCompressService] 封面已提取: " + coverPath);
+                    }
+                } catch (Exception e) {
+                    // 封面提取失败不影响压缩结果
+                    LogUtil.info("[VideoCompressService] 封面提取失败: " + e.getMessage());
+                }
+            }
+
             return result;
 
         } catch (InterruptedException e) {
