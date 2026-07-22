@@ -29,8 +29,14 @@ public interface FileInfo {
     /** 原始文件对象 */
     File getSourceFile();
 
+    /** 设置原始文件对象（批量重命名等场景） */
+    void setSourceFile(File sourceFile);
+
     /** 文件名（含扩展名） */
     String getFileName();
+
+    /** 设置文件名（批量重命名等场景） */
+    void setFileName(String fileName);
 
     /** 原始文件大小（字节） */
     long getOriginalSize();

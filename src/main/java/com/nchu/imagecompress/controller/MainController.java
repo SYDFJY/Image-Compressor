@@ -413,6 +413,32 @@ public class MainController implements MainControllerCallback,
         }
     }
 
+    /**
+     * 打开批量重命名对话框。
+     */
+    public void onBatchRename() {
+        List<FileInfo> files = fileListPanel.getFileList();
+        if (files == null || files.isEmpty()) {
+            ToastNotification.warning("文件列表为空，无法重命名");
+            return;
+        }
+        // 构建可修改的列表副本
+        List<FileInfo> modifiableList = new ArrayList<>(files);
+        new com.nchu.imagecompress.view.BatchRenameDialog(mainFrame, modifiableList,
+                updatedList -> {
+                    // 刷新缩略图缓存（路径可能已变）
+                    fileListPanel.clearAllFiles();
+                    clearPreviews();
+                    // 重新导入（使用更新后的 FileInfo）
+                    for (FileInfo info : updatedList) {
+                        fileListPanel.addFile(info);
+                        if (info.getFileType() == FileInfo.FileType.IMAGE) {
+                            fileListPanel.loadThumbnail(info);
+                        }
+                    }
+                });
+    }
+
     @Override
     public void onClearAllFiles() {
         if (imageController.isCompressing()) {
@@ -797,6 +823,10 @@ public class MainController implements MainControllerCallback,
         popupMenu.add(playVideoItem);
 
         popupMenu.addSeparator();
+
+        JMenuItem renameItem = new JMenuItem("批量重命名", new FlatSVGIcon("icons/clipboard.svg"));
+        renameItem.addActionListener(e -> onBatchRename());
+        popupMenu.add(renameItem);
 
         JMenuItem compressSingleItem = new JMenuItem("单独压缩此文件", new FlatSVGIcon("icons/play.svg"));
         compressSingleItem.addActionListener(e -> {
