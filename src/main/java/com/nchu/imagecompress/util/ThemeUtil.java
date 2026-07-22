@@ -290,11 +290,11 @@ public final class ThemeUtil {
         UIManager.put("TabbedPane.tabInsets", new Insets(6, 14, 6, 14));
 
         // 输入框
-        UIManager.put("TextComponent.borderColor", new ColorUIResource(BORDER));
+        UIManager.put("TextComponent.borderColor", new ColorUIResource(PRIMARY));
         UIManager.put("TextField.background", new ColorUIResource(BG_INPUT));
 
         // 下拉框
-        UIManager.put("ComboBox.borderColor", new ColorUIResource(BORDER));
+        UIManager.put("ComboBox.borderColor", new ColorUIResource(PRIMARY));
         UIManager.put("ComboBox.buttonBackground", new ColorUIResource(BG_CARD));
         UIManager.put("ComboBox.selectionBackground", new ColorUIResource(BG_SELECTED));
         UIManager.put("ComboBox.selectionForeground", new ColorUIResource(TEXT_PRIMARY));
