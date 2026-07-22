@@ -468,9 +468,10 @@ public class MainController implements MainControllerCallback,
                     // 刷新缩略图缓存（路径可能已变）
                     fileListPanel.clearAllFiles();
                     clearPreviews();
-                    // 重新导入（使用更新后的 FileInfo）
+                    // v2.5.1: 批量添加以避免逐文件 applyFilter 导致的 UI 抖动
+                    fileListPanel.addFiles(updatedList);
+                    // 重新加载缩略图
                     for (FileInfo info : updatedList) {
-                        fileListPanel.addFile(info);
                         if (info.getFileType() == FileInfo.FileType.IMAGE) {
                             fileListPanel.loadThumbnail(info);
                         }

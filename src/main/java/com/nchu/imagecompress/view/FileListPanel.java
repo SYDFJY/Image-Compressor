@@ -323,6 +323,20 @@ public class FileListPanel extends JPanel {
     }
 
     /**
+     * 批量添加文件（v2.5.1: 一次性追加并统一刷新，避免逐文件 applyFilter 带来的 UI 抖动和潜在丢失）。
+     */
+    public void addFiles(List<FileInfo> files) {
+        for (FileInfo f : files) {
+            allFiles.add(f);
+        }
+        applyFilter();
+        if (fileList != null) {
+            fileList.revalidate();
+            fileList.repaint();
+        }
+    }
+
+    /**
      * 移除指定索引的文件。
      */
     public void removeFile(int index) {
