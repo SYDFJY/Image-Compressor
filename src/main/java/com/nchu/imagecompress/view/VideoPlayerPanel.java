@@ -384,8 +384,8 @@ public class VideoPlayerPanel extends JPanel {
             @Override
             public void run() {
                 try {
-                    // 停止当前播放
-                    if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                    // 停止当前播放（含"已结束"状态，确保干净重启）
+                    if (mediaPlayer != null) {
                         mediaPlayer.stop();
                     }
 
@@ -527,9 +527,21 @@ public class VideoPlayerPanel extends JPanel {
      */
     public void resume() {
         if (mediaPlayer != null && !isPlaying && currentVideo != null) {
+            // 如果视频已播放结束（进度在结尾），先回到开头再播放
+            if (totalDurationMs > 0) {
+                long time = mediaPlayer.getTime();
+                if (time >= totalDurationMs - 500 && time > 0) {
+                    mediaPlayer.setTime(0);
+                    seekSlider.setValue(0);
+                }
+            }
             mediaPlayer.play();
             isPlaying = true;
             playPauseBtn.setText("⏸");
+            // 恢复进度更新 Timer（视频自然结束时 syncPlayerState 已将其停止）
+            if (!syncTimer.isRunning()) {
+                syncTimer.start();
+            }
         }
     }
 
