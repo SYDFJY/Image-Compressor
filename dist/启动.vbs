@@ -1,45 +1,46 @@
-' ============================================
-'  NCHU Compressor — Windows 静默启动器
-'  版本: 1.0.0 | 图片/视频双模压缩工具
-'  双击此文件即可无控制台启动
-'  优先使用捆绑版 FFmpeg，其次使用系统 PATH
-' ============================================
+Option Explicit
+
+Dim objShell, objFSO, strDir, strJar, strFfmpeg, strVlc
+Dim strCmd, strFfmpegPath, strVlcPath
 
 Set objShell = CreateObject("WScript.Shell")
 Set objFSO   = CreateObject("Scripting.FileSystemObject")
 
-' ---- 获取脚本所在目录 ----
 strDir = objFSO.GetParentFolderName(WScript.ScriptFullName)
 strJar = strDir & "\image-compressor-1.0.0.jar"
 
-' ---- 检查 JAR 文件 ----
 If Not objFSO.FileExists(strJar) Then
-    MsgBox "找不到程序文件:" & vbCrLf & strJar, 48, "NCHU Compressor — 错误"
+    Call MsgBox("Missing: " & strJar, 48, "NCHU Compressor")
     WScript.Quit 1
 End If
 
-' ---- 检测 FFmpeg（优先捆绑版）----
-strFfmpegOpts = ""
-strBundledFfmpeg = strDir & "\standalone\ffmpeg\bin\ffmpeg.exe"
-If objFSO.FileExists(strBundledFfmpeg) Then
+' FFmpeg: prefer bundled (standalone/) else system PATH
+strFfmpegPath = ""
+If objFSO.FileExists(strDir & "\standalone\ffmpeg\bin\ffmpeg.exe") Then
     strFfmpegPath = strDir & "\standalone\ffmpeg\bin"
-    strFfmpegOpts = "-Dffmpeg.bin.path=""" & strFfmpegPath & """"
 End If
 
-' ---- 检测 VLC（优先捆绑版）----
-strVlcOpts = ""
-strBundledVlc = strDir & "\standalone\vlc\libvlc.dll"
-If objFSO.FileExists(strBundledVlc) Then
+' VLC: prefer bundled (standalone/) else system
+strVlcPath = ""
+If objFSO.FileExists(strDir & "\standalone\vlc\libvlc.dll") Then
     strVlcPath = strDir & "\standalone\vlc"
-    strVlcPlugins = strDir & "\standalone\vlc\plugins"
-    ' 设置环境变量（VLC 原生读取 VLC_PLUGIN_PATH）
-    objShell.Environment("Process")("VLC_PLUGIN_PATH") = strVlcPlugins
     objShell.Environment("Process")("PATH") = strVlcPath & ";" & objShell.Environment("Process")("PATH")
-    strVlcOpts = " -Djna.library.path=""" & strVlcPath & """"
+    objShell.Environment("Process")("VLC_PLUGIN_PATH") = strVlcPath & "\plugins"
 End If
 
-' ---- 静默启动（0=隐藏窗口, False=不等待）----
-objShell.Run "javaw " & strFfmpegOpts & strVlcOpts & " -Xmx512m -jar """ & strJar & """", 0, False
+' Build command
+Dim q : q = Chr(34)
+strCmd = "javaw"
+If strFfmpegPath <> "" Then
+    strCmd = strCmd & " -Dffmpeg.bin.path=" & q & strFfmpegPath & q
+End If
+If strVlcPath <> "" Then
+    strCmd = strCmd & " -Djna.library.path=" & q & strVlcPath & q & _
+             " -Djava.library.path=" & q & strVlcPath & q
+End If
+strCmd = strCmd & " -Xmx512m -jar " & q & strJar & q
+
+objShell.Run strCmd, 1, False
 
 Set objShell = Nothing
 Set objFSO   = Nothing
