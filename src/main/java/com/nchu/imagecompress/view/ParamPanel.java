@@ -15,6 +15,7 @@ import javax.swing.JSpinner;
 import javax.swing.JTabbedPane;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.Font;
@@ -48,7 +49,10 @@ public class ParamPanel extends JPanel {
     private JComboBox<String> namingRuleCombo;
     private javax.swing.JTextField customNameField;
     private javax.swing.JTextField infoPatternField;  // v2.5: 信息命名模板
-    private JButton batchRenameButton;
+    /** 批量重命名回调（由 MainController 注入） */
+    private Runnable onBatchRenameAction;
+    /** 上一次合法的命名规则索引（用于"批量重命名..."触发后恢复） */
+    private int previousNamingIndex = 0;
     private JButton compressButton;
     private JButton cancelButton;
     private JButton outputDirButton;
@@ -319,30 +323,6 @@ public class ParamPanel extends JPanel {
         addFormControl(panel, gbc, formatPanel, row);
         row++;
 
-        // --- 批量重命名快捷入口 (v2.5) ---
-        addFormLabel(panel, gbc, "批量操作", row);
-        JPanel batchRow = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
-        batchRow.setOpaque(false);
-        JButton basicRenameBtn = new JButton("📝 批量重命名...");
-        basicRenameBtn.setFont(ThemeUtil.FONT_SMALL);
-        basicRenameBtn.setFocusPainted(false);
-        basicRenameBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        basicRenameBtn.setToolTipText("使用模板批量重命名所有已导入文件（支持日期/序号/自定义文本）");
-        ThemeUtil.setDynamicForeground(basicRenameBtn, () -> ThemeUtil.PRIMARY);
-        ThemeUtil.setDynamicBackground(basicRenameBtn, () -> ThemeUtil.BG_CARD);
-        basicRenameBtn.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ThemeUtil.PRIMARY, 1),
-                BorderFactory.createEmptyBorder(4, 12, 4, 12)));
-        basicRenameBtn.addActionListener(e -> {
-            // 触发同一个 Action：委托给高级 Tab 中的 batchRenameButton
-            for (java.awt.event.ActionListener al : batchRenameButton.getActionListeners()) {
-                al.actionPerformed(e);
-            }
-        });
-        batchRow.add(basicRenameBtn);
-        addFormControl(panel, gbc, batchRow, row);
-        row++;
-
         // 弹性填充
         gbc.gridy = row; gbc.gridx = 0; gbc.gridwidth = 2;
         gbc.weighty = 1.0; gbc.fill = GridBagConstraints.BOTH;
@@ -360,24 +340,9 @@ public class ParamPanel extends JPanel {
         int row = 0;
 
         addFormLabel(panel, gbc, "文件命名", row);
-        namingRuleCombo = new JComboBox<>(new String[]{"添加后缀 _compressed", "添加前缀 compressed_", "保持原名", "自定义文件名", "基于图片信息（分辨率/大小等）"});
+        namingRuleCombo = new JComboBox<>(new String[]{"添加后缀 _compressed", "添加前缀 compressed_", "保持原名", "自定义文件名", "基于图片信息（分辨率/大小等）", "批量重命名..."});
         namingRuleCombo.setFont(ThemeUtil.FONT_SMALL);
         addFormControl(panel, gbc, namingRuleCombo, row);
-        row++;
-
-        // 批量重命名按钮（快捷入口）
-        addFormLabel(panel, gbc, "", row);
-        batchRenameButton = new JButton("📝 批量重命名...");
-        batchRenameButton.setFont(ThemeUtil.FONT_SMALL);
-        batchRenameButton.setFocusPainted(false);
-        ThemeUtil.setDynamicForeground(batchRenameButton, () -> ThemeUtil.PRIMARY);
-        ThemeUtil.setDynamicBackground(batchRenameButton, () -> ThemeUtil.BG_CARD);
-        batchRenameButton.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ThemeUtil.PRIMARY, 1),
-                BorderFactory.createEmptyBorder(4, 12, 4, 12)));
-        batchRenameButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        batchRenameButton.setToolTipText("使用模板批量重命名所有文件（支持日期/序号/自定义文本）");
-        addFormControl(panel, gbc, batchRenameButton, row);
         row++;
 
         // 自定义文件名输入框（仅当选择"自定义文件名"时可见）
@@ -404,8 +369,20 @@ public class ParamPanel extends JPanel {
         // 下拉框切换时显示/隐藏对应输入框
         namingRuleCombo.addItemListener(e -> {
             if (e.getStateChange() == java.awt.event.ItemEvent.SELECTED) {
-                boolean isCustom = namingRuleCombo.getSelectedIndex() == 3;
-                boolean isInfoBased = namingRuleCombo.getSelectedIndex() == 4;
+                int idx = namingRuleCombo.getSelectedIndex();
+                // "批量重命名..." — 触发动作后恢复之前的选择
+                if (idx == 5) {
+                    if (previousNamingIndex >= 0 && previousNamingIndex < 5) {
+                        SwingUtilities.invokeLater(() -> namingRuleCombo.setSelectedIndex(previousNamingIndex));
+                    }
+                    if (onBatchRenameAction != null) {
+                        onBatchRenameAction.run();
+                    }
+                    return;
+                }
+                previousNamingIndex = idx;
+                boolean isCustom = idx == 3;
+                boolean isInfoBased = idx == 4;
                 customNameField.setVisible(isCustom);
                 if (infoPatternField != null) infoPatternField.setVisible(isInfoBased);
                 panel.revalidate();
@@ -628,7 +605,10 @@ public class ParamPanel extends JPanel {
     public JComboBox<String> getNamingRuleCombo() { return namingRuleCombo; }
     public JCheckBox getOverwriteCheckBox() { return overwriteCheckBox; }
 
-    public JButton getBatchRenameButton() { return batchRenameButton; }
+    /** 设置批量重命名回调（由 MainController 注入） */
+    public void setOnBatchRenameAction(Runnable action) {
+        this.onBatchRenameAction = action;
+    }
 
     public void setQualityDisplay(int quality) {
         qualityValueLabel.setText(quality + "%");
