@@ -143,7 +143,13 @@ public class CompressService {
                 if (name == null || name.trim().isEmpty()) {
                     return nameWithoutExt + config.getSuffix() + "." + outputExt;
                 }
-                return sanitizeFileName(name.trim()) + "." + outputExt;
+                name = name.trim();
+                // v2.5.5: 批量模式下，若无 {counter} 则自动追加序号
+                if (config.getBatchIndex() > 0 && !name.contains("{counter")) {
+                    name = name + "-{counter}";
+                }
+                name = expandCounterTokens(name, config.getBatchIndex());
+                return sanitizeFileName(name) + "." + outputExt;
 
             case INFO_BASED:
                 return expandInfoPattern(inputInfo, config) + "." + outputExt;
@@ -179,11 +185,33 @@ public class CompressService {
         result = result.replace("{quality}", "q" + config.getQuality());
 
         // {counter:N} 和 {counter} 替换（批量压缩序号支持，v2.5.5）
-        int counterValue = config.getBatchIndex();
-        if (counterValue <= 0) counterValue = 1;  // 单文件兜底
+        result = expandCounterTokens(result, config.getBatchIndex());
 
-        // 先处理 {counter:N}
-        java.util.regex.Pattern counterPattern = java.util.regex.Pattern.compile("\\{counter:(\\d+)\\}");
+        // 清理连续下划线
+        result = result.replaceAll("_+", "_");
+        return sanitizeFileName(result);
+    }
+
+    /**
+     * 展开文本中的 {counter} 和 {counter:N} 序号占位符。
+     *
+     * <p>{counter} 使用自动位数（如 1→"1", 10→"10", 100→"100"）。
+     * {counter:N} 使用固定 N 位零填充（如 {counter:3}→"001"）。
+     * 不含 counter token 的文本原样返回。
+     * counterValue ≤ 0 时默认为 1（单文件兜底）。</p>
+     *
+     * @param text         可能含 counter token 的文本
+     * @param counterValue 1-based 序号值
+     * @return 替换后的文本
+     */
+    private String expandCounterTokens(String text, int counterValue) {
+        if (counterValue <= 0) counterValue = 1;
+
+        String result = text;
+
+        // {counter:N} — 固定宽度零填充
+        java.util.regex.Pattern counterPattern =
+                java.util.regex.Pattern.compile("\\{counter:(\\d+)\\}");
         java.util.regex.Matcher counterMatcher = counterPattern.matcher(result);
         StringBuffer csb = new StringBuffer();
         while (counterMatcher.find()) {
@@ -194,14 +222,12 @@ public class CompressService {
         counterMatcher.appendTail(csb);
         result = csb.toString();
 
-        // 再处理 {counter}（自动位数）
+        // {counter} — 自动位数
         int autoDigits = Math.max(1, (int) Math.log10(counterValue) + 1);
         String autoVal = String.format("%0" + autoDigits + "d", counterValue);
         result = result.replace("{counter}", autoVal);
 
-        // 清理连续下划线
-        result = result.replaceAll("_+", "_");
-        return sanitizeFileName(result);
+        return result;
     }
 
     /**

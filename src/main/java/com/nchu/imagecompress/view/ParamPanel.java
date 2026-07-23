@@ -77,7 +77,7 @@ public class ParamPanel extends JPanel {
 
         // === 顶部：标题（参考蓝韵音乐 section-title 样式） ===
         JLabel titleLabel = new JLabel("压 缩 参 数");
-        titleLabel.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
+        titleLabel.setFont(ThemeUtil.FONT_TITLE);
         ThemeUtil.setDynamicForeground(titleLabel, () -> ThemeUtil.TEXT_TERTIARY);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, ThemeUtil.SPACE_SM, 0));
         add(titleLabel, BorderLayout.NORTH);
@@ -156,6 +156,9 @@ public class ParamPanel extends JPanel {
         gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0);
         int row = 0;
 
+        // === 分组：画质设置 ===
+        addGroupHeader(panel, gbc, "🎯 画质设置", row++);
+
         // --- 画质清晰度 ---
         addFormLabel(panel, gbc, "画质清晰度", row);
 
@@ -216,6 +219,9 @@ public class ParamPanel extends JPanel {
         presetWrapper.add(presetPanel, BorderLayout.WEST);
         addFormControl(panel, gbc, presetWrapper, row);
         row++;
+
+        // === 分组：尺寸与格式 ===
+        addGroupHeader(panel, gbc, "📐 尺寸与格式", row++);
 
         // --- 缩放模式 ---
         addFormLabel(panel, gbc, "缩放模式", row);
@@ -334,6 +340,9 @@ public class ParamPanel extends JPanel {
         gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0);
         int row = 0;
 
+        // === 分组：文件命名 ===
+        addGroupHeader(panel, gbc, "📝 文件命名", row++);
+
         addFormLabel(panel, gbc, "文件命名", row);
         namingRuleCombo = new JComboBox<>(new String[]{"添加后缀 _compressed", "添加前缀 compressed_", "保持原名", "自定义文件名", "基于图片信息（分辨率/大小等）"});
         namingRuleCombo.setFont(ThemeUtil.FONT_SMALL);
@@ -344,7 +353,8 @@ public class ParamPanel extends JPanel {
         addFormLabel(panel, gbc, "", row);
         customNameField = new javax.swing.JTextField(20);
         customNameField.setFont(ThemeUtil.FONT_SMALL);
-        customNameField.setToolTipText("输入自定义文件名（不含扩展名），留空则使用默认命名");
+        customNameField.setToolTipText("输入自定义文件名（不含扩展名），留空则使用默认命名 | 支持: {counter} {counter:N}");
+        customNameField.setText("例: 旅游美景-{counter}");
         customNameField.setBorder(ThemeUtil.createDynamicLineBorder());
         customNameField.setVisible(false);
         addFormControl(panel, gbc, customNameField, row);
@@ -373,6 +383,9 @@ public class ParamPanel extends JPanel {
             }
         });
 
+        // === 分组：输出设置 ===
+        addGroupHeader(panel, gbc, "📂 输出设置", row++);
+
         addFormLabel(panel, gbc, "输出目录", row);
         outputDirButton = new JButton("选择目录...");
         outputDirButton.setFont(ThemeUtil.FONT_BODY);
@@ -398,6 +411,9 @@ public class ParamPanel extends JPanel {
         row++;
 
         // v2: 目标大小压缩
+        // === 分组：高级选项 ===
+        addGroupHeader(panel, gbc, "🔧 高级选项", row++);
+
         addFormLabel(panel, gbc, "目标大小", row);
         JPanel targetSizePanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 0));
         targetSizePanel.setOpaque(false);
@@ -504,6 +520,27 @@ public class ParamPanel extends JPanel {
     private void applyPresetUnselected(JButton btn) {
         ThemeUtil.setDynamicBackground(btn, () -> ThemeUtil.BG_HOVER);
         ThemeUtil.setDynamicForeground(btn, () -> ThemeUtil.TEXT_SECONDARY);
+    }
+
+    /** 分组标题（Bold 15px + 主题色 + 底部分隔线） */
+    private static void addGroupHeader(JPanel panel, GridBagConstraints gbc, String title, int row) {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+        headerPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 2, 0, ThemeUtil.PRIMARY),
+                BorderFactory.createEmptyBorder(ThemeUtil.SPACE_BLOCK, 0, 4, 0)));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(ThemeUtil.FONT_TITLE);
+        ThemeUtil.setDynamicForeground(titleLabel, () -> ThemeUtil.PRIMARY);
+        headerPanel.add(titleLabel, BorderLayout.WEST);
+
+        gbc.gridy = row; gbc.gridx = 0; gbc.gridwidth = 2;
+        gbc.weightx = 1.0; gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, ThemeUtil.SPACE_SM, 0);
+        gbc.anchor = GridBagConstraints.LINE_START;
+        panel.add(headerPanel, gbc);
+        gbc.insets = new Insets(ThemeUtil.SPACE_SM, 0, ThemeUtil.SPACE_SM, 0);
     }
 
     /** 表单标签（右对齐，加粗，主题色） */

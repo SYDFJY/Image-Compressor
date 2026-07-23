@@ -108,7 +108,7 @@ public class PreviewPanel extends JPanel {
         topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, ThemeUtil.SPACE_SM, 0));
 
         JLabel titleLabel = new JLabel("预 览");
-        titleLabel.setFont(ThemeUtil.FONT_SMALL.deriveFont(Font.BOLD));
+        titleLabel.setFont(ThemeUtil.FONT_TITLE);
         ThemeUtil.setDynamicForeground(titleLabel, () -> ThemeUtil.TEXT_TERTIARY);
         topPanel.add(titleLabel, BorderLayout.WEST);
 
