@@ -157,7 +157,7 @@ public class ParamPanel extends JPanel {
         int row = 0;
 
         // === 分组：画质设置 ===
-        addGroupHeader(panel, gbc, "🎯 画质设置", row++);
+        addGroupHeader(panel, gbc, "● 画质设置", row++);
 
         // --- 画质清晰度 ---
         addFormLabel(panel, gbc, "画质清晰度", row);
@@ -221,7 +221,7 @@ public class ParamPanel extends JPanel {
         row++;
 
         // === 分组：尺寸与格式 ===
-        addGroupHeader(panel, gbc, "📐 尺寸与格式", row++);
+        addGroupHeader(panel, gbc, "● 尺寸与格式", row++);
 
         // --- 缩放模式 ---
         addFormLabel(panel, gbc, "缩放模式", row);
@@ -341,7 +341,7 @@ public class ParamPanel extends JPanel {
         int row = 0;
 
         // === 分组：文件命名 ===
-        addGroupHeader(panel, gbc, "📝 文件命名", row++);
+        addGroupHeader(panel, gbc, "● 文件命名", row++);
 
         addFormLabel(panel, gbc, "文件命名", row);
         namingRuleCombo = new JComboBox<>(new String[]{"添加后缀 _compressed", "添加前缀 compressed_", "保持原名", "自定义文件名", "基于图片信息（分辨率/大小等）"});
@@ -384,7 +384,7 @@ public class ParamPanel extends JPanel {
         });
 
         // === 分组：输出设置 ===
-        addGroupHeader(panel, gbc, "📂 输出设置", row++);
+        addGroupHeader(panel, gbc, "● 输出设置", row++);
 
         addFormLabel(panel, gbc, "输出目录", row);
         outputDirButton = new JButton("选择目录...");
@@ -412,7 +412,7 @@ public class ParamPanel extends JPanel {
 
         // v2: 目标大小压缩
         // === 分组：高级选项 ===
-        addGroupHeader(panel, gbc, "🔧 高级选项", row++);
+        addGroupHeader(panel, gbc, "● 高级选项", row++);
 
         addFormLabel(panel, gbc, "目标大小", row);
         JPanel targetSizePanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 0));
