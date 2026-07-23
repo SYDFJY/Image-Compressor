@@ -89,7 +89,6 @@ public class BatchCompressService {
         ExecutorCompletionService<CompressResult> completionService =
                 new ExecutorCompletionService<>(executor);
 
-        final CompressConfig cfg = config;
         Map<Future<CompressResult>, Integer> futureIndexMap = new HashMap<>();
         AtomicInteger completed = new AtomicInteger(0);
         AtomicInteger successCount = new AtomicInteger(0);
@@ -106,6 +105,10 @@ public class BatchCompressService {
             final int index = i;
             final ImageFileInfo fileInfo = fileInfoList.get(i);
 
+            // v2.5.5: 为每个文件创建独立配置副本并设置 batchIndex
+            final CompressConfig perTaskConfig = config.shallowCopy();
+            perTaskConfig.setBatchIndex(index + 1);  // 1-based
+
             // 取消检查
             if (executor.isShutdown()) {
                 markRemaining(fileInfoList, index, total, listener);
@@ -119,14 +122,14 @@ public class BatchCompressService {
 
             Callable<CompressResult> task = () -> {
                 if (Thread.currentThread().isInterrupted()) {
-                    CompressResult cancelled = CompressResult.fail(fileInfo, cfg, "任务已取消");
+                    CompressResult cancelled = CompressResult.fail(fileInfo, perTaskConfig, "任务已取消");
                     return cancelled;
                 }
                 CompressService service = new CompressService();
-                // v2.5: 应用逐文件参数覆盖
+                // v2.5: 应用逐文件参数覆盖（perTaskConfig 已含 batchIndex）
                 CompressConfig effectiveConfig = fileInfo.hasPerFileConfig()
-                        ? cfg.applyOverride(fileInfo.getPerFileConfig())
-                        : cfg;
+                        ? perTaskConfig.applyOverride(fileInfo.getPerFileConfig())
+                        : perTaskConfig;
                 return service.compress(fileInfo, effectiveConfig);
             };
 
@@ -226,10 +229,12 @@ public class BatchCompressService {
                 listener.onFileProgress(i, fileInfo.getFileName(), 0.5);
             }
 
-            // v2.5: 应用逐文件参数覆盖
+            // v2.5.5: 为每个文件创建独立配置副本并设置 batchIndex
+            CompressConfig taskConfig = config.shallowCopy();
+            taskConfig.setBatchIndex(i + 1);  // 1-based
             CompressConfig effectiveConfig = fileInfo.hasPerFileConfig()
-                    ? config.applyOverride(fileInfo.getPerFileConfig())
-                    : config;
+                    ? taskConfig.applyOverride(fileInfo.getPerFileConfig())
+                    : taskConfig;
             CompressResult result = service.compress(fileInfo, effectiveConfig);
             results.add(result);
 

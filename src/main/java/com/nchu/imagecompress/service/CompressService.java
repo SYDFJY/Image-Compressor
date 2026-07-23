@@ -156,7 +156,7 @@ public class CompressService {
 
     /**
      * 展开信息命名模板中的占位符（v2.5）。
-     * 支持标记: {name} {ext} {width} {height} {size} {format} {quality}
+     * 支持标记: {name} {ext} {width} {height} {size} {sizeKB} {format} {quality} {counter} {counter:N}
      */
     private String expandInfoPattern(ImageFileInfo info, CompressConfig config) {
         String pattern = config.getInfoPattern();
@@ -177,6 +177,27 @@ public class CompressService {
         result = result.replace("{sizeKB}", String.valueOf(info.getOriginalSize() / 1024));
         result = result.replace("{format}", info.getFormat().toUpperCase());
         result = result.replace("{quality}", "q" + config.getQuality());
+
+        // {counter:N} 和 {counter} 替换（批量压缩序号支持，v2.5.5）
+        int counterValue = config.getBatchIndex();
+        if (counterValue <= 0) counterValue = 1;  // 单文件兜底
+
+        // 先处理 {counter:N}
+        java.util.regex.Pattern counterPattern = java.util.regex.Pattern.compile("\\{counter:(\\d+)\\}");
+        java.util.regex.Matcher counterMatcher = counterPattern.matcher(result);
+        StringBuffer csb = new StringBuffer();
+        while (counterMatcher.find()) {
+            int digits = Integer.parseInt(counterMatcher.group(1));
+            String val = String.format("%0" + digits + "d", counterValue);
+            counterMatcher.appendReplacement(csb, java.util.regex.Matcher.quoteReplacement(val));
+        }
+        counterMatcher.appendTail(csb);
+        result = csb.toString();
+
+        // 再处理 {counter}（自动位数）
+        int autoDigits = Math.max(1, (int) Math.log10(counterValue) + 1);
+        String autoVal = String.format("%0" + autoDigits + "d", counterValue);
+        result = result.replace("{counter}", autoVal);
 
         // 清理连续下划线
         result = result.replaceAll("_+", "_");

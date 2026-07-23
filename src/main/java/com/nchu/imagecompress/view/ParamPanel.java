@@ -15,7 +15,6 @@ import javax.swing.JSpinner;
 import javax.swing.JTabbedPane;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.Font;
@@ -49,10 +48,6 @@ public class ParamPanel extends JPanel {
     private JComboBox<String> namingRuleCombo;
     private javax.swing.JTextField customNameField;
     private javax.swing.JTextField infoPatternField;  // v2.5: 信息命名模板
-    /** 批量重命名回调（由 MainController 注入） */
-    private Runnable onBatchRenameAction;
-    /** 上一次合法的命名规则索引（用于"批量重命名..."触发后恢复） */
-    private int previousNamingIndex = 0;
     private JButton compressButton;
     private JButton cancelButton;
     private JButton outputDirButton;
@@ -340,7 +335,7 @@ public class ParamPanel extends JPanel {
         int row = 0;
 
         addFormLabel(panel, gbc, "文件命名", row);
-        namingRuleCombo = new JComboBox<>(new String[]{"添加后缀 _compressed", "添加前缀 compressed_", "保持原名", "自定义文件名", "基于图片信息（分辨率/大小等）", "批量重命名..."});
+        namingRuleCombo = new JComboBox<>(new String[]{"添加后缀 _compressed", "添加前缀 compressed_", "保持原名", "自定义文件名", "基于图片信息（分辨率/大小等）"});
         namingRuleCombo.setFont(ThemeUtil.FONT_SMALL);
         addFormControl(panel, gbc, namingRuleCombo, row);
         row++;
@@ -359,8 +354,8 @@ public class ParamPanel extends JPanel {
         addFormLabel(panel, gbc, "", row);
         infoPatternField = new javax.swing.JTextField(20);
         infoPatternField.setFont(ThemeUtil.FONT_SMALL);
-        infoPatternField.setText("{name}_{width}x{height}");
-        infoPatternField.setToolTipText("可用: {name} {width} {height} {size} {sizeKB} {format} {quality} | 例: {name}_{width}x{height}");
+        infoPatternField.setText("{name}_{counter:3}");
+        infoPatternField.setToolTipText("可用: {name} {ext} {width} {height} {size} {sizeKB} {format} {quality} {counter} {counter:N} | 例: {name}_{counter:3}");
         infoPatternField.setBorder(ThemeUtil.createDynamicLineBorder());
         infoPatternField.setVisible(false);
         addFormControl(panel, gbc, infoPatternField, row);
@@ -369,20 +364,8 @@ public class ParamPanel extends JPanel {
         // 下拉框切换时显示/隐藏对应输入框
         namingRuleCombo.addItemListener(e -> {
             if (e.getStateChange() == java.awt.event.ItemEvent.SELECTED) {
-                int idx = namingRuleCombo.getSelectedIndex();
-                // "批量重命名..." — 触发动作后恢复之前的选择
-                if (idx == 5) {
-                    if (previousNamingIndex >= 0 && previousNamingIndex < 5) {
-                        SwingUtilities.invokeLater(() -> namingRuleCombo.setSelectedIndex(previousNamingIndex));
-                    }
-                    if (onBatchRenameAction != null) {
-                        onBatchRenameAction.run();
-                    }
-                    return;
-                }
-                previousNamingIndex = idx;
-                boolean isCustom = idx == 3;
-                boolean isInfoBased = idx == 4;
+                boolean isCustom = namingRuleCombo.getSelectedIndex() == 3;
+                boolean isInfoBased = namingRuleCombo.getSelectedIndex() == 4;
                 customNameField.setVisible(isCustom);
                 if (infoPatternField != null) infoPatternField.setVisible(isInfoBased);
                 panel.revalidate();
@@ -604,11 +587,6 @@ public class ParamPanel extends JPanel {
     public JComboBox<String> getOutputFormatCombo() { return outputFormatCombo; }
     public JComboBox<String> getNamingRuleCombo() { return namingRuleCombo; }
     public JCheckBox getOverwriteCheckBox() { return overwriteCheckBox; }
-
-    /** 设置批量重命名回调（由 MainController 注入） */
-    public void setOnBatchRenameAction(Runnable action) {
-        this.onBatchRenameAction = action;
-    }
 
     public void setQualityDisplay(int quality) {
         qualityValueLabel.setText(quality + "%");

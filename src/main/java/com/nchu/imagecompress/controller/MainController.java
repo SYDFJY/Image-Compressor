@@ -205,8 +205,6 @@ public class MainController implements MainControllerCallback,
         mainFrame.getClearBtn().addActionListener(e -> onClearAllFiles());
         mainFrame.getThemeBtn().addActionListener(e -> onToggleTheme());
         mainFrame.getWatchFolderBtn().addActionListener(e -> onOpenWatchSetup());
-        // 批量重命名入口（ParamPanel "文件命名"下拉框的"批量重命名..."选项）
-        mainFrame.getParamPanel().setOnBatchRenameAction(this::onBatchRename);
 
         // ---- 模式切换分段控件 ----
         mainFrame.getImageModeBtn().addActionListener(e -> {

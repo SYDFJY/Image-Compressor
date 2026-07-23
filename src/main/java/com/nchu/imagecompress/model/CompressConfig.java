@@ -114,6 +114,9 @@ public class CompressConfig {
     /** 推荐的图片类型（照片/截图/图标） */
     private String imageTypeHint = "";
 
+    /** 批量压缩中的文件序号（1-based），0 表示单文件或未设置 */
+    private int batchIndex = 0;
+
     // ==================== 默认实例 ====================
 
     /** 获取默认压缩配置（质量 80，不缩放，保持格式） */
@@ -163,10 +166,41 @@ public class CompressConfig {
         merged.overwrite = this.overwrite;
         merged.preserveMetadata = this.preserveMetadata;
         merged.gifMaxColors = this.gifMaxColors;
+        merged.batchIndex = this.batchIndex;
         // 应用覆盖
         if (override.getQuality() != null) merged.quality = override.getQuality();
         if (override.getOutputFormat() != null) merged.outputFormat = override.getOutputFormat();
         return merged;
+    }
+
+    /**
+     * 创建此配置的完整浅拷贝（所有字段逐字段复制）。
+     * 用于批量压缩时为每个文件创建独立的配置副本。
+     *
+     * @return 新的 CompressConfig 实例，所有字段与此实例相同
+     */
+    public CompressConfig shallowCopy() {
+        CompressConfig copy = new CompressConfig();
+        copy.quality = this.quality;
+        copy.targetSizeKB = this.targetSizeKB;
+        copy.scaleMode = this.scaleMode;
+        copy.scalePercent = this.scalePercent;
+        copy.maxWidth = this.maxWidth;
+        copy.maxHeight = this.maxHeight;
+        copy.outputFormat = this.outputFormat;
+        copy.outputPath = this.outputPath;
+        copy.namingRule = this.namingRule;
+        copy.suffix = this.suffix;
+        copy.prefix = this.prefix;
+        copy.customName = this.customName;
+        copy.infoPattern = this.infoPattern;
+        copy.overwrite = this.overwrite;
+        copy.preserveMetadata = this.preserveMetadata;
+        copy.gifMaxColors = this.gifMaxColors;
+        copy.smartRecommend = this.smartRecommend;
+        copy.imageTypeHint = this.imageTypeHint;
+        copy.batchIndex = this.batchIndex;
+        return copy;
     }
 
     // ==================== Getter / Setter ====================
@@ -230,6 +264,10 @@ public class CompressConfig {
 
     public String getImageTypeHint() { return imageTypeHint; }
     public void setImageTypeHint(String imageTypeHint) { this.imageTypeHint = imageTypeHint; }
+
+    /** 批量压缩中的文件序号（1-based），0 = 单文件/未设置 */
+    public int getBatchIndex() { return batchIndex; }
+    public void setBatchIndex(int batchIndex) { this.batchIndex = Math.max(0, batchIndex); }
 
     @Override
     public String toString() {
