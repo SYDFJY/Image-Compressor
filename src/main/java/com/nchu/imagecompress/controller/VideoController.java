@@ -168,6 +168,12 @@ public class VideoController {
             } catch (IllegalArgumentException ignored) {}
         }
 
+        // 恢复上次使用的输出目录
+        String lastOutputPath = appConfig.getLastVideoOutputPath();
+        if (lastOutputPath != null && !lastOutputPath.isEmpty()) {
+            videoParamPanel.setOutputDir(lastOutputPath);
+        }
+
         updateVideoCompressButtonState();
     }
 
@@ -609,6 +615,7 @@ public class VideoController {
             File dir = chooser.getSelectedFile();
             appConfig.setLastVideoOutputPath(dir.getAbsolutePath());
             configService.saveConfig(appConfig);
+            videoParamPanel.setOutputDir(dir.getAbsolutePath());
             ToastNotification.info("视频输出目录: " + dir.getName());
         }
     }

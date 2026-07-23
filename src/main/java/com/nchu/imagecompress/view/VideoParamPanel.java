@@ -65,6 +65,7 @@ public class VideoParamPanel extends JPanel {
     private JButton compressButton;
     private JButton cancelButton;
     private JButton outputDirButton;
+    private String lastOutputDir = null;
     private javax.swing.JTextField customNameField;
     private JCheckBox overwriteCheckBox;
     private JButton activePresetBtn;
@@ -318,16 +319,19 @@ public class VideoParamPanel extends JPanel {
         openOutputDirBtn.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
         openOutputDirBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         openOutputDirBtn.addActionListener(e -> {
-            String path = outputDirButton.getText();
-            if (path != null && !path.isEmpty() && !path.equals("选择目录...")) {
-                java.io.File dir = new java.io.File(path);
+            if (lastOutputDir != null && !lastOutputDir.isEmpty()) {
+                java.io.File dir = new java.io.File(lastOutputDir);
                 if (dir.isDirectory()) {
                     try {
                         java.awt.Desktop.getDesktop().open(dir);
                     } catch (Exception ex) {
                         ToastNotification.warning("无法打开目录: " + ex.getMessage());
                     }
+                } else {
+                    ToastNotification.warning("输出目录不存在，请重新选择");
                 }
+            } else {
+                ToastNotification.info("请先选择输出目录");
             }
         });
         outputDirPanel.add(openOutputDirBtn);
@@ -708,6 +712,11 @@ public class VideoParamPanel extends JPanel {
     public JButton getCompressButton() { return compressButton; }
     public JButton getCancelButton() { return cancelButton; }
     public JButton getOutputDirButton() { return outputDirButton; }
+
+    /** 设置当前输出目录路径（由 Controller 同步写入，供「打开目录」按钮使用） */
+    public void setOutputDir(String path) { this.lastOutputDir = path; }
+    public String getOutputDir() { return lastOutputDir; }
+
     public JComboBox<String> getResolutionCombo() { return resolutionCombo; }
     public JComboBox<String> getFpsCombo() { return fpsCombo; }
     public JComboBox<String> getAudioCombo() { return audioCombo; }

@@ -2,10 +2,11 @@ package com.nchu.imagecompress.view;
 
 import com.nchu.imagecompress.util.ThemeUtil;
 
+import com.nchu.imagecompress.view.widget.ModernProgressBar;
+
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -31,7 +32,7 @@ public class StatusBar extends JPanel {
     private final JLabel statusIconLabel;
     private final JLabel statusLabel;
     private final JLabel statsLabel;
-    private final JProgressBar progressBar;
+    private final ModernProgressBar progressBar;
 
     public StatusBar() {
         setLayout(new BorderLayout(ThemeUtil.SPACE_LG, 0));
@@ -59,11 +60,9 @@ public class StatusBar extends JPanel {
 
         add(leftPanel, BorderLayout.WEST);
 
-        // === 中间：进度条（自适应宽度） ===
-        progressBar = new JProgressBar(0, 100);
-        progressBar.setStringPainted(false);
+        // === 中间：进度条（ModernProgressBar — 圆角 + 渐变 + 文字叠加） ===
+        progressBar = new ModernProgressBar();
         progressBar.setVisible(false);
-        progressBar.setBorder(BorderFactory.createEmptyBorder());
         add(progressBar, BorderLayout.CENTER);
 
         // === 右侧：统计信息 ===
@@ -113,11 +112,9 @@ public class StatusBar extends JPanel {
 
     public void showProgress(int percent, String detail, String statusText) {
         progressBar.setVisible(true);
-        progressBar.setValue(Math.max(0, Math.min(100, percent)));
+        progressBar.setProgress(Math.max(0, Math.min(100, percent)));
+        progressBar.setDetail(detail != null ? detail : "");
 
-        if (detail != null) {
-            statsLabel.setText(detail);
-        }
         if (statusText != null) {
             setStatus(statusText, "working");
         } else {
@@ -127,8 +124,7 @@ public class StatusBar extends JPanel {
 
     public void hideProgress() {
         progressBar.setVisible(false);
-        progressBar.setValue(0);
-        statsLabel.setText("");
+        progressBar.reset();
         setStatus("就绪", "ready");
     }
 
@@ -160,6 +156,6 @@ public class StatusBar extends JPanel {
         }
     }
 
-    public JProgressBar getProgressBar() { return progressBar; }
+    public ModernProgressBar getProgressBar() { return progressBar; }
     public JLabel getStatusLabel() { return statusLabel; }
 }
