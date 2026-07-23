@@ -100,6 +100,9 @@ public class BatchRenameDialog extends JDialog {
 
         // 初始预览
         refreshPreview();
+
+        // 显示模态对话框
+        setVisible(true);
     }
 
     private JPanel createRulePanel() {
