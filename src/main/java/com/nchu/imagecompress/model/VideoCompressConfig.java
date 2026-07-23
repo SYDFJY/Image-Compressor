@@ -195,6 +195,16 @@ public class VideoCompressConfig {
     /** 计算出的目标视频码率 (kbps)，仅在 TARGET_SIZE 模式下由 VideoCompressService 设置 */
     private int targetBitrate = 0;
 
+    /**
+     * FFmpeg 编码速度预设（影响同码率下的画质与编码耗时）。
+     *
+     * <p>可选值：ultrafast, superfast, veryfast, faster, fast,
+     * medium（默认）, slow, slower, veryslow。</p>
+     *
+     * @since 2.6.0
+     */
+    private String encodePreset = "medium";
+
     /** CRF 质量值 (0-51)，默认 23 */
     private int crf = 23;
 
@@ -313,6 +323,9 @@ public class VideoCompressConfig {
     public int getTargetBitrate() { return targetBitrate; }
     public void setTargetBitrate(int targetBitrate) { this.targetBitrate = targetBitrate; }
 
+    public String getEncodePreset() { return encodePreset; }
+    public void setEncodePreset(String encodePreset) { this.encodePreset = encodePreset != null ? encodePreset : "medium"; }
+
     public ResolutionMode getResolutionMode() { return resolutionMode; }
     public void setResolutionMode(ResolutionMode resolutionMode) { this.resolutionMode = resolutionMode; }
 
@@ -398,6 +411,9 @@ public class VideoCompressConfig {
         /** 目标输出文件大小（MB），-1=继承 base，>0=码率模式 */
         private double targetSizeMB = -1;
 
+        /** 编码速度预设，null=继承 base */
+        private String encodePreset = null;
+
         public VariantPreset() {}
 
         public VariantPreset(ResolutionMode resolutionMode, FpsMode fpsMode, int crf,
@@ -437,6 +453,9 @@ public class VideoCompressConfig {
 
         public double getTargetSizeMB() { return targetSizeMB; }
         public void setTargetSizeMB(double s) { this.targetSizeMB = s; }
+
+        public String getEncodePreset() { return encodePreset; }
+        public void setEncodePreset(String p) { this.encodePreset = p; }
 
         // ==================== 工具方法 ====================
 
@@ -505,6 +524,10 @@ public class VideoCompressConfig {
             // 目标文件大小：变体值优先（≥0 表示用户显式设置），否则继承 base
             merged.setTargetSizeMB(this.targetSizeMB >= 0
                     ? (int) this.targetSizeMB : base.getTargetSizeMB());
+
+            // 编码预设：变体值优先，否则继承 base
+            merged.setEncodePreset(this.encodePreset != null && !this.encodePreset.isEmpty()
+                    ? this.encodePreset : base.getEncodePreset());
 
             return merged;
         }

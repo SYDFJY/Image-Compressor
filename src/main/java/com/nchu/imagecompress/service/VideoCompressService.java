@@ -77,14 +77,8 @@ public class VideoCompressService {
         }
         effectiveDuration = Math.max(effectiveDuration, 1.0); // 至少 1 秒避免除零
 
-        // ⑤b 若使用大小优先模式，计算目标码率
-        if (config.getRateControlMode() == VideoCompressConfig.RateControlMode.TARGET_SIZE
-                && config.getTargetSizeMB() > 0) {
-            double targetKBitsTotal = config.getTargetSizeMB() * 8.0 * 1024.0; // 总目标 kb
-            double audioBitrateKbps = config.getAudioMode() == VideoCompressConfig.AudioMode.REMOVE ? 0 : 128;
-            int videoBitrateKbps = (int) ((targetKBitsTotal / effectiveDuration) - audioBitrateKbps);
-            config.setTargetBitrate(Math.max(100, videoBitrateKbps)); // 最低 100 kbps
-        }
+        // ⑤b 码率计算与二遍编码已统一在 VideoCompressUtil 中处理
+        //   （v2.6: 移除此处的重复计算，executeCompress 内部根据 TARGET_SIZE 模式自动路由）
 
         // ⑥ 执行 FFmpeg 压缩
         try {

@@ -79,33 +79,28 @@ public final class VideoCompressUtil {
         cmd.add("-c:v");
         cmd.add(videoCodec);
 
-        // --- 码率控制：CRF 画质优先 vs 目标文件大小 vs 目标码率模式 ---
-        if (config.getTargetSizeMB() > 0 && effectiveDurationSeconds > 0) {
-            // 目标文件大小模式：根据目标大小自动计算码率
+        // --- 码率控制：CRF 画质优先 vs 目标文件大小（单遍快速模式 fallback） ---
+        if (config.getRateControlMode() == VideoCompressConfig.RateControlMode.TARGET_SIZE
+                && config.getTargetSizeMB() > 0 && effectiveDurationSeconds > 0) {
+            // 目标文件大小 — 单遍快速模式（二遍编码入口在 executeCompress 中优先路由）
+            boolean hasAudio = config.getAudioMode() != VideoCompressConfig.AudioMode.REMOVE;
             int bitrateKbps = calculateBitrateKbps(config.getTargetSizeMB(),
-                    effectiveDurationSeconds);
+                    effectiveDurationSeconds, hasAudio);
             cmd.add("-b:v");
             cmd.add(bitrateKbps + "k");
             cmd.add("-maxrate");
-            cmd.add((bitrateKbps * 3 / 2) + "k");
+            cmd.add((bitrateKbps * 11 / 10) + "k");   // 1.1x（v2.6: 原 1.5x 允许编码器严重超额）
             cmd.add("-bufsize");
-            cmd.add((bitrateKbps * 2) + "k");
-        } else if (config.getRateControlMode() == VideoCompressConfig.RateControlMode.TARGET_SIZE
-                && config.getTargetBitrate() > 0) {
-            cmd.add("-b:v");
-            cmd.add(config.getTargetBitrate() + "k");
-            cmd.add("-maxrate");
-            cmd.add((config.getTargetBitrate() * 3 / 2) + "k");
-            cmd.add("-bufsize");
-            cmd.add((config.getTargetBitrate() * 2) + "k");
+            cmd.add((bitrateKbps * 3 / 2) + "k");       // 1.5x
         } else {
             cmd.add("-crf");
             cmd.add(String.valueOf(config.getCrf()));
         }
 
-        // --- 编码预设 ---
+        // --- 编码预设（v2.6: 从 config 读取，不再硬编码 medium） ---
         cmd.add("-preset");
-        cmd.add(DEFAULT_PRESET);
+        cmd.add(config.getEncodePreset() != null && !config.getEncodePreset().isEmpty()
+                ? config.getEncodePreset() : DEFAULT_PRESET);
 
         // --- 分辨率缩放 ---
         // 使用 -2 占位符：自动计算高度、保持宽高比、保证被 2 整除
@@ -207,6 +202,13 @@ public final class VideoCompressUtil {
                                            double totalDurationSeconds,
                                            VideoProgressCallback callback)
             throws IOException, InterruptedException {
+
+        // v2.6: TARGET_SIZE 模式优先使用二遍编码精确命中目标
+        if (config.getRateControlMode() == VideoCompressConfig.RateControlMode.TARGET_SIZE
+                && config.getTargetSizeMB() > 0) {
+            return executeTwoPassCompress(inputFile, outputFile, config,
+                    totalDurationSeconds, callback);
+        }
 
         List<String> command = buildFfmpegCommand(inputFile, outputFile, config,
                 totalDurationSeconds);
@@ -400,20 +402,299 @@ public final class VideoCompressUtil {
     /**
      * 根据目标文件大小计算视频码率（kbps）。
      *
-     * <p>公式：targetSizeMB × 8192 / durationSeconds × 0.95</p>
+     * <p>公式：targetSizeMB × 8000 / durationSeconds − audioKbps − overhead</p>
      * <ul>
-     *   <li>8192 = 8 (bits/byte) × 1024 (KB/MB)</li>
-     *   <li>0.95 = 预留 5% 给音频流和容器开销</li>
+     *   <li>8000 = 8 (bits/byte) × 1000 (KB/MB)，k=1000 匹配 FFmpeg 的 {@code -b:v} 单位</li>
+     *   <li>audioKbps = 有音频 ? 128 : 0（AAC 典型码率）</li>
+     *   <li>overhead = 2% 容器开销（MOOV atom + 帧头 + 索引等）</li>
      * </ul>
      *
      * @param targetSizeMB       目标文件大小（MB）
      * @param durationSeconds    视频有效时长（秒），已扣除裁剪
-     * @return 视频码率（kbps），最低 100 kbps
+     * @param hasAudio           是否包含音频流
+     * @return 视频码率（kbps），最低 50 kbps
+     * @since 2.6.0（修复 k=1000 单位匹配 + 音频感知 + 容器开销）
      */
-    static int calculateBitrateKbps(double targetSizeMB, double durationSeconds) {
-        double targetBits = targetSizeMB * 8.0 * 1024.0 * 1024.0;
-        double videoBits = targetBits * 0.95;
-        int bitrate = (int) (videoBits / durationSeconds / 1024.0);
-        return Math.max(100, bitrate);
+    static int calculateBitrateKbps(double targetSizeMB, double durationSeconds, boolean hasAudio) {
+        // FFmpeg 的 -b:v 使用 k=1000（非 1024），统一单位避免系统性偏差
+        double targetKbps = targetSizeMB * 8000.0 / durationSeconds;  // 8 bit/byte × 1000
+        double audioKbps = hasAudio ? 128 : 0;
+        double overheadKbps = targetKbps * 0.02;
+        double videoKbps = targetKbps - audioKbps - overheadKbps;
+        return Math.max(50, (int) videoKbps);
+    }
+
+    // ==================== 二遍编码（Two-Pass） ====================
+
+    /**
+     * 使用 FFmpeg 二遍编码精确命中目标文件大小。
+     *
+     * <p>第一遍分析视频复杂度（无音频、无输出文件），第二遍根据分析
+     * 结果精确分配码率。总时间约为单遍编码的 2.0-2.2 倍，但目标大小
+     * 精度可达 ±5%。</p>
+     *
+     * @param inputFile             输入视频文件
+     * @param outputFile            输出视频文件
+     * @param config                视频压缩配置（含目标大小、preset 等）
+     * @param totalDurationSeconds  视频有效时长（秒）
+     * @param callback              进度回调（可为 null）
+     * @return true 表示压缩成功
+     * @throws IOException          如果 ffmpeg 无法启动
+     * @throws InterruptedException 如果线程被中断（取消操作）
+     * @since 2.6.0
+     */
+    public static boolean executeTwoPassCompress(File inputFile, File outputFile,
+                                                  VideoCompressConfig config,
+                                                  double totalDurationSeconds,
+                                                  VideoProgressCallback callback)
+            throws IOException, InterruptedException {
+
+        boolean hasAudio = config.getAudioMode() != VideoCompressConfig.AudioMode.REMOVE;
+        int bitrateKbps = calculateBitrateKbps(config.getTargetSizeMB(),
+                totalDurationSeconds, hasAudio);
+
+        LogUtil.info("[VideoCompressUtil] 二遍编码开始: target=" + config.getTargetSizeMB()
+                + "MB, duration=" + String.format("%.1f", totalDurationSeconds)
+                + "s, bitrate=" + bitrateKbps + "kbps, preset=" + config.getEncodePreset());
+
+        // 输出目录作为 log 文件目录（避免污染用户目录）
+        File logDir = outputFile.getParentFile();
+        String logBase = new File(logDir, "ffmpeg2pass-" + outputFile.getName()).getAbsolutePath();
+
+        // ==== Pass 1: 分析 ====
+        if (callback != null) {
+            callback.onProgress(0.0, "分析视频复杂度… (Pass 1/2)");
+        }
+
+        List<String> pass1Cmd = buildPassCommand(inputFile, config, bitrateKbps,
+                totalDurationSeconds, 1, logBase, null);
+
+        LogUtil.info("[VideoCompressUtil] Pass 1: " + String.join(" ", pass1Cmd));
+        int exitCode = runFfmpegProcess(pass1Cmd, logDir, callback, totalDurationSeconds,
+                0.0, 0.45, "分析中… (Pass 1/2)");
+        if (exitCode != 0) {
+            cleanupPassLogs(logBase);
+            throw new IOException("FFmpeg Pass 1 失败，退出码: " + exitCode);
+        }
+
+        // 检查 log 文件是否生成
+        File passLog = new File(logBase + "-0.log");
+        if (!passLog.exists() || passLog.length() < 100) {
+            cleanupPassLogs(logBase);
+            throw new IOException("FFmpeg Pass 1 未生成有效的分析日志，"
+                    + "请检查视频文件是否可解码");
+        }
+
+        // ==== Pass 2: 编码 ====
+        if (callback != null) {
+            callback.onProgress(0.45, "编码中… (Pass 2/2)");
+        }
+
+        List<String> pass2Cmd = buildPassCommand(inputFile, config, bitrateKbps,
+                totalDurationSeconds, 2, logBase, outputFile);
+
+        LogUtil.info("[VideoCompressUtil] Pass 2: " + String.join(" ", pass2Cmd));
+        exitCode = runFfmpegProcess(pass2Cmd, logDir, callback, totalDurationSeconds,
+                0.45, 0.99, "编码中… (Pass 2/2)");
+        if (exitCode != 0) {
+            cleanupPassLogs(logBase);
+            throw new IOException("FFmpeg Pass 2 失败，退出码: " + exitCode);
+        }
+
+        // 清理临时文件
+        cleanupPassLogs(logBase);
+
+        // 验证输出
+        if (!outputFile.exists() || outputFile.length() < 1024) {
+            throw new IOException("输出文件无效（无编码内容）: " + outputFile.getName());
+        }
+
+        if (callback != null) {
+            callback.onProgress(1.0, "压缩完成");
+        }
+
+        LogUtil.info("[VideoCompressUtil] 二遍编码完成: output="
+                + VideoFileInfo.formatFileSize(outputFile.length()));
+        return true;
+    }
+
+    /**
+     * 构建单遍 FFmpeg 命令（Pass 1 或 Pass 2 通用）。
+     *
+     * @param outputFile Pass 2 的输出文件，Pass 1 时传 null
+     * @param pass       1 或 2
+     * @param logBase    Pass log 文件的基础路径（不含 -0.log 后缀）
+     */
+    private static List<String> buildPassCommand(File inputFile, VideoCompressConfig config,
+                                                  int bitrateKbps, double durationSeconds,
+                                                  int pass, String logBase, File outputFile) {
+        List<String> cmd = new ArrayList<>();
+        cmd.add(VideoUtil.getFfmpegPath());
+
+        // 覆盖输出（-y 在 pass 1 也有效）
+        cmd.add("-y");
+
+        // 裁剪参数（两遍必须相同）
+        if (config.getStartTimeSeconds() > 0) {
+            cmd.add("-ss");
+            cmd.add(formatTimeArg(config.getStartTimeSeconds()));
+        }
+        if (config.getDurationSeconds() > 0) {
+            cmd.add("-t");
+            cmd.add(formatTimeArg(config.getDurationSeconds()));
+        }
+
+        cmd.add("-i");
+        cmd.add(inputFile.getAbsolutePath());
+
+        // 视频编码器
+        cmd.add("-c:v");
+        cmd.add(resolveVideoCodec(config));
+
+        // 码率控制
+        cmd.add("-b:v");
+        cmd.add(bitrateKbps + "k");
+
+        // Pass 标志
+        cmd.add("-pass");
+        cmd.add(String.valueOf(pass));
+        cmd.add("-passlogfile");
+        cmd.add(logBase);
+
+        // 编码预设
+        cmd.add("-preset");
+        cmd.add(config.getEncodePreset());
+
+        // 分辨率缩放
+        if (config.getResolutionMode() != VideoCompressConfig.ResolutionMode.ORIGINAL) {
+            int targetWidth = config.getResolutionMode().getMaxWidth();
+            cmd.add("-vf");
+            cmd.add("scale=" + targetWidth + ":-2");
+        }
+
+        // 帧率
+        if (config.getFpsMode() != VideoCompressConfig.FpsMode.ORIGINAL) {
+            cmd.add("-r");
+            cmd.add(String.valueOf(config.getFpsMode().getFps()));
+        }
+
+        // 音频（Pass 1 跳过音频以加速分析）
+        if (pass == 1) {
+            cmd.add("-an");
+        } else if (config.getAudioMode() == VideoCompressConfig.AudioMode.REMOVE) {
+            cmd.add("-an");
+        } else {
+            cmd.add("-c:a");
+            cmd.add(resolveAudioCodec(config));
+        }
+
+        // 输出
+        if (pass == 1) {
+            // Pass 1: 不写输出文件
+            cmd.add("-f");
+            cmd.add("mp4");
+            cmd.add(isWindows() ? "NUL" : "/dev/null");
+        } else {
+            cmd.add(outputFile.getAbsolutePath());
+        }
+
+        return cmd;
+    }
+
+    /** 执行 FFmpeg 进程并返回退出码，同时解析进度。 */
+    private static int runFfmpegProcess(List<String> command, File workingDir,
+                                         VideoProgressCallback callback,
+                                         double totalDuration, double progressMin,
+                                         double progressMax, String statusPrefix)
+            throws IOException, InterruptedException {
+
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.directory(workingDir);
+
+        Process process = pb.start();
+
+        // 排空 stdout
+        final Process finalProcess = process;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    byte[] buf = new byte[4096];
+                    while (finalProcess.getInputStream().read(buf) != -1) { /* drain */ }
+                } catch (IOException ignored) { }
+            }
+        }, "FFmpeg-Stdout-Drainer").start();
+
+        double lastProgress = 0;
+        final String[] lastErrorLines = new String[5];
+        final int[] errorIdx = {0};
+
+        try (BufferedReader errorReader = new BufferedReader(
+                new InputStreamReader(process.getErrorStream()))) {
+            String line;
+            while ((line = errorReader.readLine()) != null) {
+                if (Thread.currentThread().isInterrupted()) {
+                    process.destroyForcibly();
+                    throw new InterruptedException("压缩任务被取消");
+                }
+
+                if (callback != null && totalDuration > 0) {
+                    double currentTime = parseTime(line);
+                    if (currentTime > 0) {
+                        double frac = Math.min(currentTime / totalDuration, 1.0);
+                        double progress = progressMin + frac * (progressMax - progressMin);
+                        if (progress - lastProgress >= 0.01) {
+                            lastProgress = progress;
+                            callback.onProgress(Math.min(progress, 0.99),
+                                    statusPrefix + " " + formatTime(currentTime));
+                        }
+                        continue;
+                    }
+                }
+
+                if (line != null && !line.isEmpty()
+                        && !line.startsWith("frame=") && !line.startsWith("size=")) {
+                    lastErrorLines[errorIdx[0] % 5] = line;
+                    errorIdx[0]++;
+                }
+            }
+        }
+
+        boolean finished = process.waitFor(7200, TimeUnit.SECONDS);
+        if (!finished) {
+            process.destroyForcibly();
+            throw new IOException("FFmpeg 执行超时（2小时）");
+        }
+
+        int exitCode = process.exitValue();
+        if (exitCode != 0) {
+            StringBuilder errInfo = new StringBuilder();
+            for (String err : lastErrorLines) {
+                if (err != null) errInfo.append(err).append(" | ");
+            }
+            if (errInfo.length() > 0) {
+                LogUtil.error("[VideoCompressUtil] FFmpeg stderr: " + errInfo.toString().trim());
+            }
+        }
+
+        return exitCode;
+    }
+
+    /** 清理二遍编码生成的临时日志文件。 */
+    private static void cleanupPassLogs(String logBase) {
+        String[] suffixes = {"-0.log", "-0.log.mbtree"};
+        for (String suffix : suffixes) {
+            File f = new File(logBase + suffix);
+            if (f.exists()) {
+                if (!f.delete()) {
+                    f.deleteOnExit();
+                }
+            }
+        }
+    }
+
+    /** 检测当前运行平台是否为 Windows。 */
+    private static boolean isWindows() {
+        return System.getProperty("os.name", "").toLowerCase().contains("win");
     }
 }

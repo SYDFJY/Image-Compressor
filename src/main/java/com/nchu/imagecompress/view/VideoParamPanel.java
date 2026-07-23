@@ -71,6 +71,7 @@ public class VideoParamPanel extends JPanel {
     private JButton activePresetBtn;
     private JLabel estimatedSizeLabel;
     private JComboBox<String> rateControlModeCombo;
+    private JComboBox<String> encodePresetCombo;
     private javax.swing.JSpinner targetSizeMBSpinner;
     private javax.swing.JTextField startTimeField;
     private javax.swing.JTextField endTimeField;
@@ -97,6 +98,14 @@ public class VideoParamPanel extends JPanel {
     private static final String[] FPS_OPTIONS = {"保持原始", "24 fps", "30 fps", "60 fps"};
     private static final String[] AUDIO_OPTIONS = {"保留音频", "移除音频"};
     private static final String[] FORMAT_OPTIONS = {"保持原格式", "MP4 (H.264)", "WebM (VP9)", "AVI", "MOV", "MKV"};
+
+    /** v2.6: 编码速度预设（影响同码率下的画质） */
+    private static final String[] ENCODE_PRESET_OPTIONS = {
+        "极速 (veryfast)", "快速 (fast)", "标准 (medium)", "高质量 (slow)"
+    };
+    private static final String[] ENCODE_PRESET_VALUES = {
+        "veryfast", "fast", "medium", "slow"
+    };
 
     public VideoParamPanel() {
         setLayout(new BorderLayout(0, 0));
@@ -274,6 +283,15 @@ public class VideoParamPanel extends JPanel {
             crfSlider.setEnabled(!targetMode);
         });
         addFormControl(panel, gbc, ratePanel, row);
+        row++;
+
+        // --- 编码质量（v2.6: 限制大小模式下的画质控制） ---
+        addFormLabel(panel, gbc, "编码质量", row);
+        encodePresetCombo = new JComboBox<>(ENCODE_PRESET_OPTIONS);
+        encodePresetCombo.setFont(ThemeUtil.FONT_SMALL);
+        encodePresetCombo.setSelectedIndex(2); // 默认 "标准 (medium)"
+        encodePresetCombo.setToolTipText("同码率下，更高质量 = 更好画质但编码更慢");
+        addFormControl(panel, gbc, encodePresetCombo, row);
         row++;
 
         // --- 自定义文件名开关 ---
@@ -638,6 +656,14 @@ public class VideoParamPanel extends JPanel {
                     ? (int) targetSizeMBSpinner.getValue() : 0);
         } else {
             config.setRateControlMode(VideoCompressConfig.RateControlMode.CRF);
+        }
+
+        // v2.6: 编码速度预设（限制大小模式下的画质控制）
+        if (encodePresetCombo != null) {
+            int presetIdx = encodePresetCombo.getSelectedIndex();
+            if (presetIdx >= 0 && presetIdx < ENCODE_PRESET_VALUES.length) {
+                config.setEncodePreset(ENCODE_PRESET_VALUES[presetIdx]);
+            }
         }
 
         // v2.3: 封面快照
