@@ -91,8 +91,19 @@ public class CardWrapper extends JPanel {
         if (withBorder && palette != null && palette.cardHasBorder
                 && palette.cardBorderColor != null) {
             g2.setColor(palette.cardBorderColor);
-            g2.drawRoundRect(0, 0, w, h, ARC, ARC);
+            g2.drawRoundRect(0, 0, w - 1, h - 1, ARC, ARC);
         }
+
+        // 主题色 accent 描边（所有主题统一，提升卡片视觉边界）
+        Color primary = ThemeUtil.PRIMARY;
+        int bgLuminance = ThemeUtil.BG_WINDOW.getRed() * 299
+                + ThemeUtil.BG_WINDOW.getGreen() * 587
+                + ThemeUtil.BG_WINDOW.getBlue() * 114;
+        boolean isDark = bgLuminance < 128000; // 0.299R+0.587G+0.114B < 128
+        int alpha = isDark ? 35 : 50;
+        g2.setColor(new Color(primary.getRed(), primary.getGreen(),
+                primary.getBlue(), alpha));
+        g2.drawRoundRect(0, 0, w - 1, h - 1, ARC, ARC);
 
         g2.dispose();
     }

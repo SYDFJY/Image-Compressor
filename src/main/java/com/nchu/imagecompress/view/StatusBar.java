@@ -36,10 +36,8 @@ public class StatusBar extends JPanel {
 
     public StatusBar() {
         setLayout(new BorderLayout(ThemeUtil.SPACE_LG, 0));
-        // 顶部：边框线 + 微阴影（参考蓝韵音乐 player bar 的顶部立体感）
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, ThemeUtil.BORDER),
-                BorderFactory.createEmptyBorder(0, ThemeUtil.SPACE_LG, 0, ThemeUtil.SPACE_LG)));
+        // 顶部：主题色半透明边框线（与卡片 accent 描边风格统一）
+        refreshBorder();
         setPreferredSize(new Dimension(0, 36));
         // 使用 BG_CARD 凸起背景，区别于窗口底色
         ThemeUtil.setDynamicBackground(this, () -> ThemeUtil.BG_CARD);
@@ -71,8 +69,21 @@ public class StatusBar extends JPanel {
         ThemeUtil.setDynamicForeground(statsLabel, () -> ThemeUtil.TEXT_TERTIARY);
         add(statsLabel, BorderLayout.EAST);
 
-        // 主题切换时刷新背景色
-        ThemeUtil.addThemeChangeListener(() -> setBackground(ThemeUtil.BG_CARD));
+        // 主题切换时刷新背景色 + 边框色
+        ThemeUtil.addThemeChangeListener(() -> {
+            setBackground(ThemeUtil.BG_CARD);
+            refreshBorder();
+        });
+    }
+
+    /** 重建顶部边框，使用 PRIMARY 色半透明（与卡片 accent 描边统一） */
+    private void refreshBorder() {
+        java.awt.Color primary = ThemeUtil.PRIMARY;
+        setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0,
+                        new java.awt.Color(primary.getRed(), primary.getGreen(),
+                                primary.getBlue(), 40)),
+                BorderFactory.createEmptyBorder(0, ThemeUtil.SPACE_LG, 0, ThemeUtil.SPACE_LG)));
     }
 
     // ==================== 状态更新 ====================

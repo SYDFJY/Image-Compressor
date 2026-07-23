@@ -223,13 +223,22 @@ public class MainFrame extends JFrame {
         JPanel toolBarPanel = new JPanel(new BorderLayout());
         toolBarPanel.setBackground(ThemeUtil.BG_CARD);
         toolBarPanel.setOpaque(true);
-        // 主题切换时刷新工具栏背景
+        // 主题切换时刷新工具栏背景 + 底边颜色
         ThemeUtil.addThemeChangeListener(() -> {
             toolBarPanel.setBackground(ThemeUtil.BG_CARD);
+            toolBarPanel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0,
+                            new Color(ThemeUtil.PRIMARY.getRed(),
+                                    ThemeUtil.PRIMARY.getGreen(),
+                                    ThemeUtil.PRIMARY.getBlue(), 40)),
+                    BorderFactory.createEmptyBorder(12, 20, 12, 20)));
             toolBarPanel.repaint();
         });
         toolBarPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ThemeUtil.BORDER),
+                BorderFactory.createMatteBorder(0, 0, 1, 0,
+                        new Color(ThemeUtil.PRIMARY.getRed(),
+                                ThemeUtil.PRIMARY.getGreen(),
+                                ThemeUtil.PRIMARY.getBlue(), 40)),
                 BorderFactory.createEmptyBorder(12, 20, 12, 20)));
 
         // --- 左侧：品牌 ---
@@ -589,15 +598,15 @@ public class MainFrame extends JFrame {
     private void initPanels() {
         // 左侧卡片：文件列表
         fileListPanel = new FileListPanel();
-        JPanel leftCard = new CardWrapper(fileListPanel);
+        JPanel leftCard = new CardWrapper(fileListPanel, true);
 
         // ========== 图片模式右侧面板 ==========
         previewPanel = new PreviewPanel();
-        JPanel previewCard = new CardWrapper(previewPanel);
+        JPanel previewCard = new CardWrapper(previewPanel, true);
         previewCard.setMinimumSize(new Dimension(0, 60));
 
         paramPanel = new ParamPanel();
-        JPanel paramCard = new CardWrapper(paramPanel);
+        JPanel paramCard = new CardWrapper(paramPanel, true);
 
         // 参数面板包滚动条：压缩到很小时可滚动，不丢失内容
         JScrollPane imgParamScroll = new JScrollPane(paramCard);
@@ -622,11 +631,11 @@ public class MainFrame extends JFrame {
 
         // ========== 视频模式右侧面板 ==========
         videoPreviewPanel = new VideoPreviewPanel();
-        JPanel videoPreviewCard = new CardWrapper(videoPreviewPanel);
+        JPanel videoPreviewCard = new CardWrapper(videoPreviewPanel, true);
         videoPreviewCard.setMinimumSize(new Dimension(0, 60));
 
         videoParamPanel = new VideoParamPanel();
-        JPanel videoParamCard = new CardWrapper(videoParamPanel);
+        JPanel videoParamCard = new CardWrapper(videoParamPanel, true);
 
         // 参数面板包滚动条：压缩到很小时可滚动，不丢失内容
         JScrollPane vidParamScroll = new JScrollPane(videoParamCard);
