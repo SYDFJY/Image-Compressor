@@ -647,7 +647,7 @@ public class MainController implements MainControllerCallback,
         }
 
         FolderWatchConfig watchConfig = appConfig.getWatchConfig();
-        new WatchSetupDialog(mainFrame,
+        WatchSetupDialog dialog = new WatchSetupDialog(mainFrame,
                 watchConfig,
                 cfg -> {
                     // 保存配置
@@ -679,6 +679,7 @@ public class MainController implements MainControllerCallback,
                             () -> ThemeUtil.TEXT_SECONDARY);
                     statusBar.setStatus("就绪", "ready");
                 });
+        dialog.setVisible(true);
     }
 
     /**

@@ -68,7 +68,6 @@ public class WatchSetupDialog extends JDialog {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
         JPanel mainPanel = new JPanel(new BorderLayout(0, 12));
-        mainPanel.setBackground(ThemeUtil.BG_CARD);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
 
         mainPanel.add(createFormPanel(), BorderLayout.CENTER);
@@ -233,6 +232,9 @@ public class WatchSetupDialog extends JDialog {
     }
 
     private void loadFromConfig() {
+        // 防御性 null 检查：构造函数中 createFormPanel() 先执行，但以防万一
+        if (watchFolderField == null) return;
+
         if (config.getWatchFolderPath() != null) {
             watchFolderField.setText(config.getWatchFolderPath());
         }

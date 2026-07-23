@@ -43,6 +43,12 @@
             <artifactId>flatlaf-extras</artifactId>
             <version>${flatlaf.version}</version>
         </dependency>
+        <!-- JSVG — FlatSVGIcon 加载 SVG 图标所需（flatlaf-extras 传递依赖，显式声明确保 exec-maven-plugin classpath 可用） -->
+        <dependency>
+            <groupId>com.github.weisj</groupId>
+            <artifactId>jsvg</artifactId>
+            <version>1.2.0</version>
+        </dependency>
 
         <!-- Thumbnailator — 图片缩略图/压缩处理库 -->
         <dependency>
