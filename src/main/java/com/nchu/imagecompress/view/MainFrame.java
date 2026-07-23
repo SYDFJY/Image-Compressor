@@ -230,7 +230,7 @@ public class MainFrame extends JFrame {
                     BorderFactory.createMatteBorder(0, 0, 1, 0,
                             new Color(ThemeUtil.PRIMARY.getRed(),
                                     ThemeUtil.PRIMARY.getGreen(),
-                                    ThemeUtil.PRIMARY.getBlue(), 40)),
+                                    ThemeUtil.PRIMARY.getBlue(), 90)),
                     BorderFactory.createEmptyBorder(12, 20, 12, 20)));
             toolBarPanel.repaint();
         });
@@ -238,7 +238,7 @@ public class MainFrame extends JFrame {
                 BorderFactory.createMatteBorder(0, 0, 1, 0,
                         new Color(ThemeUtil.PRIMARY.getRed(),
                                 ThemeUtil.PRIMARY.getGreen(),
-                                ThemeUtil.PRIMARY.getBlue(), 40)),
+                                ThemeUtil.PRIMARY.getBlue(), 90)),
                 BorderFactory.createEmptyBorder(12, 20, 12, 20)));
 
         // --- 左侧：品牌 ---

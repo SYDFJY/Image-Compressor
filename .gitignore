@@ -16,6 +16,7 @@ target/
 *.dylib
 # 发行版 EXE 启动器允许提交
 !dist/*.exe
+!dist/standalone/*.exe
 
 # IDE & Editor
 .vscode/

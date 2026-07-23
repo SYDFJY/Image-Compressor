@@ -82,7 +82,7 @@ public class StatusBar extends JPanel {
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0,
                         new java.awt.Color(primary.getRed(), primary.getGreen(),
-                                primary.getBlue(), 40)),
+                                primary.getBlue(), 90)),
                 BorderFactory.createEmptyBorder(0, ThemeUtil.SPACE_LG, 0, ThemeUtil.SPACE_LG)));
     }
 

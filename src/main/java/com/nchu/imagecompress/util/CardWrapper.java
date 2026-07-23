@@ -100,7 +100,7 @@ public class CardWrapper extends JPanel {
                 + ThemeUtil.BG_WINDOW.getGreen() * 587
                 + ThemeUtil.BG_WINDOW.getBlue() * 114;
         boolean isDark = bgLuminance < 128000; // 0.299R+0.587G+0.114B < 128
-        int alpha = isDark ? 35 : 50;
+        int alpha = isDark ? 75 : 160;
         g2.setColor(new Color(primary.getRed(), primary.getGreen(),
                 primary.getBlue(), alpha));
         g2.drawRoundRect(0, 0, w - 1, h - 1, ARC, ARC);
